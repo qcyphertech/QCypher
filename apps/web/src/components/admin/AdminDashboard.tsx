@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, Plus, CheckCircle2, AlertCircle, Clock, Eye } from 'lucide-react'
+import { Plus, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
-import { TenantSnapshotModal } from '@/components/admin/TenantSnapshotModal'
 import { IncidentsPanel } from '@/components/admin/IncidentsPanel'
 import { PlatformModulesPanel } from '@/components/admin/PlatformModulesPanel'
+import { ClientsPanel } from '@/components/admin/ClientsPanel'
+import { listTenants, type TenantSummary } from '@/lib/actions/admin-console'
 
 type Tenant = {
   id: string; name: string; slug: string; plan: string
@@ -24,21 +25,34 @@ const TABS = [
 ] as const
 type TabId = typeof TABS[number]['id']
 
-const STATUS_STYLE: Record<Tenant['status'], string> = {
-  active:    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  trial:     'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  suspended: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+type Props = {
+  tenants: Tenant[]
+  totalClients: number
+  filteredCount: number
+  page: number
+  pageSize: number
+  isSuperAdmin?: boolean
 }
 
-const STATUS_ICON: Record<Tenant['status'], React.ElementType> = {
-  active: CheckCircle2, trial: Clock, suspended: AlertCircle,
-}
-
-export function AdminDashboard({ tenants, isSuperAdmin = false }: { tenants: Tenant[]; isSuperAdmin?: boolean }) {
+export function AdminDashboard({ tenants, totalClients, filteredCount, page, pageSize, isSuperAdmin = false }: Props) {
+  const router = useRouter()
   const [showInvite, setShowInvite] = useState(false)
   const [tab, setTab] = useState<TabId>('clients')
 
-  const clients = tenants.filter(t => !t.is_admin)
+  // The Clients tab is paginated for scale (thousands of tenants); the
+  // Approvals/Incidents/Audit tabs still need a tenant picker, so that
+  // full list is fetched separately and lazily, only once one of those
+  // tabs is actually opened.
+  const [allTenants, setAllTenants] = useState<TenantSummary[]>([])
+  const [allTenantsLoaded, setAllTenantsLoaded] = useState(false)
+
+  useEffect(() => {
+    const needsFullList = tab === 'approvals' || tab === 'incidents' || tab === 'audit'
+    if (needsFullList && isSuperAdmin && !allTenantsLoaded) {
+      listTenants().then(t => { setAllTenants(t); setAllTenantsLoaded(true) })
+    }
+  }, [tab, isSuperAdmin, allTenantsLoaded])
+
   const visibleTabs = isSuperAdmin ? TABS : TABS.filter(t => t.id === 'clients')
 
   return (
@@ -46,7 +60,7 @@ export function AdminDashboard({ tenants, isSuperAdmin = false }: { tenants: Ten
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">QCypher Admin</h1>
-          <p className="text-[15px] text-[hsl(var(--muted-foreground))] mt-0.5">{clients.length} client workspace{clients.length !== 1 ? 's' : ''}</p>
+          <p className="text-[15px] text-[hsl(var(--muted-foreground))] mt-0.5">{totalClients} client workspace{totalClients !== 1 ? 's' : ''}</p>
         </div>
         {tab === 'clients' && (
           <button
@@ -77,81 +91,22 @@ export function AdminDashboard({ tenants, isSuperAdmin = false }: { tenants: Ten
       )}
 
       {tab === 'clients' && (
-        <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] shadow-soft overflow-hidden divide-y divide-[hsl(var(--border))]">
-          {clients.length === 0 && (
-            <div className="p-12 text-center">
-              <p className="text-[15px] text-[hsl(var(--muted-foreground))]">No client tenants yet. Invite your first client.</p>
-            </div>
-          )}
-          {clients.map(t => <TenantRow key={t.id} tenant={t} isSuperAdmin={isSuperAdmin} />)}
-        </div>
+        <ClientsPanel
+          tenants={tenants}
+          totalClients={totalClients}
+          filteredCount={filteredCount}
+          page={page}
+          pageSize={pageSize}
+          isSuperAdmin={isSuperAdmin}
+        />
       )}
 
       {tab === 'approvals' && isSuperAdmin && <ApprovalRequestsPanel />}
-      {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={clients} />}
+      {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={allTenants} />}
       {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}
-      {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={clients} />}
+      {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={allTenants} />}
 
-      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
-    </div>
-  )
-}
-
-function TenantRow({ tenant, isSuperAdmin }: { tenant: Tenant; isSuperAdmin: boolean }) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [showSnapshot, setShowSnapshot] = useState(false)
-  const StatusIcon = STATUS_ICON[tenant.status]
-
-  function setStatus(status: Tenant['status']) {
-    startTransition(async () => {
-      await fetch(`/api/admin/tenants/${tenant.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      })
-      router.refresh()
-    })
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
-      <div className="w-9 h-9 rounded-xl bg-accent/10 text-accent flex items-center justify-center flex-shrink-0">
-        <Building2 className="w-4 h-4" />
-      </div>
-      <button
-        onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
-        className="flex-1 min-w-0 text-left hover:opacity-70 transition-opacity"
-      >
-        <p className="text-[15px] font-medium">{tenant.name}</p>
-        <p className="text-[15px] text-[hsl(var(--muted-foreground))]">/{tenant.slug} · {tenant.plan}</p>
-      </button>
-      <span className={cn('flex items-center gap-1 text-[15px] px-2.5 py-1 rounded-full font-medium capitalize', STATUS_STYLE[tenant.status])}>
-        <StatusIcon className="w-3 h-3" />
-        {tenant.status}
-      </span>
-      {isSuperAdmin && (
-        <button
-          onClick={() => setShowSnapshot(true)}
-          title="View snapshot (logged as impersonation)"
-          className="flex items-center gap-1 text-[15px] text-accent px-2 py-1 rounded-lg hover:bg-accent/10"
-        >
-          <Eye className="w-3.5 h-3.5" /> View
-        </button>
-      )}
-      <select
-        disabled={isPending}
-        value={tenant.status}
-        onChange={e => setStatus(e.target.value as Tenant['status'])}
-        className="text-[15px] rounded-lg border border-[hsl(var(--border))] px-2 py-1 bg-transparent outline-none focus:ring-1 focus:ring-[hsl(var(--ring))] disabled:opacity-50"
-      >
-        <option value="active">Active</option>
-        <option value="trial">Trial</option>
-        <option value="suspended">Suspend</option>
-      </select>
-      {showSnapshot && (
-        <TenantSnapshotModal tenantId={tenant.id} tenantName={tenant.name} onClose={() => setShowSnapshot(false)} />
-      )}
+      {showInvite && <InviteModal onClose={() => { setShowInvite(false); router.refresh() }} />}
     </div>
   )
 }
