@@ -112,14 +112,6 @@ export default async function SettingsPage() {
     </div>
   )
 
-  const dataTab = (
-    <div style={{ maxWidth: '640px' }}>
-      <SettingsSection label="Export & Delete" hint="Download your data or permanently delete your account.">
-        <ExportDeletePanel initial={deletionStatus} />
-      </SettingsSection>
-    </div>
-  )
-
   const accountTab = (
     <div style={{ maxWidth: '640px' }}>
       <SettingsSection label="Profile">
@@ -149,6 +141,12 @@ export default async function SettingsPage() {
         />
       </SettingsSection>
 
+      {isAdmin && (
+        <SettingsSection label="Export & Delete" hint="Download your data or permanently delete your account.">
+          <ExportDeletePanel initial={deletionStatus} />
+        </SettingsSection>
+      )}
+
       <div style={{ borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', overflow: 'hidden' }}>
         <SignOutButton />
       </div>
@@ -170,7 +168,6 @@ export default async function SettingsPage() {
         workspaceContent={workspaceTab}
         teamContent={teamTab}
         auditContent={auditTab}
-        dataContent={dataTab}
         accountContent={accountTab}
         isAdmin={isAdmin}
       />

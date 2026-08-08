@@ -1,14 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Sun, Blocks, Zap, Users, User, Shield, LogOut, ScrollText, DownloadCloud } from 'lucide-react'
+import { Sun, Blocks, Zap, Users, User, Shield, LogOut, ScrollText } from 'lucide-react'
 
 const ALL_TABS = [
-  { id: 'workspace', label: 'Workspace',       icon: Blocks       },
-  { id: 'team',      label: 'Team',            icon: Users        },
-  { id: 'audit',     label: 'Audit Trail',     icon: ScrollText   },
-  { id: 'data',      label: 'Export & Delete', icon: DownloadCloud },
-  { id: 'account',   label: 'Account',         icon: User         },
+  { id: 'workspace', label: 'Workspace',   icon: Blocks     },
+  { id: 'team',      label: 'Team',        icon: Users      },
+  { id: 'audit',     label: 'Audit Trail', icon: ScrollText },
+  { id: 'account',   label: 'Account',     icon: User       },
 ] as const
 
 type TabId = typeof ALL_TABS[number]['id']
@@ -17,18 +16,17 @@ type Props = {
   workspaceContent: React.ReactNode
   teamContent: React.ReactNode
   auditContent: React.ReactNode
-  dataContent: React.ReactNode
   accountContent: React.ReactNode
-  // Phase 21 RBAC — only admins (owner role) see Workspace/Team/Audit/Data; User
+  // Phase 21 RBAC — only admins (owner role) see Workspace/Team/Audit; User
   // and Read-only roles only ever see their own Account tab.
   isAdmin?: boolean
 }
 
-export function SettingsTabs({ workspaceContent, teamContent, auditContent, dataContent, accountContent, isAdmin = true }: Props) {
+export function SettingsTabs({ workspaceContent, teamContent, auditContent, accountContent, isAdmin = true }: Props) {
   const TABS = isAdmin ? ALL_TABS : ALL_TABS.filter(t => t.id === 'account')
   const [active, setActive] = useState<TabId>(isAdmin ? 'workspace' : 'account')
 
-  const content = { workspace: workspaceContent, team: teamContent, audit: auditContent, data: dataContent, account: accountContent }
+  const content = { workspace: workspaceContent, team: teamContent, audit: auditContent, account: accountContent }
 
   return (
     <div>
