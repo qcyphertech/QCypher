@@ -14,14 +14,19 @@ export default async function PayRequestPage({ params }: { params: { token: stri
 
   const r = request as unknown as {
     token: string; order_id: string; tenant_id: string; contact_id: string; amount: number; status: string
+    expires_at: string
     orders: { payment_status: string } | null
     contacts: { first_name: string; last_name: string | null; email: string | null } | null
     tenants: { name: string } | null
   }
 
   // Treat the order's own payment status as the source of truth in case it
-  // was paid through another channel (e.g. manually marked paid).
-  const effectiveStatus = r.orders?.payment_status === 'paid' ? 'paid' : r.status
+  // was paid through another channel (e.g. manually marked paid). Expiry is
+  // enforced here at read time rather than by a separate cron flipping
+  // status — the 30-day window only matters at the moment someone tries to
+  // pay, and this keeps that check next to where it's used.
+  const isExpired = r.status === 'active' && new Date(r.expires_at).getTime() < Date.now()
+  const effectiveStatus = r.orders?.payment_status === 'paid' ? 'paid' : isExpired ? 'expired' : r.status
 
   return (
     <PayRequestCard
