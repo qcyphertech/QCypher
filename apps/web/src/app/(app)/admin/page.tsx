@@ -62,6 +62,10 @@ export default async function AdminPage({
 
   query = sort === 'name'
     ? query.order('name', { ascending: true })
+    : sort === 'name_desc'
+    ? query.order('name', { ascending: false })
+    : sort === 'oldest'
+    ? query.order('created_at', { ascending: true })
     : query.order('created_at', { ascending: false })
 
   const { data: tenants, count } = await query.range(offset, offset + PAGE_SIZE - 1)
