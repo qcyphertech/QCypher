@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getServiceStats, getChecklist } from '@/lib/actions/admin'
 import { TenantDetail } from '@/components/admin/TenantDetail'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Tenant Detail — Admin' }
@@ -20,10 +21,13 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: callerTenant } = await supabase.from('tenants').select('is_admin').single()
-  if (!(callerTenant as { is_admin?: boolean } | null)?.is_admin) redirect('/contacts')
-
   const admin = adminSupabase()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  const isSuperAdmin = isSuperAdminUser(fresh)
+
+  const { data: callerTenant } = await supabase.from('tenants').select('is_admin').single()
+  if (!isSuperAdmin && !(callerTenant as { is_admin?: boolean } | null)?.is_admin) redirect('/contacts')
+
   const { data: tenant } = await admin
     .from('tenants')
     .select('id, name, slug, plan, status, created_at')

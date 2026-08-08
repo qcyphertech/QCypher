@@ -10,6 +10,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 const SERVICE_NAMES = ['reviews', 'scheduler', 'missed_call', 'backup'] as const
 export type ServiceName = typeof SERVICE_NAMES[number]
@@ -37,11 +38,21 @@ function adminClient() {
   )
 }
 
-/** Verify caller is an admin tenant — used as a gate in every action. */
+/**
+ * Verify caller is authorized — used as a gate in every action. Accepts
+ * either the DB-backed super admin flag (app_metadata.is_super_admin,
+ * used by tenantless super admin accounts) or the legacy Tenant #0
+ * (is_admin=true) gating, kept for backward compat.
+ */
 async function assertAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
+
+  const admin = adminClient()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  if (isSuperAdminUser(fresh)) return user
+
   const { data: t } = await supabase.from('tenants').select('is_admin').single()
   if (!(t as { is_admin?: boolean } | null)?.is_admin) throw new Error('Forbidden')
   return user
