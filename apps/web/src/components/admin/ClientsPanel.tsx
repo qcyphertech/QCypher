@@ -201,16 +201,19 @@ function TenantRow({ tenant, isSuperAdmin }: { tenant: Tenant; isSuperAdmin: boo
           onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
           className="flex items-center gap-3 text-left hover:opacity-70 transition-opacity"
         >
-          <div className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center flex-shrink-0">
-            <Building2 className="w-3.5 h-3.5" />
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+            style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}
+          >
+            <Building2 className="w-4 h-4 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="text-[15px] font-medium truncate">{tenant.name}</p>
+            <p className="text-[14px] font-bold uppercase tracking-wide truncate text-[hsl(var(--foreground))]">{tenant.name}</p>
             <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">/{tenant.slug}</p>
           </div>
         </button>
       </td>
-      <td className="px-5 py-3.5 text-[15px] text-[hsl(var(--muted-foreground))] capitalize whitespace-nowrap">{tenant.plan}</td>
+      <td className="px-5 py-3.5 text-[14px] font-medium text-[hsl(var(--muted-foreground))] capitalize whitespace-nowrap">{tenant.plan}</td>
       <td className="px-5 py-3.5 whitespace-nowrap">
         <span className={cn('inline-flex items-center gap-1 text-[13px] px-2.5 py-1 rounded-full font-medium capitalize', STATUS_STYLE[tenant.status])}>
           <StatusIcon className="w-3 h-3" />
