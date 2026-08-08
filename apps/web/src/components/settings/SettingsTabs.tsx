@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Sun, Blocks, Zap, Users, User, Shield, LogOut, ScrollText } from 'lucide-react'
+import Link from 'next/link'
+import { Sun, Blocks, Zap, Users, User, Shield, LogOut, ScrollText, Download } from 'lucide-react'
 
 const ALL_TABS = [
   { id: 'workspace', label: 'Workspace',   icon: Blocks     },
@@ -58,6 +59,24 @@ export function SettingsTabs({ workspaceContent, teamContent, auditContent, acco
             </button>
           )
         })}
+        {isAdmin && (
+          <Link
+            href="/settings/export"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '7px',
+              padding: '10px 16px',
+              fontSize: '14px', fontWeight: 500,
+              color: 'hsl(var(--muted-foreground))',
+              borderBottom: '2px solid transparent',
+              marginBottom: '-1px',
+              textDecoration: 'none',
+              transition: 'color 0.15s',
+            }}
+          >
+            <Download style={{ width: '15px', height: '15px', flexShrink: 0 }} />
+            Export
+          </Link>
+        )}
       </div>
 
       {/* Active tab content */}
