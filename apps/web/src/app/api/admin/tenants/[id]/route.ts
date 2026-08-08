@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 function adminSupabase() {
   return createAdmin(
@@ -24,9 +25,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Admin gate — read caller's own tenant through RLS
+  // Admin gate — DB-backed super admin flag, OR the legacy Tenant #0
+  // (is_admin=true) gating, kept for backward compat.
+  const admin = adminSupabase()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  const isSuperAdmin = isSuperAdminUser(fresh)
+
   const { data: callerTenant } = await supabase.from('tenants').select('is_admin').single()
-  if (!callerTenant?.is_admin) {
+  if (!isSuperAdmin && !callerTenant?.is_admin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -40,7 +46,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   // Use service_role to write to a different tenant's row (RLS would block anon client)
-  const admin = adminSupabase()
   const { data, error } = await admin.from('tenants').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 422 })
 

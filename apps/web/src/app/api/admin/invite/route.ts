@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { rateLimit, LIMITS } from '@/lib/rate-limit'
 import { getIp } from '@/lib/get-ip'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -30,9 +31,14 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Verify caller is the admin tenant (Tenant #0)
+  // Verify caller is authorized: DB-backed super admin flag, OR the legacy
+  // Tenant #0 (is_admin=true) gating, kept for backward compat.
+  const admin = adminSupabase()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  const isSuperAdmin = isSuperAdminUser(fresh)
+
   const { data: callerTenant } = await supabase.from('tenants').select('is_admin').single()
-  if (!callerTenant?.is_admin) {
+  if (!isSuperAdmin && !callerTenant?.is_admin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -40,8 +46,6 @@ export async function POST(request: NextRequest) {
   if (!name?.trim() || !slug?.trim() || !email?.trim()) {
     return NextResponse.json({ error: 'name, slug, and email are required' }, { status: 400 })
   }
-
-  const admin = adminSupabase()
 
   // Pre-check for an existing account before provisioning a whole tenant
   const normalizedEmail = email.trim().toLowerCase()

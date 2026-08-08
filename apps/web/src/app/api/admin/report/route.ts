@@ -8,17 +8,34 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdmin } from '@supabase/supabase-js'
 import { assembleReportData } from '@/lib/actions/admin'
 import { renderBrandedEmail } from '@/lib/email/brand'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 const GEMINI_API_KEY  = process.env.GEMINI_API_KEY ?? ''
 const RESEND_API_KEY  = process.env.RESEND_API_KEY ?? ''
 const RESEND_FROM     = process.env.RESEND_FROM_EMAIL ?? 'hello@qcyphertech.com'
 
+function adminSupabase() {
+  return createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+}
+
+// Admin gate — DB-backed super admin flag, OR the legacy Tenant #0
+// (is_admin=true) gating, kept for backward compat.
 async function assertAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+
+  const admin = adminSupabase()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  if (isSuperAdminUser(fresh)) return user
+
   const { data: t } = await supabase.from('tenants').select('is_admin').single()
   if (!(t as { is_admin?: boolean } | null)?.is_admin) return null
   return user
