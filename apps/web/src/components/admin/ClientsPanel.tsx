@@ -209,7 +209,6 @@ function TenantRow({ tenant, isSuperAdmin }: { tenant: Tenant; isSuperAdmin: boo
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-bold uppercase tracking-wide truncate text-[hsl(var(--foreground))]">{tenant.name}</p>
-            <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">/{tenant.slug}</p>
           </div>
         </button>
       </td>
