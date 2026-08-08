@@ -13,6 +13,54 @@ const ALL_TABS = [
 
 type TabId = typeof ALL_TABS[number]['id']
 
+const itemStyle = (isActive: boolean): React.CSSProperties => ({
+  display: 'flex', alignItems: 'center', gap: '7px',
+  padding: '10px 16px',
+  fontSize: '14px', fontWeight: isActive ? 700 : 500,
+  color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+  background: 'none', border: 'none', cursor: 'pointer',
+  borderBottom: isActive ? '2px solid #2a52a0' : '2px solid transparent',
+  marginBottom: '-1px',
+  textDecoration: 'none',
+  transition: 'color 0.15s',
+})
+
+// Shared menu bar rendering, reused by both the in-page tabs (settings/page.tsx)
+// and the solo /settings/export page — so the two look and behave identically,
+// down to the same hover/active treatment on every item.
+export function SettingsMenuBar({
+  active, onTabClick, isAdmin = true,
+}: {
+  active: TabId | 'export'
+  // Present when used inside the tabbed /settings page (in-page switching).
+  // Absent on the solo /settings/export page, where Workspace/Team/Audit/
+  // Account instead link back to /settings.
+  onTabClick?: (id: TabId) => void
+  isAdmin?: boolean
+}) {
+  const TABS = isAdmin ? ALL_TABS : ALL_TABS.filter(t => t.id === 'account')
+
+  return (
+    <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid hsl(var(--border))', marginBottom: '32px' }}>
+      {TABS.map(({ id, label, icon: Icon }) => {
+        const isActive = active === id
+        const content = <><Icon style={{ width: '15px', height: '15px', flexShrink: 0 }} />{label}</>
+        return onTabClick ? (
+          <button key={id} onClick={() => onTabClick(id)} style={itemStyle(isActive)}>{content}</button>
+        ) : (
+          <Link key={id} href="/settings" style={itemStyle(isActive)}>{content}</Link>
+        )
+      })}
+      {isAdmin && (
+        <Link href="/settings/export" style={itemStyle(active === 'export')}>
+          <Download style={{ width: '15px', height: '15px', flexShrink: 0 }} />
+          Export
+        </Link>
+      )}
+    </div>
+  )
+}
+
 type Props = {
   workspaceContent: React.ReactNode
   teamContent: React.ReactNode
@@ -24,62 +72,12 @@ type Props = {
 }
 
 export function SettingsTabs({ workspaceContent, teamContent, auditContent, accountContent, isAdmin = true }: Props) {
-  const TABS = isAdmin ? ALL_TABS : ALL_TABS.filter(t => t.id === 'account')
   const [active, setActive] = useState<TabId>(isAdmin ? 'workspace' : 'account')
-
   const content = { workspace: workspaceContent, team: teamContent, audit: auditContent, account: accountContent }
 
   return (
     <div>
-      {/* Tab bar */}
-      <div style={{
-        display: 'flex', gap: '4px',
-        borderBottom: '1px solid hsl(var(--border))',
-        marginBottom: '32px',
-      }}>
-        {TABS.map(({ id, label, icon: Icon }) => {
-          const isActive = active === id
-          return (
-            <button
-              key={id}
-              onClick={() => setActive(id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '7px',
-                padding: '10px 16px',
-                fontSize: '14px', fontWeight: isActive ? 700 : 500,
-                color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
-                background: 'none', border: 'none', cursor: 'pointer',
-                borderBottom: isActive ? '2px solid #2a52a0' : '2px solid transparent',
-                marginBottom: '-1px',
-                transition: 'color 0.15s',
-              }}
-            >
-              <Icon style={{ width: '15px', height: '15px', flexShrink: 0 }} />
-              {label}
-            </button>
-          )
-        })}
-        {isAdmin && (
-          <Link
-            href="/settings/export"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              padding: '10px 16px',
-              fontSize: '14px', fontWeight: 500,
-              color: 'hsl(var(--muted-foreground))',
-              borderBottom: '2px solid transparent',
-              marginBottom: '-1px',
-              textDecoration: 'none',
-              transition: 'color 0.15s',
-            }}
-          >
-            <Download style={{ width: '15px', height: '15px', flexShrink: 0 }} />
-            Export
-          </Link>
-        )}
-      </div>
-
-      {/* Active tab content */}
+      <SettingsMenuBar active={active} onTabClick={setActive} isAdmin={isAdmin} />
       <div>{content[active]}</div>
     </div>
   )
