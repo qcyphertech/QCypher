@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     .eq('status', 'pending_deletion')
     .lte('deletion_scheduled_at', new Date().toISOString())
 
-  const results: Array<{ tenantId: string; ok: boolean }> = []
+  const results: Array<{ tenantId: string; ok: boolean; auditLogError?: string; error?: string }> = []
 
   for (const tenant of (due ?? []) as { id: string; name: string }[]) {
     try {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         })
         .eq('id', tenant.id)
 
-      await admin.from('audit_logs').insert({
+      const { error: auditError } = await admin.from('audit_logs').insert({
         tenant_id: tenant.id,
         user_id: null,
         user_email: 'system',
@@ -76,9 +76,9 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      results.push({ tenantId: tenant.id, ok: true })
-    } catch {
-      results.push({ tenantId: tenant.id, ok: false })
+      results.push({ tenantId: tenant.id, ok: true, ...(auditError ? { auditLogError: auditError.message } : {}) })
+    } catch (e) {
+      results.push({ tenantId: tenant.id, ok: false, error: e instanceof Error ? e.message : String(e) })
     }
   }
 
