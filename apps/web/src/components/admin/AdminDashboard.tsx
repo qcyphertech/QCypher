@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2 } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
@@ -17,11 +17,11 @@ type Tenant = {
 }
 
 const TABS = [
-  { id: 'clients', label: 'Clients' },
-  { id: 'approvals', label: 'Approval Requests' },
-  { id: 'incidents', label: 'Incidents' },
-  { id: 'modules', label: 'Modules' },
-  { id: 'audit', label: 'Audit Trail' },
+  { id: 'clients', label: 'Clients', icon: Users },
+  { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck },
+  { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
+  { id: 'modules', label: 'Modules', icon: LayoutGrid },
+  { id: 'audit', label: 'Audit Trail', icon: ScrollText },
 ] as const
 type TabId = typeof TABS[number]['id']
 
@@ -75,19 +75,26 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
       </div>
 
       {visibleTabs.length > 1 && (
-        <div className="flex gap-1 border-b border-[hsl(var(--border))]">
-          {visibleTabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                'text-[15px] px-4 py-2.5 font-medium border-b-2 -mb-px transition-colors',
-                tab === t.id ? 'border-accent text-[hsl(var(--foreground))]' : 'border-transparent text-[hsl(var(--muted-foreground))]',
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex gap-1 p-1 rounded-2xl bg-[hsl(var(--muted))]/60 overflow-x-auto">
+          {visibleTabs.map(t => {
+            const Icon = t.icon
+            const active = tab === t.id
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  'flex items-center gap-2 text-[14px] font-medium px-3.5 py-2 rounded-xl whitespace-nowrap transition-all',
+                  active
+                    ? 'bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm'
+                    : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]',
+                )}
+              >
+                <Icon className={cn('w-3.5 h-3.5', active && 'text-accent')} />
+                {t.label}
+              </button>
+            )
+          })}
         </div>
       )}
 
