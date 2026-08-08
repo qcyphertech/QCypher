@@ -15,8 +15,9 @@ import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 import { getDeletionStatus, type DeletionStatus } from '@/lib/actions/account-deletion'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
-import { Sun } from 'lucide-react'
+import { Sun, Download, ChevronRight } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Settings' }
@@ -143,6 +144,23 @@ export default async function SettingsPage() {
 
       {isAdmin && (
         <SettingsSection label="Export & Delete" hint="Download your data or permanently delete your account.">
+          <Link
+            href="/settings/export"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
+              padding: '16px 20px', marginBottom: '20px', textDecoration: 'none',
+            }}
+          >
+            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(42,82,160,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Download style={{ width: '16px', height: '16px', color: '#2a52a0' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>Download a copy of your data</p>
+              <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>Export your contacts, notes, and calendar as a CSV file</p>
+            </div>
+            <ChevronRight style={{ width: '16px', height: '16px', color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+          </Link>
           <ExportDeletePanel initial={deletionStatus} />
         </SettingsSection>
       )}

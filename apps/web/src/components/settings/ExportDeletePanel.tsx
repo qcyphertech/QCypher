@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Download, AlertTriangle, ShieldCheck, Undo2 } from 'lucide-react'
+import { AlertTriangle, ShieldCheck, Undo2 } from 'lucide-react'
 import { requestAccountDeletion, cancelAccountDeletion, type DeletionStatus } from '@/lib/actions/account-deletion'
 
 function fmtDate(iso: string) {
@@ -52,30 +52,6 @@ export function ExportDeletePanel({ initial }: { initial: DeletionStatus }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Export */}
-      <div style={card}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(42,82,160,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Download style={{ width: '16px', height: '16px', color: '#2a52a0' }} />
-          </div>
-          <p style={{ fontSize: '15px', fontWeight: 700 }}>Download a copy of your data</p>
-        </div>
-        <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginBottom: '14px' }}>
-          Export all your contacts, their notes, and calendar event counts as a CSV file.
-        </p>
-        <a
-          href="/api/export/csv"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            fontSize: '14px', fontWeight: 600, color: '#fff',
-            background: '#2a52a0', padding: '9px 16px', borderRadius: '10px',
-            textDecoration: 'none',
-          }}
-        >
-          <Download style={{ width: '14px', height: '14px' }} /> Download CSV
-        </a>
-      </div>
-
       {/* Delete */}
       <div style={{ ...card, borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.04)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
