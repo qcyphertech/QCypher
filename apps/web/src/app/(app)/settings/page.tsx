@@ -10,6 +10,7 @@ import { RequestActionsPanel } from '@/components/settings/RequestActionsPanel'
 import { AuditTrailPanel } from '@/components/settings/AuditTrailPanel'
 import { SettingsTabs, SettingsSection } from '@/components/settings/SettingsTabs'
 import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
+import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -37,7 +38,7 @@ export default async function SettingsPage() {
   let tenantId: string | null = null
   try { tenantId = await getTenantId(user.id, user.app_metadata) } catch { /* no tenant */ }
 
-  const [{ data: tenant }, { data: profile }, members, pendingInvites] = await Promise.all([
+  const [{ data: tenant }, { data: profile }, members, pendingInvites, availableModuleKeys] = await Promise.all([
     tenantId
       ? createAdminClient().from('tenants').select('name, slug, settings, telnyx_number').eq('id', tenantId).single()
       : Promise.resolve({ data: null }),
@@ -47,6 +48,7 @@ export default async function SettingsPage() {
       .single(),
     isAdmin ? getTeamMembers().catch(() => []) : Promise.resolve([]),
     isAdmin ? getPendingInvites().catch(() => []) : Promise.resolve([]),
+    getAvailableModuleKeys(),
   ])
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
@@ -77,7 +79,7 @@ export default async function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection label="Modules" hint="Toggle features on or off — hidden modules keep their data.">
-        <ModuleToggles settings={settings} />
+        <ModuleToggles settings={settings} availableModules={availableModuleKeys ? [...availableModuleKeys] : undefined} />
       </SettingsSection>
 
       <SettingsSection label="Automations">

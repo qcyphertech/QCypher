@@ -8,6 +8,7 @@ import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
 import { TenantSnapshotModal } from '@/components/admin/TenantSnapshotModal'
 import { IncidentsPanel } from '@/components/admin/IncidentsPanel'
+import { PlatformModulesPanel } from '@/components/admin/PlatformModulesPanel'
 
 type Tenant = {
   id: string; name: string; slug: string; plan: string
@@ -18,6 +19,7 @@ const TABS = [
   { id: 'clients', label: 'Clients' },
   { id: 'approvals', label: 'Approval Requests' },
   { id: 'incidents', label: 'Incidents' },
+  { id: 'modules', label: 'Modules' },
   { id: 'audit', label: 'Audit Trail' },
 ] as const
 type TabId = typeof TABS[number]['id']
@@ -87,6 +89,7 @@ export function AdminDashboard({ tenants, isSuperAdmin = false }: { tenants: Ten
 
       {tab === 'approvals' && isSuperAdmin && <ApprovalRequestsPanel />}
       {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={clients} />}
+      {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}
       {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={clients} />}
 
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}

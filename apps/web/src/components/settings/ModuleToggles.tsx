@@ -20,11 +20,26 @@ const MODULES: Array<{
   { key: 'show_overview',  label: 'Overview',   description: 'Income & expense summary',              icon: BarChart2,   color: '#22c55e' },
 ]
 
-export function ModuleToggles({ settings }: { settings: TenantSettings }) {
+export function ModuleToggles({ settings, availableModules }: { settings: TenantSettings; availableModules?: string[] }) {
   const [pending, startTransition] = useTransition()
 
   function handleToggle(key: keyof TenantSettings, value: boolean) {
     startTransition(() => updateTenantSettings({ [key]: value }))
+  }
+
+  // availableModules undefined means the platform_modules lookup failed
+  // (e.g. migration not yet run) — fail open and show everything rather
+  // than hiding every toggle.
+  const visibleModules = availableModules
+    ? MODULES.filter(m => availableModules.includes(m.key))
+    : MODULES
+
+  if (visibleModules.length === 0) {
+    return (
+      <p style={{ fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>
+        No modules are currently available for your workspace.
+      </p>
+    )
   }
 
   return (
@@ -34,13 +49,13 @@ export function ModuleToggles({ settings }: { settings: TenantSettings }) {
       border: '1px solid hsl(var(--border))',
       overflow: 'hidden',
     }}>
-      {MODULES.map(({ key, label, description, icon: Icon, color }, i) => {
+      {visibleModules.map(({ key, label, description, icon: Icon, color }, i) => {
         const enabled = settings[key]
         return (
           <div key={key} style={{
             display: 'flex', alignItems: 'center', gap: '14px',
             padding: '13px 16px',
-            borderBottom: i < MODULES.length - 1 ? '1px solid hsl(var(--border))' : 'none',
+            borderBottom: i < visibleModules.length - 1 ? '1px solid hsl(var(--border))' : 'none',
             opacity: pending ? 0.6 : 1,
             transition: 'opacity 0.15s',
           }}>

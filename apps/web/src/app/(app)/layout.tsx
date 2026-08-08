@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
+import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -23,7 +24,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } catch { /* no tenant — leave null */ }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...((tenant as any)?.settings ?? {}) }
+  const tenantSettings: TenantSettings = { ...DEFAULT_SETTINGS, ...((tenant as any)?.settings ?? {}) }
+
+  // A module the tenant has toggled on doesn't matter if a super admin has
+  // pulled it from the platform entirely — force it off regardless of the
+  // tenant's own stored preference (which is left untouched in the DB, so
+  // it comes back automatically if the module is ever re-enabled).
+  const availableModules = await getAvailableModuleKeys()
+  const settings: TenantSettings = availableModules
+    ? (Object.fromEntries(
+        Object.entries(tenantSettings).map(([key, value]) => [key, value && availableModules.has(key)]),
+      ) as TenantSettings)
+    : tenantSettings
 
   const businessName = (tenant as { name?: string } | null)?.name ?? ''
   const words = businessName.trim().split(/\s+/).filter(Boolean)
