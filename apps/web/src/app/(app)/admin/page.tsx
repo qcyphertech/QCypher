@@ -22,10 +22,15 @@ function sanitizeSearch(q: string) {
   return q.replace(/[,%]/g, ' ').trim().slice(0, 100)
 }
 
+// Only accept a clean YYYY-MM-DD from the date inputs.
+function sanitizeDate(d?: string) {
+  return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : ''
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: { q?: string; status?: string; plan?: string; sort?: string; page?: string }
+  searchParams: { q?: string; status?: string; plan?: string; from?: string; to?: string; sort?: string; page?: string }
 }) {
   // Auth via RLS-scoped client
   const supabase = await createClient()
@@ -47,6 +52,8 @@ export default async function AdminPage({
   const q = sanitizeSearch(searchParams.q ?? '')
   const status = searchParams.status ?? 'all'
   const plan = searchParams.plan ?? 'all'
+  const from = sanitizeDate(searchParams.from)
+  const to = sanitizeDate(searchParams.to)
   const sort = searchParams.sort ?? 'newest'
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1)
   const offset = (page - 1) * PAGE_SIZE
@@ -61,6 +68,8 @@ export default async function AdminPage({
   if (q) query = query.or(`name.ilike.%${q}%,slug.ilike.%${q}%`)
   if (status !== 'all') query = query.eq('status', status)
   if (plan !== 'all') query = query.eq('plan', plan)
+  if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`)
+  if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`)
 
   query = sort === 'name'
     ? query.order('name', { ascending: true })
