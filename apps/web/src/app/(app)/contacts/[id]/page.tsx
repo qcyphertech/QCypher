@@ -24,10 +24,11 @@ export default async function ContactPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   const tenantId = user?.app_metadata?.tenant_id ?? ''
 
-  const [{ data: contact }, { data: interactions }, { data: tenantRaw }] = await Promise.all([
+  const [{ data: contact }, { data: interactions }, { data: tenantRaw }, { data: orders }] = await Promise.all([
     supabase.from('contacts').select('*').eq('id', id).single(),
     supabase.from('interactions').select('*').eq('contact_id', id).order('occurred_at', { ascending: false }),
     supabase.from('tenants').select('slug, name').single(),
+    supabase.from('orders').select('id, total_amount, payment_status, notes, created_at').eq('customer_id', id).order('created_at', { ascending: false }),
   ])
 
   if (!contact) notFound()
@@ -37,6 +38,7 @@ export default async function ContactPage({ params }: Props) {
     <ContactDetail
       contact={contact}
       interactions={interactions ?? []}
+      orders={orders ?? []}
       tenantId={tenantId}
       tenantSlug={tenant?.slug ?? ''}
       businessName={tenant?.name ?? ''}

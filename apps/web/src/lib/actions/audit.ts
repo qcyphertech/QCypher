@@ -15,8 +15,9 @@ export type AuditAction =
   | 'data_exported' | 'deletion_requested' | 'deletion_cancelled' | 'account_deleted'
   | 'pricing_override_set' | 'pricing_override_cleared'
   | 'invoice_created' | 'invoice_sent' | 'invoice_paid' | 'invoice_voided' | 'invoice_marked_paid'
+  | 'payment_link_created' | 'payment_link_sent' | 'payment_link_paid'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment'
 
 export type AuditLog = {
   id: string

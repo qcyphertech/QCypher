@@ -9,12 +9,14 @@ import { InteractionTimeline } from '@/components/interactions/InteractionTimeli
 import { AddInteractionForm } from '@/components/interactions/AddInteractionForm'
 import { QuickSendButton } from '@/components/templates/QuickSendButton'
 import { SendPortalLinkButton } from '@/components/portal/SendPortalLinkButton'
+import { PaymentRequestSection } from '@/components/contacts/PaymentRequestSection'
 import { useUserRole } from '@/lib/hooks/useUserRole'
 import type { Tables } from '@/types/database'
 import { cn } from '@/lib/utils'
 
 type Contact = Tables<'contacts'>
 type Interaction = Tables<'interactions'>
+type Order = { id: string; total_amount: number; payment_status: string; notes: string | null; created_at: string }
 
 const STATUS_COLOR: Record<Contact['status'], string> = {
   active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -26,9 +28,10 @@ function initials(c: Contact) {
   return `${c.first_name[0]}${c.last_name?.[0] ?? ''}`.toUpperCase()
 }
 
-export function ContactDetail({ contact, interactions, tenantId, tenantSlug, businessName }: {
+export function ContactDetail({ contact, interactions, orders = [], tenantId, tenantSlug, businessName }: {
   contact: Contact
   interactions: Interaction[]
+  orders?: Order[]
   tenantId: string
   tenantSlug: string
   businessName: string
@@ -120,6 +123,9 @@ export function ContactDetail({ contact, interactions, tenantId, tenantSlug, bus
           />
         </div>
       </div>
+
+      {/* Payment requests — per-order, tenant-admin only */}
+      <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} />
 
       {/* Interaction timeline */}
       <div className="space-y-4">

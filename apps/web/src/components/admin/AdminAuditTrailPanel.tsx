@@ -19,6 +19,7 @@ const ACTIONS: AuditAction[] = [
   'data_exported', 'deletion_requested', 'deletion_cancelled', 'account_deleted',
   'pricing_override_set', 'pricing_override_cleared',
   'invoice_created', 'invoice_sent', 'invoice_paid', 'invoice_voided', 'invoice_marked_paid',
+  'payment_link_created', 'payment_link_sent', 'payment_link_paid',
 ]
 
 const ACTION_COLOR = (a: string) =>

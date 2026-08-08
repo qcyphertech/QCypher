@@ -17,9 +17,10 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   pricing_override_set: 'Pricing override set', pricing_override_cleared: 'Pricing override cleared',
   invoice_created: 'Invoice created', invoice_sent: 'Invoice sent', invoice_paid: 'Invoice paid',
   invoice_voided: 'Invoice voided', invoice_marked_paid: 'Invoice marked paid',
+  payment_link_created: 'Payment link created', payment_link_sent: 'Payment link sent', payment_link_paid: 'Payment link paid',
 }
 
-const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice']
+const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment']
 
 const PAGE_SIZE = 25
 
