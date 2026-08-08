@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, CheckCircle2, AlertCircle, RefreshCw, Send, Loader2 } from 'lucide-react'
 import { toggleChecklist } from '@/lib/actions/admin'
+import { TenantModulesPanel } from '@/components/admin/TenantModulesPanel'
 import type { ServiceStat, ChecklistRow, ServiceName } from '@/lib/actions/admin'
 
 const SERVICE_LABELS: Record<ServiceName, string> = {
@@ -140,6 +141,9 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist }: Pro
           ))}
         </div>
       </div>
+
+      {/* Modules — per-tenant module access, gated by super admin */}
+      <TenantModulesPanel tenantId={tenant.id} />
 
       {/* 14B — Ops checklist */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
