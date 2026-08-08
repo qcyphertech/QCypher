@@ -58,15 +58,19 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">QCypher Admin</h1>
-          <p className="text-[15px] text-[hsl(var(--muted-foreground))] mt-0.5">{totalClients} client workspace{totalClients !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-[#2a52a0] to-[#4a9db5] bg-clip-text text-transparent">
+            Admin Portal
+          </h1>
+          <p className="text-[14px] text-[hsl(var(--muted-foreground))] mt-1">
+            {totalClients} client workspace{totalClients !== 1 ? 's' : ''}
+          </p>
         </div>
         {tab === 'clients' && (
           <button
             onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 bg-accent text-white text-[15px] font-medium px-4 py-2 rounded-xl hover:bg-accent-hover transition-colors"
+            className="flex items-center gap-2 bg-gradient-to-r from-[#2a52a0] to-[#4a9db5] text-white text-[14px] font-semibold px-4 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:brightness-105 transition-all"
           >
             <Plus className="w-4 h-4" />
             Invite client
