@@ -302,7 +302,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div>
         <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: TEAL, marginBottom: '4px' }}>
-          QCypher CRM
+          CRM
         </p>
         <h1 style={{ fontSize: '26px', fontWeight: 900, color: 'var(--heading)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
           Welcome back

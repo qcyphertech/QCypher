@@ -16,9 +16,6 @@ export default async function PipelinePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#4a9db5', marginBottom: '4px' }}>
-          QCypher CRM
-        </p>
         <h1 style={{ fontSize: '26px', fontWeight: 900, color: 'var(--heading)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
           Pipeline
         </h1>
