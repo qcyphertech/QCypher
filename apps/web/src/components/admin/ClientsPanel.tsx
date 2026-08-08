@@ -9,22 +9,26 @@ import { FilterToggle, FilterPopover as Popover, FilterOption } from '@/componen
 
 type Tenant = {
   id: string; name: string; slug: string; plan: string
-  status: 'active' | 'suspended' | 'trial'; is_admin: boolean; created_at: string
+  status: 'active' | 'suspended' | 'trial' | 'pending_deletion' | 'deleted'; is_admin: boolean; created_at: string
 }
 
 const STATUS_STYLE: Record<Tenant['status'], string> = {
-  active:    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  trial:     'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  suspended: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  active:           'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  trial:            'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  suspended:        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  pending_deletion: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  deleted:          'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]',
 }
 const STATUS_ICON: Record<Tenant['status'], React.ElementType> = {
-  active: CheckCircle2, trial: Clock, suspended: AlertCircle,
+  active: CheckCircle2, trial: Clock, suspended: AlertCircle, pending_deletion: AlertCircle, deleted: X,
 }
 const STATUS_FILTERS = [
-  { value: 'all',       label: 'All',       color: '#4a9db5', bg: 'rgba(74,157,181,0.12)' },
-  { value: 'active',    label: 'Active',    color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-  { value: 'trial',     label: 'Trial',     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  { value: 'suspended', label: 'Suspended', color: '#ef4444', bg: 'rgba(239,68,68,0.12)'  },
+  { value: 'all',              label: 'All',              color: '#4a9db5', bg: 'rgba(74,157,181,0.12)' },
+  { value: 'active',           label: 'Active',           color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+  { value: 'trial',            label: 'Trial',            color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  { value: 'suspended',        label: 'Suspended',        color: '#ef4444', bg: 'rgba(239,68,68,0.12)'  },
+  { value: 'pending_deletion', label: 'Pending Deletion', color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+  { value: 'deleted',          label: 'Deleted',          color: '#6b7280', bg: 'rgba(107,114,128,0.12)' },
 ]
 
 function fmtDate(iso: string) {

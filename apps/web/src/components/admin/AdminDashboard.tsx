@@ -13,7 +13,7 @@ import { listTenants, type TenantSummary } from '@/lib/actions/admin-console'
 
 type Tenant = {
   id: string; name: string; slug: string; plan: string
-  status: 'active' | 'suspended' | 'trial'; is_admin: boolean; created_at: string
+  status: 'active' | 'suspended' | 'trial' | 'pending_deletion' | 'deleted'; is_admin: boolean; created_at: string
 }
 
 const TABS = [

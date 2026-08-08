@@ -8,9 +8,11 @@ import { SecurityPanel } from '@/components/account/SecurityPanel'
 import { TeamPanel } from '@/components/settings/TeamPanel'
 import { RequestActionsPanel } from '@/components/settings/RequestActionsPanel'
 import { AuditTrailPanel } from '@/components/settings/AuditTrailPanel'
+import { ExportDeletePanel } from '@/components/settings/ExportDeletePanel'
 import { SettingsTabs, SettingsSection } from '@/components/settings/SettingsTabs'
 import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
 import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
+import { getDeletionStatus, type DeletionStatus } from '@/lib/actions/account-deletion'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -38,7 +40,9 @@ export default async function SettingsPage() {
   let tenantId: string | null = null
   try { tenantId = await getTenantId(user.id, user.app_metadata) } catch { /* no tenant */ }
 
-  const [{ data: tenant }, { data: profile }, members, pendingInvites, availableModuleKeys] = await Promise.all([
+  const DEFAULT_DELETION_STATUS: DeletionStatus = { status: 'active', deletionRequestedAt: null, deletionScheduledAt: null }
+
+  const [{ data: tenant }, { data: profile }, members, pendingInvites, availableModuleKeys, deletionStatus] = await Promise.all([
     tenantId
       ? createAdminClient().from('tenants').select('name, slug, settings, telnyx_number').eq('id', tenantId).single()
       : Promise.resolve({ data: null }),
@@ -49,6 +53,7 @@ export default async function SettingsPage() {
     isAdmin ? getTeamMembers().catch(() => []) : Promise.resolve([]),
     isAdmin ? getPendingInvites().catch(() => []) : Promise.resolve([]),
     getAvailableModuleKeys(),
+    isAdmin ? getDeletionStatus().catch(() => DEFAULT_DELETION_STATUS) : Promise.resolve(DEFAULT_DELETION_STATUS),
   ])
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
@@ -93,7 +98,7 @@ export default async function SettingsPage() {
       <SettingsSection label="Team" hint="Invite colleagues to your workspace. They'll see the same contacts, orders, and inventory.">
         <TeamPanel members={members} pending={pendingInvites} currentUserId={user.id} />
       </SettingsSection>
-      <SettingsSection label="Account & Billing" hint="Plan changes and account deletion require QCypher's approval.">
+      <SettingsSection label="Account & Billing" hint="Plan changes require QCypher's approval.">
         <RequestActionsPanel />
       </SettingsSection>
     </div>
@@ -103,6 +108,14 @@ export default async function SettingsPage() {
     <div>
       <SettingsSection label="Audit Trail" hint="Who did what, and when. Logs are kept for 90 days.">
         <AuditTrailPanel members={members} />
+      </SettingsSection>
+    </div>
+  )
+
+  const dataTab = (
+    <div style={{ maxWidth: '640px' }}>
+      <SettingsSection label="Export & Delete" hint="Download your data or permanently delete your account.">
+        <ExportDeletePanel initial={deletionStatus} />
       </SettingsSection>
     </div>
   )
@@ -157,6 +170,7 @@ export default async function SettingsPage() {
         workspaceContent={workspaceTab}
         teamContent={teamTab}
         auditContent={auditTab}
+        dataContent={dataTab}
         accountContent={accountTab}
         isAdmin={isAdmin}
       />

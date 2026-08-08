@@ -12,8 +12,9 @@ export type AuditAction =
   | 'template_created' | 'template_updated' | 'template_deleted'
   | 'login' | 'logout'
   | 'invite_sent' | 'role_changed' | 'user_removed'
+  | 'data_exported' | 'deletion_requested' | 'deletion_cancelled' | 'account_deleted'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account'
 
 export type AuditLog = {
   id: string

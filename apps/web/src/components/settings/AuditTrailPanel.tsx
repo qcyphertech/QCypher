@@ -12,9 +12,11 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   template_created: 'Template created', template_updated: 'Template updated', template_deleted: 'Template deleted',
   login: 'Signed in', logout: 'Signed out',
   invite_sent: 'Invite sent', role_changed: 'Role changed', user_removed: 'User removed',
+  data_exported: 'Data exported', deletion_requested: 'Deletion requested',
+  deletion_cancelled: 'Deletion cancelled', account_deleted: 'Account deleted',
 }
 
-const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team']
+const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account']
 
 const PAGE_SIZE = 25
 
