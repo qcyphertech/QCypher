@@ -84,7 +84,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  'flex items-center gap-2 text-[14px] font-medium px-3.5 py-2 rounded-xl whitespace-nowrap transition-all',
+                  'flex items-center gap-2 text-[14px] font-medium px-3.5 py-2 rounded-xl whitespace-nowrap transition-all outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
                   active
                     ? 'bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm'
                     : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]',

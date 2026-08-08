@@ -8,6 +8,7 @@ import {
   type Incident, type IncidentStatus, type IncidentType, type IncidentSeverity,
 } from '@/lib/actions/incidents'
 import type { TenantSummary } from '@/lib/actions/admin-console'
+import { SectionHeader, EmptyState, PanelSkeleton } from '@/components/admin/AdminPanelUI'
 
 const TYPE_LABEL: Record<IncidentType, string> = {
   unauthorized_access: 'Unauthorized access',
@@ -56,23 +57,23 @@ export function IncidentsPanel({ tenants }: { tenants: TenantSummary[] }) {
   return (
     <div className="space-y-8 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-semibold">Incidents</h2>
+        <h2 className="text-xl font-semibold">Incidents</h2>
         <button
           onClick={() => setShowReportForm(true)}
-          className="flex items-center gap-1.5 text-[15px] font-medium bg-accent text-white px-3.5 py-1.5 rounded-lg hover:bg-accent-hover"
+          className="flex items-center gap-1.5 text-[14px] font-medium bg-accent text-white px-4 py-2 rounded-xl shadow-sm hover:bg-accent-hover transition-colors"
         >
           <Plus className="w-4 h-4" /> Report incident manually
         </button>
       </div>
 
       {loading ? (
-        <p className="text-[15px] text-[hsl(var(--muted-foreground))]">Loading…</p>
+        <PanelSkeleton />
       ) : (
         <>
           <div>
-            <h3 className="text-[15px] font-semibold mb-3">Active ({active.length})</h3>
+            <SectionHeader icon={AlertTriangle} label="Active" count={active.length} accent={active.length > 0} />
             {active.length === 0 ? (
-              <p className="text-[15px] text-[hsl(var(--muted-foreground))]">No active incidents.</p>
+              <EmptyState icon={AlertTriangle} message="No active incidents." />
             ) : (
               <div className="space-y-3">
                 {active.map(inc => (
@@ -90,9 +91,9 @@ export function IncidentsPanel({ tenants }: { tenants: TenantSummary[] }) {
           </div>
 
           <div>
-            <h3 className="text-[15px] font-semibold mb-3">Resolved ({resolved.length})</h3>
+            <SectionHeader icon={CheckCircle2} label="Resolved" count={resolved.length} />
             {resolved.length === 0 ? (
-              <p className="text-[15px] text-[hsl(var(--muted-foreground))]">No resolved incidents yet.</p>
+              <EmptyState icon={CheckCircle2} message="No resolved incidents yet." />
             ) : (
               <div className="space-y-3">
                 {resolved.map(inc => (

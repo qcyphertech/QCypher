@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, Inbox, History as HistoryIcon } from 'lucide-react'
 import { listApprovalRequests, decideApprovalRequest, type ApprovalRequest, type ApprovalStatus } from '@/lib/actions/approvals'
+import { SectionHeader, EmptyState, PanelSkeleton } from '@/components/admin/AdminPanelUI'
 
 const REQUEST_LABEL: Record<string, string> = {
   delete_account: 'Delete account',
@@ -42,18 +43,18 @@ export function ApprovalRequestsPanel() {
   const pending = requests.filter(r => r.status === 'pending')
   const decided = requests.filter(r => r.status !== 'pending')
 
-  if (loading) return <p className="text-[15px] text-[hsl(var(--muted-foreground))]">Loading…</p>
+  if (loading) return <PanelSkeleton />
 
   return (
     <div className="space-y-8 max-w-3xl">
       <div>
-        <h2 className="text-[15px] font-semibold mb-3">Pending ({pending.length})</h2>
+        <SectionHeader icon={Inbox} label="Pending" count={pending.length} accent />
         {pending.length === 0 ? (
-          <p className="text-[15px] text-[hsl(var(--muted-foreground))]">No pending requests.</p>
+          <EmptyState icon={Inbox} message="No pending requests." />
         ) : (
           <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] shadow-soft divide-y divide-[hsl(var(--border))] overflow-hidden">
             {pending.map(r => (
-              <div key={r.id} className="p-4 space-y-2">
+              <div key={r.id} className="p-4 space-y-2 hover:bg-[hsl(var(--muted))]/30 transition-colors">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <p className="text-[15px] font-medium">{REQUEST_LABEL[r.request_type] ?? r.request_type} — {r.tenant_name}</p>
@@ -90,13 +91,13 @@ export function ApprovalRequestsPanel() {
       </div>
 
       <div>
-        <h2 className="text-[15px] font-semibold mb-3">History</h2>
+        <SectionHeader icon={HistoryIcon} label="History" count={decided.length} />
         {decided.length === 0 ? (
-          <p className="text-[15px] text-[hsl(var(--muted-foreground))]">No decided requests yet.</p>
+          <EmptyState icon={HistoryIcon} message="No decided requests yet." />
         ) : (
           <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] shadow-soft divide-y divide-[hsl(var(--border))] overflow-hidden">
             {decided.map(r => (
-              <div key={r.id} className="p-4 flex items-center justify-between flex-wrap gap-2">
+              <div key={r.id} className="p-4 flex items-center justify-between flex-wrap gap-2 hover:bg-[hsl(var(--muted))]/30 transition-colors">
                 <div>
                   <p className="text-[15px] font-medium">{REQUEST_LABEL[r.request_type] ?? r.request_type} — {r.tenant_name}</p>
                   <p className="text-[15px] text-[hsl(var(--muted-foreground))]">{r.requested_by_email} · {new Date(r.updated_at).toLocaleDateString()}</p>
