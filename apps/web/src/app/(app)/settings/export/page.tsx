@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Download } from 'lucide-react'
 import { SettingsMenuBar, SettingsSection } from '@/components/settings/SettingsTabs'
+import { ExportSelector } from '@/components/settings/ExportSelector'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Export Data' }
@@ -29,29 +29,31 @@ export default async function ExportDataPage() {
       <SettingsMenuBar active="export" />
 
       <div style={{ maxWidth: '640px' }}>
-        <SettingsSection label="Export" hint="Download a complete copy of your workspace data.">
-          <div style={{ borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(42,82,160,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Download style={{ width: '18px', height: '18px', color: '#2a52a0' }} />
+        <SettingsSection label="Export" hint="Choose what to include, then download a copy of your workspace data.">
+          <div style={{
+            borderRadius: '18px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
+            overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          }}>
+            {/* Branded header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '20px 24px', borderBottom: '1px solid hsl(var(--border))',
+              background: 'linear-gradient(135deg, rgba(42,82,160,0.06), rgba(74,157,181,0.06))',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '30px', width: 'auto', display: 'block' }} />
+              <div>
+                <p style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>Data export</p>
+                <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>CSV file, readable in Excel, Sheets, or any spreadsheet app</p>
               </div>
-              <p style={{ fontSize: '16px', fontWeight: 700 }}>Download a copy of your data</p>
             </div>
-            <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginBottom: '20px', lineHeight: 1.6 }}>
-              Export all your contacts, their notes, and calendar event counts as a CSV file — readable in Excel,
-              Google Sheets, or any spreadsheet app. Audit logs and deleted or archived records aren't included.
-            </p>
-            <a
-              href="/api/export/csv"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                fontSize: '15px', fontWeight: 600, color: '#fff',
-                background: '#2a52a0', padding: '11px 20px', borderRadius: '10px',
-                textDecoration: 'none',
-              }}
-            >
-              <Download style={{ width: '15px', height: '15px' }} /> Download CSV
-            </a>
+
+            <div style={{ padding: '24px' }}>
+              <ExportSelector />
+              <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))', marginTop: '16px' }}>
+                Audit logs and deleted or archived records aren't included.
+              </p>
+            </div>
           </div>
         </SettingsSection>
       </div>
