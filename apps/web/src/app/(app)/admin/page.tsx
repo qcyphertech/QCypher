@@ -25,7 +25,7 @@ function sanitizeSearch(q: string) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: { q?: string; status?: string; sort?: string; page?: string }
+  searchParams: { q?: string; status?: string; plan?: string; sort?: string; page?: string }
 }) {
   // Auth via RLS-scoped client
   const supabase = await createClient()
@@ -46,6 +46,7 @@ export default async function AdminPage({
 
   const q = sanitizeSearch(searchParams.q ?? '')
   const status = searchParams.status ?? 'all'
+  const plan = searchParams.plan ?? 'all'
   const sort = searchParams.sort ?? 'newest'
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1)
   const offset = (page - 1) * PAGE_SIZE
@@ -59,6 +60,7 @@ export default async function AdminPage({
 
   if (q) query = query.or(`name.ilike.%${q}%,slug.ilike.%${q}%`)
   if (status !== 'all') query = query.eq('status', status)
+  if (plan !== 'all') query = query.eq('plan', plan)
 
   query = sort === 'name'
     ? query.order('name', { ascending: true })
@@ -76,6 +78,17 @@ export default async function AdminPage({
     .select('id', { count: 'exact', head: true })
     .eq('is_admin', false)
 
+  // Distinct plan values actually in use, for the plan filter's option list.
+  // `plan` is free-text (no fixed enum), so this is fetched rather than
+  // hardcoded — capped rather than scanning the whole table, since in
+  // practice the number of distinct plan tiers is small and shows up early.
+  const { data: planRows } = await admin
+    .from('tenants')
+    .select('plan')
+    .eq('is_admin', false)
+    .limit(2000)
+  const availablePlans = [...new Set((planRows ?? []).map(r => (r as { plan: string }).plan))].sort()
+
   return (
     <AdminDashboard
       tenants={tenants ?? []}
@@ -84,6 +97,7 @@ export default async function AdminPage({
       page={page}
       pageSize={PAGE_SIZE}
       isSuperAdmin={isSuperAdmin}
+      availablePlans={availablePlans}
     />
   )
 }

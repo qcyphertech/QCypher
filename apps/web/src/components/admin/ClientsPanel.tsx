@@ -37,9 +37,12 @@ type Props = {
   page: number
   pageSize: number
   isSuperAdmin: boolean
+  availablePlans: string[]
 }
 
-export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageSize, isSuperAdmin }: Props) {
+const PLAN_COLOR = '#8b5cf6'
+
+export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageSize, isSuperAdmin, availablePlans }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -47,6 +50,7 @@ export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageS
 
   const q = searchParams.get('q') ?? ''
   const status = searchParams.get('status') ?? 'all'
+  const plan = searchParams.get('plan') ?? 'all'
   const sort = searchParams.get('sort') ?? 'newest'
 
   const updateParams = useCallback((updates: Record<string, string>) => {
@@ -108,6 +112,42 @@ export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageS
             )
           })}
         </div>
+
+        {availablePlans.length > 1 && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-[hsl(var(--border))]">
+            <span className="text-[12px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mr-1">Plan</span>
+            <button
+              onClick={() => updateParams({ plan: 'all' })}
+              className="px-3 py-1 rounded-full text-[13px] capitalize transition-all"
+              style={{
+                fontWeight: plan === 'all' ? 700 : 500,
+                border: `1px solid ${plan === 'all' ? PLAN_COLOR + '50' : 'hsl(var(--border))'}`,
+                background: plan === 'all' ? PLAN_COLOR + '1f' : 'transparent',
+                color: plan === 'all' ? PLAN_COLOR : 'hsl(var(--muted-foreground))',
+              }}
+            >
+              All
+            </button>
+            {availablePlans.map(p => {
+              const on = plan === p
+              return (
+                <button
+                  key={p}
+                  onClick={() => updateParams({ plan: p })}
+                  className="px-3 py-1 rounded-full text-[13px] capitalize transition-all"
+                  style={{
+                    fontWeight: on ? 700 : 500,
+                    border: `1px solid ${on ? PLAN_COLOR + '50' : 'hsl(var(--border))'}`,
+                    background: on ? PLAN_COLOR + '1f' : 'transparent',
+                    color: on ? PLAN_COLOR : 'hsl(var(--muted-foreground))',
+                  }}
+                >
+                  {p}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Result count */}

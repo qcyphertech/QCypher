@@ -32,9 +32,10 @@ type Props = {
   page: number
   pageSize: number
   isSuperAdmin?: boolean
+  availablePlans: string[]
 }
 
-export function AdminDashboard({ tenants, totalClients, filteredCount, page, pageSize, isSuperAdmin = false }: Props) {
+export function AdminDashboard({ tenants, totalClients, filteredCount, page, pageSize, isSuperAdmin = false, availablePlans }: Props) {
   const router = useRouter()
   const [showInvite, setShowInvite] = useState(false)
   const [tab, setTab] = useState<TabId>('clients')
@@ -98,6 +99,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
           page={page}
           pageSize={pageSize}
           isSuperAdmin={isSuperAdmin}
+          availablePlans={availablePlans}
         />
       )}
 
