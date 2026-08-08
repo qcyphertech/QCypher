@@ -9,6 +9,11 @@ type Props = {
   members: TeamMember[]
   pending: PendingInvite[]
   currentUserId: string
+  // When set, this panel is being used from the super-admin tenant detail
+  // page to manage a specific client's team rather than the caller's own —
+  // actions are scoped to this tenant and the "invite" form (which only
+  // makes sense for a tenant's own owner) is hidden.
+  tenantId?: string
 }
 
 const ROLE_LABEL: Record<Role, string> = { owner: 'Admin', member: 'User', read_only: 'Read-only' }
@@ -52,7 +57,7 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function TeamPanel({ members: initialMembers, pending: initialPending, currentUserId }: Props) {
+export function TeamPanel({ members: initialMembers, pending: initialPending, currentUserId, tenantId }: Props) {
   const [members, setMembers] = useState(initialMembers)
   const [pending, setPending] = useState(initialPending)
   const [showInvite, setShowInvite] = useState(false)
@@ -96,21 +101,21 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
 
   function handleRevoke(id: string) {
     startTransition(async () => {
-      await revokeInvite(id)
+      await revokeInvite(id, tenantId)
       setPending(prev => prev.filter(p => p.id !== id))
     })
   }
 
   function handleRoleChange(memberId: string, newRole: Role) {
     startTransition(async () => {
-      await updateMemberRole(memberId, newRole)
+      await updateMemberRole(memberId, newRole, tenantId)
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m))
     })
   }
 
   function handleRemove(memberId: string) {
     startTransition(async () => {
-      await removeMember(memberId)
+      await removeMember(memberId, tenantId)
       setMembers(prev => prev.filter(m => m.id !== memberId))
     })
   }
@@ -218,7 +223,8 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
           </div>
         ))}
 
-        {/* Invite button row */}
+        {/* Invite button row — only for a tenant's own owner, not the admin-console view */}
+        {!tenantId && (
         <div style={{ borderTop: members.length > 0 || pending.length > 0 ? '1px solid hsl(var(--border))' : undefined }}>
           {!showInvite ? (
             <button
@@ -296,6 +302,7 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
             </form>
           )}
         </div>
+        )}
       </div>
 
       {success && (

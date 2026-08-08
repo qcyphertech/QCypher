@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getServiceStats, getChecklist } from '@/lib/actions/admin'
+import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
 import { TenantDetail } from '@/components/admin/TenantDetail'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import type { Metadata } from 'next'
@@ -36,9 +37,11 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
 
   if (!tenant) notFound()
 
-  const [stats, checklist] = await Promise.all([
+  const [stats, checklist, members, pendingInvites] = await Promise.all([
     getServiceStats(params.id),
     getChecklist(params.id),
+    getTeamMembers(params.id),
+    getPendingInvites(params.id),
   ])
 
   return (
@@ -46,6 +49,9 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
       tenant={tenant as any}
       stats={stats}
       checklist={checklist}
+      members={members}
+      pendingInvites={pendingInvites}
+      currentUserId={user.id}
     />
   )
 }

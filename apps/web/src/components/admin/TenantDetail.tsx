@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, CheckCircle2, AlertCircle, RefreshCw, Send, Loader2 } from 'lucide-react'
 import { toggleChecklist } from '@/lib/actions/admin'
 import { TenantModulesPanel } from '@/components/admin/TenantModulesPanel'
+import { TeamPanel } from '@/components/settings/TeamPanel'
 import type { ServiceStat, ChecklistRow, ServiceName } from '@/lib/actions/admin'
+import type { TeamMember, PendingInvite } from '@/lib/actions/team'
 
 const SERVICE_LABELS: Record<ServiceName, string> = {
   reviews:     'Review Requests',
@@ -23,9 +25,12 @@ type Props = {
   tenant: Tenant
   stats: ServiceStat[]
   checklist: ChecklistRow[]
+  members: TeamMember[]
+  pendingInvites: PendingInvite[]
+  currentUserId: string
 }
 
-export function TenantDetail({ tenant, stats, checklist: initialChecklist }: Props) {
+export function TenantDetail({ tenant, stats, checklist: initialChecklist, members, pendingInvites, currentUserId }: Props) {
   const router = useRouter()
   const [checklist, setChecklist] = useState(initialChecklist)
   const [isPending, startTransition] = useTransition()
@@ -139,6 +144,19 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist }: Pro
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Team — role management, gated by super admin */}
+      <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[hsl(var(--border))]">
+          <h2 className="text-[15px] font-semibold">Team</h2>
+          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
+            Change roles or remove members of this account.
+          </p>
+        </div>
+        <div className="px-5 py-4">
+          <TeamPanel members={members} pending={pendingInvites} currentUserId={currentUserId} tenantId={tenant.id} />
         </div>
       </div>
 
