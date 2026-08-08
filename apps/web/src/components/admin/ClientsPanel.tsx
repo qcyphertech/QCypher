@@ -2,9 +2,10 @@
 
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Search, Building2, CheckCircle2, AlertCircle, Clock, Eye, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter, X } from 'lucide-react'
+import { Search, Building2, CheckCircle2, AlertCircle, Clock, Eye, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TenantSnapshotModal } from '@/components/admin/TenantSnapshotModal'
+import { FilterToggle, FilterPopover as Popover, FilterOption } from '@/components/admin/AdminPanelUI'
 
 type Tenant = {
   id: string; name: string; slug: string; plan: string
@@ -264,48 +265,6 @@ export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageS
         </div>
       )}
     </div>
-  )
-}
-
-function FilterToggle({ active, open, onClick }: { active: boolean; open: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={e => { e.stopPropagation(); onClick() }}
-      className={cn(
-        'flex items-center justify-center w-5 h-5 rounded-md transition-colors',
-        active ? 'text-accent' : 'text-[hsl(var(--muted-foreground))] opacity-60 hover:opacity-100',
-        open && 'bg-[hsl(var(--muted))]',
-      )}
-    >
-      <Filter className="w-3 h-3" fill={active ? 'currentColor' : 'none'} />
-    </button>
-  )
-}
-
-function Popover({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      onClick={e => e.stopPropagation()}
-      className="absolute left-0 top-full mt-1.5 z-20 min-w-[160px] p-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-card normal-case font-normal"
-    >
-      {children}
-    </div>
-  )
-}
-
-function FilterOption({ label, active, onClick, color, capitalize }: { label: string; active: boolean; onClick: () => void; color?: string; capitalize?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-lg text-[14px] transition-colors',
-        capitalize && 'capitalize',
-        active ? 'bg-accent/10 text-accent font-semibold' : 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]',
-      )}
-    >
-      {color && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />}
-      {label}
-    </button>
   )
 }
 
