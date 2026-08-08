@@ -13,8 +13,10 @@ export type AuditAction =
   | 'login' | 'logout'
   | 'invite_sent' | 'role_changed' | 'user_removed'
   | 'data_exported' | 'deletion_requested' | 'deletion_cancelled' | 'account_deleted'
+  | 'pricing_override_set' | 'pricing_override_cleared'
+  | 'invoice_created' | 'invoice_sent' | 'invoice_paid' | 'invoice_voided' | 'invoice_marked_paid'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice'
 
 export type AuditLog = {
   id: string

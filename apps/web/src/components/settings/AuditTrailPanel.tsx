@@ -14,9 +14,12 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   invite_sent: 'Invite sent', role_changed: 'Role changed', user_removed: 'User removed',
   data_exported: 'Data exported', deletion_requested: 'Deletion requested',
   deletion_cancelled: 'Deletion cancelled', account_deleted: 'Account deleted',
+  pricing_override_set: 'Pricing override set', pricing_override_cleared: 'Pricing override cleared',
+  invoice_created: 'Invoice created', invoice_sent: 'Invoice sent', invoice_paid: 'Invoice paid',
+  invoice_voided: 'Invoice voided', invoice_marked_paid: 'Invoice marked paid',
 }
 
-const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account']
+const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice']
 
 const PAGE_SIZE = 25
 

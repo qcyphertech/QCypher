@@ -43,9 +43,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/api/telnyx/') ||
     pathname.startsWith('/api/portal/') ||
+    pathname.startsWith('/api/webhooks/') ||
     pathname.startsWith('/api/contact') ||
     pathname.startsWith('/q/') ||
-    pathname.startsWith('/portal/')
+    pathname.startsWith('/portal/') ||
+    pathname.startsWith('/invoice/')
   ) {
     return supabaseResponse
   }

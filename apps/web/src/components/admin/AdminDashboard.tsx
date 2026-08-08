@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
 import { IncidentsPanel } from '@/components/admin/IncidentsPanel'
 import { PlatformModulesPanel } from '@/components/admin/PlatformModulesPanel'
+import { InvoicesPanel } from '@/components/admin/InvoicesPanel'
 import { ClientsPanel } from '@/components/admin/ClientsPanel'
 import { listTenants, type TenantSummary } from '@/lib/actions/admin-console'
 
@@ -20,6 +21,7 @@ const TABS = [
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck },
   { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
+  { id: 'invoices', label: 'Invoices', icon: Receipt },
   { id: 'modules', label: 'Modules', icon: LayoutGrid },
   { id: 'audit', label: 'Audit Trail', icon: ScrollText },
 ] as const
@@ -48,7 +50,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
   const [allTenantsLoaded, setAllTenantsLoaded] = useState(false)
 
   useEffect(() => {
-    const needsFullList = tab === 'approvals' || tab === 'incidents' || tab === 'audit'
+    const needsFullList = tab === 'approvals' || tab === 'incidents' || tab === 'audit' || tab === 'invoices'
     if (needsFullList && isSuperAdmin && !allTenantsLoaded) {
       listTenants().then(t => { setAllTenants(t); setAllTenantsLoaded(true) })
     }
@@ -116,6 +118,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
 
       {tab === 'approvals' && isSuperAdmin && <ApprovalRequestsPanel />}
       {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={allTenants} />}
+      {tab === 'invoices' && isSuperAdmin && <InvoicesPanel tenants={allTenants} />}
       {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}
       {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={allTenants} />}
 
