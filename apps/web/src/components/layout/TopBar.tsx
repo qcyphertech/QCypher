@@ -292,7 +292,7 @@ function LogoutButton() {
         style={{ background: 'rgba(239,68,68,0.1)' }}>
         <LogOut style={{ width: '15px', height: '15px', color: '#ef4444' }} strokeWidth={2} />
       </span>
-      <span className="text-[15px] font-semibold" style={{ color: '#ef4444' }}>Log out</span>
+      <span className="text-[15px] font-semibold" style={{ color: '#ef4444' }}>Sign out</span>
     </button>
   )
 }

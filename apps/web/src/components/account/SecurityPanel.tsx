@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { changePassword, requestAccountDeactivation } from '@/lib/actions/account'
-import { Mail, Chrome, Monitor, ChevronRight, Eye, EyeOff, AlertTriangle } from 'lucide-react'
+import { changePassword } from '@/lib/actions/account'
+import { Mail, Chrome, Monitor, ChevronRight, Eye, EyeOff } from 'lucide-react'
 
 const FG      = 'hsl(var(--foreground))'
 const MUTED   = 'hsl(var(--muted-foreground))'
@@ -33,11 +33,6 @@ export function SecurityPanel({ email, hasPassword, hasGoogle, signedInAt, readO
   const [pwSaving, setPwSaving] = useState(false)
   const [pwMsg,    setPwMsg]    = useState<{ ok: boolean; text: string } | null>(null)
 
-  const [deactivateOpen, setDeactivateOpen] = useState(false)
-  const [deactivating,   setDeactivating]   = useState(false)
-  const [deactivated,    setDeactivated]     = useState(false)
-  const [deactivateErr,  setDeactivateErr]  = useState('')
-
   async function submitPw(e: React.FormEvent) {
     e.preventDefault()
     if (pw.next !== pw.confirm) { setPwMsg({ ok: false, text: 'Passwords do not match' }); return }
@@ -52,18 +47,6 @@ export function SecurityPanel({ email, hasPassword, hasGoogle, signedInAt, readO
       setPwMsg({ ok: false, text: err instanceof Error ? err.message : 'Error updating password' })
     } finally {
       setPwSaving(false)
-    }
-  }
-
-  async function handleDeactivate() {
-    setDeactivating(true); setDeactivateErr('')
-    try {
-      await requestAccountDeactivation()
-      setDeactivated(true)
-    } catch {
-      setDeactivateErr('Something went wrong. Please email info@qcyphertech.com directly.')
-    } finally {
-      setDeactivating(false)
     }
   }
 
@@ -186,99 +169,6 @@ export function SecurityPanel({ email, hasPassword, hasGoogle, signedInAt, readO
         </div>
       )}
 
-      {/* ── Deactivate account ── */}
-      <div style={{
-        borderRadius: '16px', overflow: 'hidden', background: CARD,
-        border: `1px solid ${deactivateOpen ? 'rgba(239,68,68,0.4)' : BORDER}`,
-      }}>
-        <button onClick={() => setDeactivateOpen(o => !o)} style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
-          padding: '14px 20px', background: 'transparent', border: 'none',
-          cursor: 'pointer', textAlign: 'left',
-        }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
-            background: 'rgba(239,68,68,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <AlertTriangle style={{ width: '15px', height: '15px', color: '#ef4444' }} strokeWidth={2} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ ...ROW_PRIMARY, color: '#ef4444' }}>Deactivate account</p>
-            <p style={ROW_SECONDARY}>Submit a request to close your workspace</p>
-          </div>
-          <ChevronRight style={{
-            width: '16px', height: '16px', color: MUTED, flexShrink: 0,
-            transform: deactivateOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s',
-          }} />
-        </button>
-
-        {deactivateOpen && (
-          <div style={{
-            borderTop: '1px solid rgba(239,68,68,0.2)',
-            padding: '16px 20px 20px',
-            display: 'flex', flexDirection: 'column', gap: '16px',
-          }}>
-            {deactivated ? (
-              <div style={{
-                borderRadius: '12px', padding: '14px 16px',
-                background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
-              }}>
-                <p style={{ fontSize: '15px', fontWeight: 700, color: '#ef4444', marginBottom: '4px' }}>Request received</p>
-                <p style={{ fontSize: '14px', color: MUTED, lineHeight: 1.6 }}>
-                  We've sent a confirmation to your email and notified the QCypher team. Your account
-                  remains active until our team processes the request — typically within 1–2 business days.
-                  Reply to the confirmation email if this was a mistake.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div style={{
-                  borderRadius: '12px', padding: '14px 16px',
-                  background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
-                }}>
-                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#ef4444', marginBottom: '8px' }}>Before you go</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {[
-                      'Your account will not be deactivated immediately — a request is sent to the QCypher team.',
-                      'You\'ll receive a confirmation email and we\'ll follow up within 1–2 business days.',
-                      'Export any data you need before the team processes your request.',
-                    ].map(line => (
-                      <div key={line} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <span style={{
-                          marginTop: '7px', width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
-                          background: MUTED,
-                        }} />
-                        <p style={{ fontSize: '14px', color: MUTED, lineHeight: 1.6 }}>{line}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {deactivateErr && (
-                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#ef4444' }}>{deactivateErr}</p>
-                )}
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setDeactivateOpen(false)} style={{
-                    padding: '7px 16px', borderRadius: '10px', border: `1px solid ${BORDER}`,
-                    background: 'transparent', cursor: 'pointer',
-                    fontSize: '14px', fontWeight: 600, color: MUTED,
-                  }}>
-                    Cancel
-                  </button>
-                  <button onClick={handleDeactivate} disabled={deactivating} style={{
-                    padding: '7px 18px', borderRadius: '10px', border: 'none',
-                    background: '#ef4444', cursor: deactivating ? 'wait' : 'pointer',
-                    fontSize: '14px', fontWeight: 700, color: '#fff', opacity: deactivating ? 0.7 : 1,
-                  }}>
-                    {deactivating ? 'Submitting…' : 'Submit deactivation request'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
