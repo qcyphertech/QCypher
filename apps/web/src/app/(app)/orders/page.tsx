@@ -52,9 +52,15 @@ export default async function OrdersPage() {
           <table className="w-full">
             <thead>
               <tr style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
-                {['Order', 'Customer', 'Total', 'Status', 'Date'].map(h => (
-                  <th key={h} className="px-5 py-3 text-left text-[15px] font-bold uppercase tracking-wide"
-                    style={{ color: 'hsl(var(--muted-foreground))' }}>{h}</th>
+                {[
+                  { label: 'Order', hideOnMobile: false },
+                  { label: 'Customer', hideOnMobile: false },
+                  { label: 'Total', hideOnMobile: true },
+                  { label: 'Status', hideOnMobile: false },
+                  { label: 'Date', hideOnMobile: true },
+                ].map(({ label, hideOnMobile }) => (
+                  <th key={label} className={`px-5 py-3 text-left text-[15px] font-bold uppercase tracking-wide ${hideOnMobile ? 'hidden sm:table-cell' : ''}`}
+                    style={{ color: 'hsl(var(--muted-foreground))' }}>{label}</th>
                 ))}
               </tr>
             </thead>
@@ -75,7 +81,7 @@ export default async function OrdersPage() {
                     <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
                       {contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
                     </td>
-                    <td className="px-5 py-3.5 text-[15px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+                    <td className="px-5 py-3.5 text-[15px] font-bold hidden sm:table-cell" style={{ color: 'hsl(var(--foreground))' }}>
                       ${Number(o.total_amount).toFixed(2)}
                     </td>
                     <td className="px-5 py-3.5">
@@ -90,7 +96,7 @@ export default async function OrdersPage() {
                           style={s}>{o.payment_status}</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    <td className="px-5 py-3.5 text-[15px] hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
                       {new Date(o.created_at).toLocaleDateString()}
                     </td>
                   </tr>
