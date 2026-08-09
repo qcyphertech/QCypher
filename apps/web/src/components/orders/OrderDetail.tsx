@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock } from 'lucide-react'
 import {
-  addLineItem, removeLineItem, updateOrderStatus, updateJobStatus, returnRental, extendRental,
+  addLineItem, removeLineItem, updateOrderStatus, updateOrderCustomer, updateJobStatus, returnRental, extendRental,
   type Order, type OrderLineItem,
 } from '@/lib/actions/orders'
 import { JobPhotos } from './JobPhotos'
@@ -64,6 +64,12 @@ export function OrderDetail({
 
   function handleStatusChange(status: Order['payment_status']) {
     startTransition(() => updateOrderStatus(order.id, status))
+  }
+
+  function handleCustomerChange(customer_id: string) {
+    if (!customer_id) return
+    startTransition(() => updateOrderCustomer(order.id, customer_id))
+    router.refresh()
   }
 
   function handleJobStatusChange(status: Order['job_status']) {
@@ -131,12 +137,25 @@ export function OrderDetail({
             <h1 className="text-xl font-black" style={{ color: 'hsl(var(--foreground))' }}>
               Order #{order.id.slice(-6).toUpperCase()}
             </h1>
-            {contact && (
+            {contact ? (
               <Link href={`/contacts/${contact.id}`}
                 className="text-[15px] font-semibold mt-1 hover:text-[#1a3070] transition-colors"
                 style={{ color: 'hsl(var(--muted-foreground))' }}>
                 {contact.first_name} {contact.last_name}
               </Link>
+            ) : contacts.length > 0 && (
+              <select
+                defaultValue=""
+                onChange={e => handleCustomerChange(e.target.value)}
+                disabled={pending}
+                className="text-[15px] font-semibold mt-1 px-2 py-1 rounded-lg border cursor-pointer no-print"
+                style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+              >
+                <option value="" disabled>Link a customer…</option>
+                {contacts.map(c => (
+                  <option key={c.id} value={c.id}>{c.first_name} {c.last_name ?? ''}</option>
+                ))}
+              </select>
             )}
             <p className="text-[15px] mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
               Created {new Date(order.created_at).toLocaleDateString()}

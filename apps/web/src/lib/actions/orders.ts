@@ -94,6 +94,17 @@ export async function updateOrderStatus(id: string, payment_status: Order['payme
   revalidatePath(`/orders/${id}`)
 }
 
+export async function updateOrderCustomer(id: string, customer_id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('orders')
+    .update({ customer_id })
+    .eq('id', id)
+  if (error) throw error
+  revalidatePath('/orders')
+  revalidatePath(`/orders/${id}`)
+}
+
 export async function updateJobStatus(id: string, job_status: Order['job_status']) {
   const supabase = await createClient()
   const { error } = await supabase
