@@ -152,9 +152,13 @@ export function SettingsSection({ label, hint, children }: { label: string; hint
 // the reference layout — used for simple action/summary rows (Theme, Sign
 // out, Delete account, etc.) across the settings sub-panels.
 export function SettingsRow({
-  icon: Icon, iconColor = '#2a52a0', label, hint, right, onClick,
+  icon, iconColor = '#2a52a0', label, hint, right, onClick,
 }: {
-  icon: React.ElementType
+  // A rendered icon element (e.g. <Sun />), not a component reference — this
+  // file is a Client Component, and a bare component reference passed as a
+  // prop from a Server Component parent can't cross that boundary (Next.js
+  // throws "Functions cannot be passed directly to Client Components").
+  icon: React.ReactElement
   iconColor?: string
   label: string
   hint?: string
@@ -172,7 +176,13 @@ export function SettingsRow({
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
-      <SidebarIcon Icon={Icon} color={iconColor} />
+      <div style={{
+        width: '30px', height: '30px', borderRadius: '9px', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: `${iconColor}1a`, color: iconColor,
+      }}>
+        {icon}
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>{label}</p>
         {hint && <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>{hint}</p>}

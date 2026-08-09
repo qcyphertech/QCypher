@@ -70,7 +70,7 @@ export default async function SettingsPage() {
     <div style={{ maxWidth: '640px' }}>
       <SettingsSection label="Appearance">
         <div style={{ borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', overflow: 'hidden' }}>
-          <SettingsRow icon={Sun} iconColor="#2a52a0" label="Theme" hint="Light or dark mode" right={<ThemeToggle />} />
+          <SettingsRow icon={<Sun style={{ width: '15px', height: '15px' }} />} iconColor="#2a52a0" label="Theme" hint="Light or dark mode" right={<ThemeToggle />} />
         </div>
       </SettingsSection>
 
