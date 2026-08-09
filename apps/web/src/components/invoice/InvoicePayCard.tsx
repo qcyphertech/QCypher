@@ -6,8 +6,8 @@ import { initInvoiceCheckout, validateAndRecordInvoicePayment } from '@/lib/acti
 
 declare global {
   interface Window {
-    appendHelcimIframe?: (token: string) => void
-    removeHelcimIframe?: () => void
+    appendHelcimPayIframe?: (token: string) => void
+    removeHelcimPayIframe?: () => void
   }
 }
 
@@ -40,7 +40,7 @@ export function InvoicePayCard({ invoice }: { invoice: Invoice }) {
     const script = document.createElement('script')
     script.src = 'https://secure.helcim.app/helcim-pay/services/start.js'
     script.onload = () => {
-      window.appendHelcimIframe?.(result.checkoutToken)
+      window.appendHelcimPayIframe?.(result.checkoutToken)
     }
     document.head.appendChild(script)
 
@@ -49,7 +49,7 @@ export function InvoicePayCard({ invoice }: { invoice: Invoice }) {
       const data = e.data as { eventName?: string; eventStatus?: string; transactionId?: string }
       if (data.eventName !== 'HELCIM_PAY_JS_TRANSACTION_COMPLETION') return
       window.removeEventListener('message', handler)
-      window.removeHelcimIframe?.()
+      window.removeHelcimPayIframe?.()
 
       if (data.eventStatus !== 'SUCCESS' || !data.transactionId) {
         setState('error')
