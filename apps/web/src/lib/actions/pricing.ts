@@ -6,9 +6,9 @@ import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { sendEmail } from '@/lib/email/send'
 import { renderBrandedEmail } from '@/lib/email/brand'
 import { revalidatePath } from 'next/cache'
+import { BASE_PRICING, type PriceTier, type PricingReason } from '@/lib/pricing-constants'
 
-export type PriceTier = 'starter' | 'growth' | 'all_in'
-export type PricingReason = 'negotiated_discount' | 'volume_deal' | 'retention' | 'non_profit'
+export type { PriceTier, PricingReason }
 
 export type CustomerPricing = {
   id: string
@@ -21,14 +21,6 @@ export type CustomerPricing = {
   reason: PricingReason | null
   notes: string | null
   updated_at: string
-}
-
-// Standard tier pricing — used as the fallback when a tenant has no
-// override on file, and to compute what an override is actually saving.
-export const BASE_PRICING: Record<PriceTier, { oneTime: number; monthly: number }> = {
-  starter: { oneTime: 750, monthly: 49 },
-  growth: { oneTime: 1250, monthly: 99 },
-  all_in: { oneTime: 2000, monthly: 199 },
 }
 
 async function requireSuperAdminCaller() {

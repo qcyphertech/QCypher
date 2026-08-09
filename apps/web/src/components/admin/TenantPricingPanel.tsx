@@ -3,9 +3,10 @@
 import { useEffect, useState, useTransition } from 'react'
 import { DollarSign, Edit3, X } from 'lucide-react'
 import {
-  getTenantPricing, setTenantPricing, clearTenantPricing, BASE_PRICING,
-  type CustomerPricing, type PriceTier, type PricingReason,
+  getTenantPricing, setTenantPricing, clearTenantPricing,
+  type CustomerPricing,
 } from '@/lib/actions/pricing'
+import { BASE_PRICING, type PriceTier, type PricingReason } from '@/lib/pricing-constants'
 
 const TIER_LABEL: Record<PriceTier, string> = { starter: 'Starter', growth: 'Growth', all_in: 'All-In' }
 const REASON_LABEL: Record<PricingReason, string> = {
