@@ -24,6 +24,10 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function orderLabel(order: { id: string; notes: string | null }) {
+  return order.notes || `Order #${order.id.slice(-6).toUpperCase()}`
+}
+
 export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: Order[]; hasPhone: boolean; hasEmail: boolean }) {
   const { isAdmin } = useUserRole()
   if (orders.length === 0) return null
@@ -50,7 +54,7 @@ export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: 
               <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-medium">${Number(order.total_amount).toFixed(2)}</p>
-                <p className="text-[13px] text-[hsl(var(--muted-foreground))]">{order.notes || 'No description'}</p>
+                <p className="text-[13px] text-[hsl(var(--muted-foreground))]">{orderLabel(order)}</p>
               </div>
               <span className={`text-[13px] px-2.5 py-1 rounded-full font-medium ${STATUS_STYLE.paid}`}>Paid</span>
             </div>
@@ -96,7 +100,7 @@ function OrderRow({ order, isAdmin, hasPhone, hasEmail }: { order: Order; isAdmi
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[15px] font-medium">${Number(order.total_amount).toFixed(2)}</p>
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">{order.notes || 'No description'} · {fmtDate(order.created_at)}</p>
+          <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">{orderLabel(order)} · {fmtDate(order.created_at)}</p>
         </div>
         <span className={`text-[13px] px-2.5 py-1 rounded-full font-medium capitalize flex-shrink-0 ${STATUS_STYLE[order.payment_status] ?? STATUS_STYLE.draft}`}>
           {order.payment_status}
