@@ -143,8 +143,14 @@ export function SendQuoteButton({
                   </button>
                 </div>
               ) : quoteUrl ? (
-                // Link-only result (no email address provided)
+                // Link-only result — either no email was provided, or email
+                // delivery failed (in which case `error` explains why).
                 <div className="space-y-3">
+                  {error && (
+                    <p className="text-[13px] text-red-500 flex items-start gap-1.5">
+                      <X className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> {error}
+                    </p>
+                  )}
                   <p className="text-[15px] text-[hsl(var(--muted-foreground))]">Copy this link and send it to your customer:</p>
                   <div className="flex gap-2">
                     <input readOnly value={quoteUrl} className={inputCls + ' text-[13px] flex-1'} />

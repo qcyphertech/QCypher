@@ -7,7 +7,7 @@ const RESEND_FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@example.com'
 export async function sendEmail(opts: { to: string | string[]; subject: string; html: string; text?: string }) {
   if (!RESEND_API_KEY) return
   try {
-    await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -18,7 +18,15 @@ export async function sendEmail(opts: { to: string | string[]; subject: string; 
         text: opts.text,
       }),
     })
-  } catch {
-    // best-effort — swallow
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      // Still best-effort (never throws — a notification email should
+      // never break the action that triggered it), but log so silent
+      // delivery failures (e.g. an unverified sending domain) show up in
+      // server logs instead of vanishing with no trace.
+      console.error('[sendEmail] Resend error', res.status, JSON.stringify(err))
+    }
+  } catch (e) {
+    console.error('[sendEmail] fetch failed', e instanceof Error ? e.message : e)
   }
 }
