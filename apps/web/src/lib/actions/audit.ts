@@ -136,12 +136,18 @@ export async function getRecentAuditLogs(limit = 5): Promise<AuditLog[]> {
     const { tenant_id, isSuperAdmin } = await requireAdmin()
     if (isSuperAdmin || !tenant_id) return []
     const admin = createAdminClient()
-    const { data } = await admin
+    // Tenant admins never see super admin activity in their own audit trail
+    // (matches getAuditLogs) — a super admin acting inside a tenant (e.g.
+    // via impersonation) shouldn't surface on that tenant's own dashboard.
+    const superAdminEmails = await listSuperAdminEmails()
+    let query = admin
       .from('audit_logs')
       .select('id, user_email, action, resource_type, resource_id, resource_name, details, created_at')
       .eq('tenant_id', tenant_id)
       .order('created_at', { ascending: false })
       .limit(limit)
+    for (const email of superAdminEmails) query = query.neq('user_email', email)
+    const { data } = await query
     return (data ?? []) as AuditLog[]
   } catch {
     return []
