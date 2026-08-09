@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { Search, Filter } from 'lucide-react'
 
 type Order = {
   id: string
@@ -35,29 +35,38 @@ function orderLabel(order: Order) {
 
 export function PaymentsTable({ orders }: { orders: Order[] }) {
   const [search, setSearch] = useState('')
+  const [orderQuery, setOrderQuery] = useState('')
+  const [amountQuery, setAmountQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
+  const hasFilters = !!(search || orderQuery || amountQuery || status !== 'all' || dateFrom || dateTo)
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
+    const oq = orderQuery.trim().toLowerCase()
+    const aq = amountQuery.trim().toLowerCase()
     return orders.filter(o => {
       if (status !== 'all' && o.payment_status !== status) return false
       if (dateFrom && new Date(o.created_at) < new Date(dateFrom)) return false
       if (dateTo && new Date(o.created_at) > new Date(dateTo + 'T23:59:59')) return false
+      const label = orderLabel(o).toLowerCase()
+      const orderNum = `#${o.id.slice(-6).toUpperCase()}`.toLowerCase()
+      if (oq && !label.includes(oq) && !orderNum.includes(oq)) return false
+      if (aq && !Number(o.total_amount).toFixed(2).includes(aq)) return false
       if (q) {
         const customerName = o.contact ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.toLowerCase() : ''
-        const label = orderLabel(o).toLowerCase()
-        const orderNum = `#${o.id.slice(-6).toUpperCase()}`.toLowerCase()
         if (!customerName.includes(q) && !label.includes(q) && !orderNum.includes(q)) return false
       }
       return true
     })
-  }, [orders, search, status, dateFrom, dateTo])
+  }, [orders, search, orderQuery, amountQuery, status, dateFrom, dateTo])
 
   const inputCls = 'rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-[15px]'
   const headerLabelCls = 'text-[15px] font-bold uppercase tracking-wide'
-  const headerFilterCls = 'mt-1.5 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-2 py-1 text-[13px] font-normal normal-case tracking-normal'
+  const headerFilterCls = 'mt-1.5 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] pl-6 pr-2 py-1 text-[13px] font-normal normal-case tracking-normal'
+  const filterIconCls = 'w-3 h-3 absolute left-1.5 top-1/2 -translate-y-1/2 pointer-events-none'
 
   return (
     <div className="space-y-4">
@@ -73,9 +82,9 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
             style={{ color: 'hsl(var(--foreground))' }}
           />
         </div>
-        {(search || status !== 'all' || dateFrom || dateTo) && (
+        {hasFilters && (
           <button
-            onClick={() => { setSearch(''); setStatus('all'); setDateFrom(''); setDateTo('') }}
+            onClick={() => { setSearch(''); setOrderQuery(''); setAmountQuery(''); setStatus('all'); setDateFrom(''); setDateTo('') }}
             className="text-[15px] font-semibold px-3 py-2 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
             style={{ color: 'hsl(var(--muted-foreground))' }}
           >
@@ -94,32 +103,47 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
           <table className="w-full">
             <thead>
               <tr style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
-                <th className="px-5 py-3 text-left align-top" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <th className="px-5 py-3 text-left align-top" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '150px' }}>
                   <span className={headerLabelCls}>Order</span>
+                  <div className="relative">
+                    <Filter className={filterIconCls} />
+                    <input value={orderQuery} onChange={e => setOrderQuery(e.target.value)}
+                      placeholder="Filter…"
+                      className={headerFilterCls} style={{ color: 'hsl(var(--foreground))' }} />
+                  </div>
                 </th>
                 <th className="px-5 py-3 text-left align-top" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <span className={headerLabelCls}>Customer</span>
                 </th>
-                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '120px' }}>
                   <span className={headerLabelCls}>Amount</span>
+                  <div className="relative">
+                    <Filter className={filterIconCls} />
+                    <input value={amountQuery} onChange={e => setAmountQuery(e.target.value)}
+                      placeholder="Filter…"
+                      className={headerFilterCls} style={{ color: 'hsl(var(--foreground))' }} />
+                  </div>
                 </th>
                 <th className="px-5 py-3 text-left align-top" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '150px' }}>
                   <span className={headerLabelCls}>Status</span>
-                  <select value={status} onChange={e => setStatus(e.target.value)}
-                    onClick={e => e.stopPropagation()}
-                    className={headerFilterCls} style={{ color: 'hsl(var(--foreground))' }}>
-                    {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                  <div className="relative">
+                    <Filter className={filterIconCls} />
+                    <select value={status} onChange={e => setStatus(e.target.value)}
+                      className={`${headerFilterCls} appearance-none`} style={{ color: 'hsl(var(--foreground))' }}>
+                      {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
                 </th>
-                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '160px' }}>
+                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '220px' }}>
                   <span className={headerLabelCls}>Date</span>
                   <div className="flex items-center gap-1 mt-1.5">
                     <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                      className={`${headerFilterCls} mt-0`} style={{ color: 'hsl(var(--foreground))' }} />
-                  </div>
-                  <div className="flex items-center gap-1 mt-1">
+                      className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal"
+                      style={{ color: 'hsl(var(--foreground))' }} />
+                    <span className="text-[13px] flex-shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }}>–</span>
                     <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                      className={`${headerFilterCls} mt-0`} style={{ color: 'hsl(var(--foreground))' }} />
+                      className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal"
+                      style={{ color: 'hsl(var(--foreground))' }} />
                   </div>
                 </th>
                 <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
