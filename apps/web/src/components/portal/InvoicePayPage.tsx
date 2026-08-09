@@ -64,7 +64,6 @@ export function InvoicePayPage({
       tenantId: session.tenantId,
       contactId: session.contactId,
       amountCents: Math.round(order.total_amount * 100),
-      invoiceNumber: order.id.slice(-8).toUpperCase(),
       customerName: session.contactName,
       customerEmail: '',
     })

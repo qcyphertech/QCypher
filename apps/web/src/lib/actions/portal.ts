@@ -253,7 +253,6 @@ export async function initHelcimCheckout(input: {
   tenantId: string
   contactId: string
   amountCents: number // in cents
-  invoiceNumber: string
   customerName: string
   customerEmail: string
 }): Promise<
@@ -284,7 +283,6 @@ export async function initHelcimCheckout(input: {
       paymentType: 'purchase',
       amount: Number((input.amountCents / 100).toFixed(2)),
       currency: 'USD',
-      invoiceNumber: input.invoiceNumber,
       customerName: input.customerName,
       customerEmail: input.customerEmail,
       // Fee Saver: pass surcharge to customer

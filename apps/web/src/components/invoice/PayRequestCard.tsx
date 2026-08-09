@@ -39,7 +39,6 @@ export function PayRequestCard({ request }: { request: Req }) {
       tenantId: request.tenantId,
       contactId: request.contactId,
       amountCents: Math.round(request.amount * 100),
-      invoiceNumber: request.orderId.slice(-8).toUpperCase(),
       customerName: request.customerName,
       customerEmail: request.customerEmail,
     })
