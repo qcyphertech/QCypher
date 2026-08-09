@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   Search, Bell, Sun, Moon, Menu, X,
   LayoutDashboard, Users, GitBranch, Calendar,
-  Package, ShoppingBag, FileText, Settings, ShieldCheck, Home,
+  Package, ShoppingBag, FileText, Settings, ShieldCheck, Home, Wallet,
   HelpCircle, LogOut, BarChart2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -37,6 +37,7 @@ const PRIMARY_NAV: NavItem[] = [
 const SECONDARY_NAV: NavItem[] = [
   { href: '/inventory', label: 'Inventory', icon: Package,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   flag: 'show_catalog'   },
   { href: '/orders',    label: 'Orders',    icon: ShoppingBag, color: '#10b981', bg: 'rgba(16,185,129,0.12)',  flag: 'show_orders'    },
+  { href: '/payments',  label: 'Payments',  icon: Wallet,      color: '#2a52a0', bg: 'rgba(42,82,160,0.12)',   flag: 'show_orders'    },
   { href: '/templates', label: 'Templates', icon: FileText,    color: '#a855f7', bg: 'rgba(168,85,247,0.12)',  flag: 'show_templates' },
   { href: '/overview',  label: 'Overview',  icon: BarChart2,   color: '#22c55e', bg: 'rgba(34,197,94,0.12)',   flag: 'show_overview'  },
   { href: '/support',   label: 'Support',   icon: HelpCircle,  color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)',  flag: null             },

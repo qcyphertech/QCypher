@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, GitBranch, Calendar, FileText, Settings, ShieldCheck, Package, ShoppingBag } from 'lucide-react'
+import { LayoutDashboard, Users, GitBranch, Calendar, FileText, Settings, ShieldCheck, Package, ShoppingBag, Wallet } from 'lucide-react'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 
 const ALL_NAV = [
@@ -12,6 +12,7 @@ const ALL_NAV = [
   { href: '/calendar',  icon: Calendar,         label: 'Calendar',  color: '#38bdf8', flag: 'show_calendar' as const },
   { href: '/inventory', icon: Package,          label: 'Inventory', color: '#f59e0b', flag: 'show_catalog' as const },
   { href: '/orders',    icon: ShoppingBag,      label: 'Orders',    color: '#10b981', flag: 'show_orders' as const },
+  { href: '/payments',  icon: Wallet,           label: 'Payments',  color: '#818cf8', flag: 'show_orders' as const },
   { href: '/templates', icon: FileText,         label: 'Templates', color: '#c084fc', flag: 'show_templates' as const },
   { href: '/settings',  icon: Settings,         label: 'Settings',  color: '#94a3b8', flag: null },
 ]
