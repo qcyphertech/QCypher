@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { CatalogItem } from '@/lib/actions/catalog'
 import { deactivateCatalogItem } from '@/lib/actions/catalog'
 import { CatalogItemModal } from './CatalogItemModal'
-import { Pencil, ToggleLeft, Package, Wrench, Key } from 'lucide-react'
+import { Pencil, ToggleLeft, Package, Wrench, Key, Filter } from 'lucide-react'
 
 const TYPE_META = {
   good:    { label: 'Good',    icon: Package, bg: 'var(--badge-indigo-bg)', color: 'var(--badge-indigo-text)' },
@@ -16,70 +16,123 @@ const UNIT_LABELS: Record<string, string> = {
   flat: 'flat', hourly: '/hr', daily: '/day', weekly: '/wk', monthly: '/mo',
 }
 
+const TYPE_OPTIONS = [
+  { value: 'all',     label: 'All types' },
+  { value: 'good',    label: 'Good' },
+  { value: 'service', label: 'Service' },
+  { value: 'rental',  label: 'Rental' },
+]
+
+const STATUS_OPTIONS = [
+  { value: 'all',      label: 'All statuses' },
+  { value: 'active',   label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
 export function CatalogList({ items }: { items: CatalogItem[] }) {
   const [editItem, setEditItem] = useState<CatalogItem | null>(null)
-  const [filter, setFilter] = useState<'all' | 'good' | 'service' | 'rental'>('all')
+  const [nameQuery, setNameQuery] = useState('')
+  const [type, setType] = useState('all')
+  const [status, setStatus] = useState('all')
 
-  const filters: Array<{ key: typeof filter; label: string }> = [
-    { key: 'all', label: 'All' },
-    { key: 'good', label: 'Goods' },
-    { key: 'service', label: 'Services' },
-    { key: 'rental', label: 'Rentals' },
-  ]
+  const hasFilters = !!(nameQuery || type !== 'all' || status !== 'all')
 
-  const visible = items.filter(i => filter === 'all' || i.item_type === filter)
-  const active   = visible.filter(i => i.is_active)
-  const inactive = visible.filter(i => !i.is_active)
+  const filtered = useMemo(() => {
+    const nq = nameQuery.trim().toLowerCase()
+    return items.filter(i => {
+      if (type !== 'all' && i.item_type !== type) return false
+      if (status === 'active' && !i.is_active) return false
+      if (status === 'inactive' && i.is_active) return false
+      if (nq && !i.name.toLowerCase().includes(nq)) return false
+      return true
+    })
+  }, [items, nameQuery, type, status])
+
+  const active   = filtered.filter(i => i.is_active)
+  const inactive = filtered.filter(i => !i.is_active)
+
+  const headerLabelCls = 'text-[15px] font-bold uppercase tracking-wide'
+  const headerFilterCls = 'mt-1.5 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] pl-6 pr-2 py-1 text-[13px] font-normal normal-case tracking-normal'
+  const filterIconCls = 'w-3 h-3 absolute left-1.5 top-1/2 -translate-y-1/2 pointer-events-none'
+  const headerColor = 'hsl(var(--muted-foreground))'
 
   return (
     <>
-      {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {filters.map(f => (
+      {hasFilters && (
+        <div className="flex items-center justify-between">
+          <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            {filtered.length} of {items.length} item{items.length === 1 ? '' : 's'}
+          </p>
           <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className="px-4 py-1.5 rounded-xl text-[15px] font-semibold transition-all"
-            style={{
-              background: filter === f.key ? '#2a52a0' : 'hsl(var(--muted))',
-              color: filter === f.key ? '#fff' : 'hsl(var(--muted-foreground))',
-            }}
+            onClick={() => { setNameQuery(''); setType('all'); setStatus('all') }}
+            className="text-[15px] font-semibold px-3 py-1.5 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
           >
-            {f.label}
+            Clear filters
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
-              {['Name', 'Type', 'Price', 'Status', ''].map(h => (
-                <th key={h} className="px-5 py-3 text-left text-[15px] font-bold uppercase tracking-wide"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}>{h}</th>
-              ))}
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '170px' }}>
+                <span className={headerLabelCls}>Name</span>
+                <div className="relative">
+                  <Filter className={filterIconCls} />
+                  <input value={nameQuery} onChange={e => setNameQuery(e.target.value)} placeholder="Filter…"
+                    className={headerFilterCls} style={{ color: 'hsl(var(--foreground))' }} />
+                </div>
+              </th>
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '150px' }}>
+                <span className={headerLabelCls}>Type</span>
+                <div className="relative">
+                  <Filter className={filterIconCls} />
+                  <select value={type} onChange={e => setType(e.target.value)}
+                    className={`${headerFilterCls} appearance-none`} style={{ color: 'hsl(var(--foreground))' }}>
+                    {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+              </th>
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor }}>
+                <span className={headerLabelCls}>Price</span>
+              </th>
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '150px' }}>
+                <span className={headerLabelCls}>Status</span>
+                <div className="relative">
+                  <Filter className={filterIconCls} />
+                  <select value={status} onChange={e => setStatus(e.target.value)}
+                    className={`${headerFilterCls} appearance-none`} style={{ color: 'hsl(var(--foreground))' }}>
+                    {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+              </th>
+              <th className="px-5 py-3 align-top" />
             </tr>
           </thead>
           <tbody>
-            {active.map(item => <CatalogRow key={item.id} item={item} onEdit={() => setEditItem(item)} />)}
-            {inactive.length > 0 && (
+            {status !== 'inactive' && active.map(item => <CatalogRow key={item.id} item={item} onEdit={() => setEditItem(item)} />)}
+            {status !== 'active' && inactive.length > 0 && (
               <>
-                <tr>
-                  <td colSpan={5} className="px-5 py-2 text-[15px] font-bold uppercase tracking-wide"
-                    style={{ color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--muted))' }}>
-                    Inactive
-                  </td>
-                </tr>
+                {status === 'all' && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-2 text-[15px] font-bold uppercase tracking-wide"
+                      style={{ color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--muted))' }}>
+                      Inactive
+                    </td>
+                  </tr>
+                )}
                 {inactive.map(item => <CatalogRow key={item.id} item={item} onEdit={() => setEditItem(item)} />)}
               </>
             )}
           </tbody>
         </table>
         </div>
-        {visible.length === 0 && (
+        {filtered.length === 0 && (
           <p className="text-center py-10 text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            No items in this category
+            No items match your filters
           </p>
         )}
       </div>

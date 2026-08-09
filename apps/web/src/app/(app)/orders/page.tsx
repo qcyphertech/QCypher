@@ -1,17 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { NewOrderButton } from '@/components/orders/NewOrderButton'
+import { OrdersTable } from '@/components/orders/OrdersTable'
 import { ShoppingBag } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Orders' }
-
-const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  draft:    { bg: 'var(--badge-inactive-bg)', color: 'var(--badge-inactive-text)' },
-  pending:  { bg: 'var(--badge-lead-bg)',     color: 'var(--badge-lead-text)'     },
-  paid:     { bg: 'var(--badge-green-bg)',    color: 'var(--badge-green-text)'    },
-  refunded: { bg: 'var(--badge-red-bg)',      color: 'var(--badge-red-text)'      },
-}
 
 export default async function OrdersPage() {
   const supabase = await createClient()
@@ -47,65 +40,7 @@ export default async function OrdersPage() {
           <NewOrderButton />
         </div>
       ) : (
-        <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
-                {[
-                  { label: 'Order', hideOnMobile: false },
-                  { label: 'Customer', hideOnMobile: false },
-                  { label: 'Total', hideOnMobile: true },
-                  { label: 'Status', hideOnMobile: false },
-                  { label: 'Date', hideOnMobile: true },
-                ].map(({ label, hideOnMobile }) => (
-                  <th key={label} className={`px-5 py-3 text-left text-[15px] font-bold uppercase tracking-wide ${hideOnMobile ? 'hidden sm:table-cell' : ''}`}
-                    style={{ color: 'hsl(var(--muted-foreground))' }}>{label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o, i) => {
-                const s = STATUS_STYLE[o.payment_status] ?? STATUS_STYLE.draft
-                const contact = o.contact as { id: string; first_name: string; last_name: string | null } | null
-                return (
-                  <tr key={o.id}
-                    className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--muted))] transition-colors">
-                    <td className="px-5 py-3.5">
-                      <Link href={`/orders/${o.id}`}
-                        className="text-[15px] font-bold hover:text-[#1a3070] transition-colors"
-                        style={{ color: 'hsl(var(--foreground))' }}>
-                        #{String(i + 1).padStart(4, '0')}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
-                      {contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
-                    </td>
-                    <td className="px-5 py-3.5 text-[15px] font-bold hidden sm:table-cell" style={{ color: 'hsl(var(--foreground))' }}>
-                      ${Number(o.total_amount).toFixed(2)}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {contact ? (
-                        <Link href={`/contacts/${contact.id}#payments`}
-                          className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize hover:opacity-80 transition-opacity"
-                          style={s} title="View payments for this customer">
-                          {o.payment_status}
-                        </Link>
-                      ) : (
-                        <span className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize"
-                          style={s}>{o.payment_status}</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-[15px] hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      {new Date(o.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          </div>
-        </div>
+        <OrdersTable orders={orders as any} />
       )}
     </div>
   )

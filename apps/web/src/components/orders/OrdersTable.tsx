@@ -2,15 +2,13 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Search, Filter } from 'lucide-react'
+import { Filter } from 'lucide-react'
 
 type Order = {
   id: string
   total_amount: number
   payment_status: string
-  notes: string | null
   created_at: string
-  paid_at: string | null
   contact: { id: string; first_name: string; last_name: string | null } | null
 }
 
@@ -29,12 +27,7 @@ const STATUS_OPTIONS = [
   { value: 'refunded', label: 'Refunded' },
 ]
 
-function orderLabel(order: Order) {
-  return order.notes || `Order #${order.id.slice(-6).toUpperCase()}`
-}
-
-export function PaymentsTable({ orders }: { orders: Order[] }) {
-  const [search, setSearch] = useState('')
+export function OrdersTable({ orders }: { orders: Order[] }) {
   const [orderQuery, setOrderQuery] = useState('')
   const [customerQuery, setCustomerQuery] = useState('')
   const [amountQuery, setAmountQuery] = useState('')
@@ -42,65 +35,47 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  const hasFilters = !!(search || orderQuery || customerQuery || amountQuery || status !== 'all' || dateFrom || dateTo)
+  const hasFilters = !!(orderQuery || customerQuery || amountQuery || status !== 'all' || dateFrom || dateTo)
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
     const oq = orderQuery.trim().toLowerCase()
     const cq = customerQuery.trim().toLowerCase()
     const aq = amountQuery.trim().toLowerCase()
-    return orders.filter(o => {
+    return orders.filter((o, i) => {
       if (status !== 'all' && o.payment_status !== status) return false
       if (dateFrom && new Date(o.created_at) < new Date(dateFrom)) return false
       if (dateTo && new Date(o.created_at) > new Date(dateTo + 'T23:59:59')) return false
-      const label = orderLabel(o).toLowerCase()
-      const orderNum = `#${o.id.slice(-6).toUpperCase()}`.toLowerCase()
+      const orderNum = `#${String(i + 1).padStart(4, '0')}`.toLowerCase()
       const customerName = o.contact ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.toLowerCase() : ''
-      if (oq && !label.includes(oq) && !orderNum.includes(oq)) return false
+      if (oq && !orderNum.includes(oq)) return false
       if (cq && !customerName.includes(cq)) return false
       if (aq && !Number(o.total_amount).toFixed(2).includes(aq)) return false
-      if (q) {
-        if (!customerName.includes(q) && !label.includes(q) && !orderNum.includes(q)) return false
-      }
       return true
     })
-  }, [orders, search, orderQuery, customerQuery, amountQuery, status, dateFrom, dateTo])
+  }, [orders, orderQuery, customerQuery, amountQuery, status, dateFrom, dateTo])
 
-  const inputCls = 'rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-[15px]'
   const headerLabelCls = 'text-[15px] font-bold uppercase tracking-wide'
   const headerFilterCls = 'mt-1.5 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] pl-6 pr-2 py-1 text-[13px] font-normal normal-case tracking-normal'
   const filterIconCls = 'w-3 h-3 absolute left-1.5 top-1/2 -translate-y-1/2 pointer-events-none'
 
   return (
     <div className="space-y-4">
-      {/* Search — free-text spans multiple columns, doesn't fit one header */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--muted-foreground))' }} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search customer or order…"
-            className={`${inputCls} w-full pl-9`}
-            style={{ color: 'hsl(var(--foreground))' }}
-          />
-        </div>
-        {hasFilters && (
+      {hasFilters && (
+        <div className="flex justify-end">
           <button
-            onClick={() => { setSearch(''); setOrderQuery(''); setCustomerQuery(''); setAmountQuery(''); setStatus('all'); setDateFrom(''); setDateTo('') }}
+            onClick={() => { setOrderQuery(''); setCustomerQuery(''); setAmountQuery(''); setStatus('all'); setDateFrom(''); setDateTo('') }}
             className="text-[15px] font-semibold px-3 py-2 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
             style={{ color: 'hsl(var(--muted-foreground))' }}
           >
             Clear filters
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-        {filtered.length} of {orders.length} payment{orders.length === 1 ? '' : 's'}
+        {filtered.length} of {orders.length} order{orders.length === 1 ? '' : 's'}
       </p>
 
-      {/* Table */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -125,7 +100,7 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
                   </div>
                 </th>
                 <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '120px' }}>
-                  <span className={headerLabelCls}>Amount</span>
+                  <span className={headerLabelCls}>Total</span>
                   <div className="relative">
                     <Filter className={filterIconCls} />
                     <input value={amountQuery} onChange={e => setAmountQuery(e.target.value)}
@@ -155,33 +130,29 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
                       style={{ color: 'hsl(var(--foreground))' }} />
                   </div>
                 </th>
-                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <span className={headerLabelCls}>Paid</span>
-                </th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    No payments match your filters.
+                  <td colSpan={5} className="px-5 py-10 text-center text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    No orders match your filters.
                   </td>
                 </tr>
               ) : filtered.map(o => {
                 const s = STATUS_STYLE[o.payment_status] ?? STATUS_STYLE.draft
+                const i = orders.indexOf(o)
                 return (
                   <tr key={o.id} className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--muted))] transition-colors">
                     <td className="px-5 py-3.5">
-                      <Link href={`/orders/${o.id}`} className="text-[15px] font-bold hover:text-[#1a3070] transition-colors" style={{ color: 'hsl(var(--foreground))' }}>
-                        {orderLabel(o)}
+                      <Link href={`/orders/${o.id}`}
+                        className="text-[15px] font-bold hover:text-[#1a3070] transition-colors"
+                        style={{ color: 'hsl(var(--foreground))' }}>
+                        #{String(i + 1).padStart(4, '0')}
                       </Link>
                     </td>
                     <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
-                      {o.contact ? (
-                        <Link href={`/contacts/${o.contact.id}`} className="hover:text-[#1a3070] transition-colors">
-                          {o.contact.first_name} {o.contact.last_name ?? ''}
-                        </Link>
-                      ) : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
+                      {o.contact ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.trim() : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
                     </td>
                     <td className="px-5 py-3.5 text-[15px] font-bold hidden sm:table-cell" style={{ color: 'hsl(var(--foreground))' }}>
                       ${Number(o.total_amount).toFixed(2)}
@@ -194,14 +165,12 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
                           {o.payment_status}
                         </Link>
                       ) : (
-                        <span className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize" style={s}>{o.payment_status}</span>
+                        <span className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize"
+                          style={s}>{o.payment_status}</span>
                       )}
                     </td>
                     <td className="px-5 py-3.5 text-[15px] hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
                       {new Date(o.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-5 py-3.5 text-[15px] hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      {o.paid_at ? new Date(o.paid_at).toLocaleDateString() : '—'}
                     </td>
                   </tr>
                 )

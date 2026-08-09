@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Copy, MessageSquare, Mail, CheckCircle2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Copy, MessageSquare, Mail, CheckCircle2, Filter } from 'lucide-react'
 import { createPaymentLink, sendPaymentLinkSms, sendPaymentLinkEmail } from '@/lib/actions/payment-requests'
 import { useUserRole } from '@/lib/hooks/useUserRole'
 
@@ -20,6 +20,14 @@ const STATUS_STYLE: Record<string, string> = {
   refunded: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 }
 
+const STATUS_OPTIONS = [
+  { value: 'all',      label: 'All statuses' },
+  { value: 'draft',    label: 'Draft' },
+  { value: 'pending',  label: 'Pending' },
+  { value: 'paid',     label: 'Paid' },
+  { value: 'refunded', label: 'Refunded' },
+]
+
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
@@ -30,14 +38,59 @@ function orderLabel(order: { id: string; notes: string | null }) {
 
 export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: Order[]; hasPhone: boolean; hasEmail: boolean }) {
   const { isAdmin } = useUserRole()
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('all')
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return orders.filter(o => {
+      if (status !== 'all' && o.payment_status !== status) return false
+      if (q && !orderLabel(o).toLowerCase().includes(q) && !Number(o.total_amount).toFixed(2).includes(q)) return false
+      return true
+    })
+  }, [orders, query, status])
+
   if (orders.length === 0) return null
 
-  const unpaid = orders.filter(o => o.payment_status !== 'paid' && o.payment_status !== 'refunded')
-  const paid = orders.filter(o => o.payment_status === 'paid')
+  const hasFilters = !!(query || status !== 'all')
+  const unpaid = filtered.filter(o => o.payment_status !== 'paid' && o.payment_status !== 'refunded')
+  const paid = filtered.filter(o => o.payment_status === 'paid')
+
+  const headerFilterCls = 'w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] pl-7 pr-2 py-1.5 text-[13px] font-normal'
+  const filterIconCls = 'w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none'
 
   return (
     <div id="payments" className="space-y-4 scroll-mt-6">
-      <h2 className="text-[15px] font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Payments</h2>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h2 className="text-[15px] font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Payments</h2>
+        <div className="flex items-center gap-2">
+          <div className="relative w-[160px]">
+            <Filter className={filterIconCls} style={{ color: 'hsl(var(--muted-foreground))' }} />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Filter…"
+              className={headerFilterCls} style={{ color: 'hsl(var(--foreground))' }} />
+          </div>
+          <div className="relative w-[140px]">
+            <Filter className={filterIconCls} style={{ color: 'hsl(var(--muted-foreground))' }} />
+            <select value={status} onChange={e => setStatus(e.target.value)}
+              className={`${headerFilterCls} appearance-none`} style={{ color: 'hsl(var(--foreground))' }}>
+              {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          {hasFilters && (
+            <button onClick={() => { setQuery(''); setStatus('all') }}
+              className="text-[13px] font-semibold px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted))] transition-colors"
+              style={{ color: 'hsl(var(--muted-foreground))' }}>
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="text-[15px] text-center py-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          No payments match your filters.
+        </p>
+      )}
 
       {unpaid.length > 0 && (
         <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] divide-y divide-[hsl(var(--border))] overflow-hidden">

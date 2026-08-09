@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { ContactListWithSearch } from '@/components/contacts/ContactListWithSearch'
+import { ContactsTable } from '@/components/contacts/ContactsTable'
 import { ReadOnlyBanner } from '@/components/ReadOnlyBanner'
 import Link from 'next/link'
 import type { Metadata } from 'next'
@@ -7,12 +7,7 @@ import { UserPlus, Upload } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Contacts' }
 
-export default async function ContactsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; status?: string }>
-}) {
-  const { q, status } = await searchParams
+export default async function ContactsPage() {
   const supabase = await createClient()
 
   // Phase 21 RBAC — read-only accounts can browse contacts but never
@@ -21,20 +16,10 @@ export default async function ContactsPage({
   const { data: { user } } = await supabase.auth.getUser()
   const isReadOnly = user?.app_metadata?.role === 'read_only'
 
-  let query = supabase
+  const { data: contacts, error } = await supabase
     .from('contacts')
     .select('id, first_name, last_name, email, phone, tags, status, created_at')
     .order('created_at', { ascending: false })
-
-  if (status && status !== 'all') {
-    query = query.eq('status', status as 'active' | 'inactive' | 'lead')
-  }
-
-  if (q) {
-    query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
-  }
-
-  const { data: contacts, error } = await query
   if (error) throw error
 
   const total = contacts?.length ?? 0
@@ -91,7 +76,7 @@ export default async function ContactsPage({
 
       {isReadOnly && <ReadOnlyBanner />}
 
-      <ContactListWithSearch contacts={contacts ?? []} />
+      <ContactsTable contacts={contacts ?? []} />
     </div>
   )
 }

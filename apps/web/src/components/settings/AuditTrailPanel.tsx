@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { Download, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Download, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react'
 import { getAuditLogs, type AuditLog, type AuditAction, type ResourceType } from '@/lib/actions/audit'
 import type { TeamMember } from '@/lib/actions/team'
 
@@ -87,9 +87,20 @@ export function AuditTrailPanel({ members }: { members: TeamMember[] }) {
     border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))',
   }
 
+  const headerFilterStyle: React.CSSProperties = {
+    marginTop: '6px', width: '100%', borderRadius: '6px',
+    border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))',
+    padding: '4px 8px 4px 22px', fontSize: '12px', fontWeight: 400,
+    textTransform: 'none', letterSpacing: 'normal', color: 'hsl(var(--foreground))',
+  }
+  const filterIconStyle: React.CSSProperties = {
+    position: 'absolute', left: '6px', top: '50%', transform: 'translateY(-50%)',
+    width: '11px', height: '11px', color: 'hsl(var(--muted-foreground))', pointerEvents: 'none',
+  }
+
   return (
     <div>
-      {/* Filters */}
+      {/* Search + export */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '160px' }}>
           <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: 'hsl(var(--muted-foreground))' }} />
@@ -100,18 +111,6 @@ export function AuditTrailPanel({ members }: { members: TeamMember[] }) {
             style={{ ...selectStyle, width: '100%', paddingLeft: '32px' }}
           />
         </div>
-        <select value={userId} onChange={e => { setPage(1); setUserId(e.target.value) }} style={selectStyle}>
-          <option value="">All users</option>
-          {members.map(m => <option key={m.id} value={m.id}>{m.email}</option>)}
-        </select>
-        <select value={action} onChange={e => { setPage(1); setAction(e.target.value) }} style={selectStyle}>
-          <option value="">All actions</option>
-          {Object.entries(ACTION_LABEL).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-        </select>
-        <select value={resourceType} onChange={e => { setPage(1); setResourceType(e.target.value) }} style={selectStyle}>
-          <option value="">All resources</option>
-          {RESOURCE_TYPES.map(r => <option key={r} value={r} style={{ textTransform: 'capitalize' }}>{r}</option>)}
-        </select>
         <button
           onClick={handleExport}
           style={{
@@ -131,11 +130,42 @@ export function AuditTrailPanel({ members }: { members: TeamMember[] }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
               <tr style={{ background: 'hsl(var(--muted))' }}>
-                {['Time', 'User', 'Action', 'Resource', 'Details'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
-                ))}
+                <th style={{ textAlign: 'left', padding: '10px 14px', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                  Time
+                </th>
+                <th style={{ textAlign: 'left', padding: '10px 14px', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: '150px' }}>
+                  User
+                  <div style={{ position: 'relative' }}>
+                    <Filter style={filterIconStyle} />
+                    <select value={userId} onChange={e => { setPage(1); setUserId(e.target.value) }} style={{ ...headerFilterStyle, appearance: 'none' }}>
+                      <option value="">All users</option>
+                      {members.map(m => <option key={m.id} value={m.id}>{m.email}</option>)}
+                    </select>
+                  </div>
+                </th>
+                <th style={{ textAlign: 'left', padding: '10px 14px', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: '160px' }}>
+                  Action
+                  <div style={{ position: 'relative' }}>
+                    <Filter style={filterIconStyle} />
+                    <select value={action} onChange={e => { setPage(1); setAction(e.target.value) }} style={{ ...headerFilterStyle, appearance: 'none' }}>
+                      <option value="">All actions</option>
+                      {Object.entries(ACTION_LABEL).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+                    </select>
+                  </div>
+                </th>
+                <th style={{ textAlign: 'left', padding: '10px 14px', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: '150px' }}>
+                  Resource
+                  <div style={{ position: 'relative' }}>
+                    <Filter style={filterIconStyle} />
+                    <select value={resourceType} onChange={e => { setPage(1); setResourceType(e.target.value) }} style={{ ...headerFilterStyle, appearance: 'none' }}>
+                      <option value="">All resources</option>
+                      {RESOURCE_TYPES.map(r => <option key={r} value={r} style={{ textTransform: 'capitalize' }}>{r}</option>)}
+                    </select>
+                  </div>
+                </th>
+                <th style={{ textAlign: 'left', padding: '10px 14px', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                  Details
+                </th>
               </tr>
             </thead>
             <tbody>
