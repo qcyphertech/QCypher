@@ -17,7 +17,7 @@ export default async function OrdersPage() {
   const supabase = await createClient()
   const { data: orders } = await supabase
     .from('orders')
-    .select('*, contact:contacts(first_name, last_name)')
+    .select('*, contact:contacts(id, first_name, last_name)')
     .order('created_at', { ascending: false })
 
   return (
@@ -61,7 +61,7 @@ export default async function OrdersPage() {
             <tbody>
               {orders.map((o, i) => {
                 const s = STATUS_STYLE[o.payment_status] ?? STATUS_STYLE.draft
-                const contact = o.contact as { first_name: string; last_name: string | null } | null
+                const contact = o.contact as { id: string; first_name: string; last_name: string | null } | null
                 return (
                   <tr key={o.id}
                     className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--muted))] transition-colors">
@@ -79,8 +79,16 @@ export default async function OrdersPage() {
                       ${Number(o.total_amount).toFixed(2)}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize"
-                        style={s}>{o.payment_status}</span>
+                      {contact ? (
+                        <Link href={`/contacts/${contact.id}#payments`}
+                          className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize hover:opacity-80 transition-opacity"
+                          style={s} title="View payments for this customer">
+                          {o.payment_status}
+                        </Link>
+                      ) : (
+                        <span className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize"
+                          style={s}>{o.payment_status}</span>
+                      )}
                     </td>
                     <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                       {new Date(o.created_at).toLocaleDateString()}
