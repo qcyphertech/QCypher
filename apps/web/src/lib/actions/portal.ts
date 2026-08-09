@@ -2,6 +2,7 @@
 
 import { randomBytes } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
+import { sendPaymentConfirmationEmails } from '@/lib/email/payment-notify'
 
 function admin() {
   return createClient(
@@ -317,7 +318,7 @@ export async function validateAndRecordPayment(input: {
   // Verify ownership
   const { data: order } = await db
     .from('orders')
-    .select('id, payment_status')
+    .select('id, total_amount, payment_status, contacts(first_name, last_name, email)')
     .eq('id', input.orderId)
     .eq('tenant_id', input.tenantId)
     .eq('customer_id', input.contactId)
@@ -342,6 +343,17 @@ export async function validateAndRecordPayment(input: {
     paid_at: now,
     helcim_transaction_id: input.transactionId,
   }).eq('id', input.orderId)
+
+  const contact = order.contacts as unknown as { first_name: string; last_name: string | null; email: string | null } | null
+  await sendPaymentConfirmationEmails({
+    admin: db,
+    tenantId: input.tenantId,
+    orderId: input.orderId,
+    amount: Number(order.total_amount),
+    transactionId: input.transactionId,
+    customerEmail: contact?.email ?? null,
+    customerName: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null,
+  })
 
   return { ok: true }
 }

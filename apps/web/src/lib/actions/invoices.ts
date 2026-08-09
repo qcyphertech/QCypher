@@ -238,7 +238,7 @@ export async function validateAndRecordInvoicePayment(input: {
   transactionId: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const admin = createAdminClient()
-  const { data: invoice } = await admin.from('invoices').select('id, tenant_id, invoice_number, status').eq('id', input.invoiceId).maybeSingle()
+  const { data: invoice } = await admin.from('invoices').select('id, tenant_id, invoice_number, amount, sent_to_email, status').eq('id', input.invoiceId).maybeSingle()
   if (!invoice) return { ok: false, error: 'Invoice not found' }
   if (invoice.status === 'paid') return { ok: true } // idempotent
 
@@ -271,6 +271,29 @@ export async function validateAndRecordInvoicePayment(input: {
       details: { transaction_id: input.transactionId },
     })
   }
+
+  const receiptHtml = renderBrandedEmail({
+    bodyHtml: `
+      <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#171a2b;">Payment received</p>
+      <p style="margin:16px 0 0;">Thanks — your payment for invoice #${invoice.invoice_number} was successful.</p>
+      <p style="margin:16px 0 0;"><strong>Amount:</strong> $${Number(invoice.amount).toFixed(2)}</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#5b6072;">Transaction ID: ${input.transactionId}</p>
+    `,
+  })
+  if (invoice.sent_to_email) {
+    await sendEmail({
+      to: invoice.sent_to_email,
+      subject: `Payment received — Invoice #${invoice.invoice_number}`,
+      html: receiptHtml,
+      text: `Your payment for invoice #${invoice.invoice_number} ($${Number(invoice.amount).toFixed(2)}) was successful. Transaction ID: ${input.transactionId}`,
+    })
+  }
+  await sendEmail({
+    to: 'hello@qcyphertech.com',
+    subject: `Invoice #${invoice.invoice_number} paid — $${Number(invoice.amount).toFixed(2)}`,
+    html: receiptHtml,
+    text: `Invoice #${invoice.invoice_number} was paid: $${Number(invoice.amount).toFixed(2)}. Transaction ID: ${input.transactionId}`,
+  })
 
   return { ok: true }
 }
