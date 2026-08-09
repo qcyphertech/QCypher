@@ -26,36 +26,38 @@ export default async function ExportDataPage() {
         </p>
       </div>
 
-      <SettingsMenuBar active="export" />
+      <div className="flex flex-col md:flex-row" style={{ gap: '32px', alignItems: 'flex-start' }}>
+        <SettingsMenuBar active="export" />
 
-      <div style={{ maxWidth: '640px' }}>
-        <SettingsSection label="Export" hint="Choose what to include, then download a copy of your workspace data.">
-          <div style={{
-            borderRadius: '18px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
-            overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-          }}>
-            {/* Branded header */}
+        <div style={{ flex: 1, minWidth: 0, width: '100%', maxWidth: '640px' }}>
+          <SettingsSection label="Export" hint="Choose what to include, then download a copy of your workspace data.">
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '20px 24px', borderBottom: '1px solid hsl(var(--border))',
-              background: 'linear-gradient(135deg, rgba(42,82,160,0.06), rgba(74,157,181,0.06))',
+              borderRadius: '18px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
+              overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '30px', width: 'auto', display: 'block' }} />
-              <div>
-                <p style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>Data export</p>
-                <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>CSV file, readable in Excel, Sheets, or any spreadsheet app</p>
+              {/* Branded header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '20px 24px', borderBottom: '1px solid hsl(var(--border))',
+                background: 'linear-gradient(135deg, rgba(42,82,160,0.06), rgba(74,157,181,0.06))',
+              }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '30px', width: 'auto', display: 'block' }} />
+                <div>
+                  <p style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>Data export</p>
+                  <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>CSV file, readable in Excel, Sheets, or any spreadsheet app</p>
+                </div>
+              </div>
+
+              <div style={{ padding: '24px' }}>
+                <ExportSelector />
+                <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))', marginTop: '16px' }}>
+                  Audit logs and deleted or archived records aren't included.
+                </p>
               </div>
             </div>
-
-            <div style={{ padding: '24px' }}>
-              <ExportSelector />
-              <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))', marginTop: '16px' }}>
-                Audit logs and deleted or archived records aren't included.
-              </p>
-            </div>
-          </div>
-        </SettingsSection>
+          </SettingsSection>
+        </div>
       </div>
     </div>
   )
