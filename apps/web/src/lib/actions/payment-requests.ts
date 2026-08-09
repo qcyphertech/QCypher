@@ -149,7 +149,7 @@ export async function sendPaymentLinkEmail(orderId: string): Promise<{ ok: true 
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
   const url = `${appUrl}/pay/${req.token}`
 
-  await sendEmail({
+  const result = await sendEmail({
     to: email,
     subject: `Invoice from ${businessName}`,
     html: renderNeutralEmail({
@@ -164,6 +164,7 @@ export async function sendPaymentLinkEmail(orderId: string): Promise<{ ok: true 
     }),
     text: `Your invoice from ${businessName} for $${Number(order.total_amount).toFixed(2)} is ready. Pay here: ${url}`,
   })
+  if (!result.ok) return { ok: false, error: result.error }
 
   await admin.from('payment_requests').update({ sent_via: 'email' }).eq('id', req.id)
   await logPaymentAudit(admin, tenantId, userId, 'payment_link_sent', order.id, { via: 'email' })
