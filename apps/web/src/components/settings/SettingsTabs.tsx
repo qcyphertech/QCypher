@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { Blocks, Users, User, ScrollText, Download } from 'lucide-react'
 
 const ALL_TABS = [
+  { id: 'account',   label: 'Account',     icon: User,       color: '#10b981' },
   { id: 'workspace', label: 'Workspace',   icon: Blocks,     color: '#2a52a0' },
   { id: 'team',      label: 'Team',        icon: Users,      color: '#a855f7' },
   { id: 'audit',     label: 'Audit Trail', icon: ScrollText, color: '#f97316' },
-  { id: 'account',   label: 'Account',     icon: User,       color: '#10b981' },
 ] as const
 
 type TabId = typeof ALL_TABS[number]['id']
