@@ -63,7 +63,10 @@ export function ContactForm({ contact }: { contact?: Contact }) {
         logAudit({ action: 'contact_updated', resource_type: 'contact', resource_id: contact.id, resource_name: contactName })
         router.push(`/contacts/${contact.id}`)
       } else {
-        const { data, error } = await supabase.from('contacts').insert(payload).select('id').single()
+        const { data: { user } } = await supabase.auth.getUser()
+        const tenantId = user?.app_metadata?.tenant_id ?? user?.user_metadata?.tenant_id
+        if (!tenantId) { setError('Session error — please refresh and try again.'); return }
+        const { data, error } = await supabase.from('contacts').insert({ ...payload, tenant_id: tenantId }).select('id').single()
         if (error) { setError(error.message); return }
         logAudit({ action: 'contact_created', resource_type: 'contact', resource_id: data.id, resource_name: contactName })
         router.push(`/contacts/${data.id}`)
