@@ -7,6 +7,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * in lib/actions/invoices.ts, called from the pay page on HelcimPay.js
  * completion) — same two-layer pattern as the existing
  * api/portal/helcim/webhook route for order payments.
+ *
+ * Lives at a single path segment (/helcim-webhook, not
+ * /api/webhooks/helcim) because Helcim's own webhook-URL form validator
+ * rejects multi-segment paths with "invalid value for the following
+ * field/s [DeliverUrl: urlformat]" — confirmed by testing a single-segment
+ * URL saved fine while the nested one didn't.
  */
 
 // Helcim pings the URL with GET to validate it when saving webhook settings.
