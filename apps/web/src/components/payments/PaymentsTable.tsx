@@ -56,10 +56,12 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
   }, [orders, search, status, dateFrom, dateTo])
 
   const inputCls = 'rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-[15px]'
+  const headerLabelCls = 'text-[15px] font-bold uppercase tracking-wide'
+  const headerFilterCls = 'mt-1.5 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-2 py-1 text-[13px] font-normal normal-case tracking-normal'
 
   return (
     <div className="space-y-4">
-      {/* Search + filters */}
+      {/* Search — free-text spans multiple columns, doesn't fit one header */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--muted-foreground))' }} />
@@ -71,19 +73,13 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
             style={{ color: 'hsl(var(--foreground))' }}
           />
         </div>
-        <select value={status} onChange={e => setStatus(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }}>
-          {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
-        <span style={{ color: 'hsl(var(--muted-foreground))' }}>to</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
         {(search || status !== 'all' || dateFrom || dateTo) && (
           <button
             onClick={() => { setSearch(''); setStatus('all'); setDateFrom(''); setDateTo('') }}
             className="text-[15px] font-semibold px-3 py-2 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
             style={{ color: 'hsl(var(--muted-foreground))' }}
           >
-            Clear
+            Clear filters
           </button>
         )}
       </div>
@@ -98,17 +94,37 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
           <table className="w-full">
             <thead>
               <tr style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
-                {[
-                  { label: 'Order', hideOnMobile: false },
-                  { label: 'Customer', hideOnMobile: false },
-                  { label: 'Amount', hideOnMobile: true },
-                  { label: 'Status', hideOnMobile: false },
-                  { label: 'Date', hideOnMobile: true },
-                  { label: 'Paid', hideOnMobile: true },
-                ].map(({ label, hideOnMobile }) => (
-                  <th key={label} className={`px-5 py-3 text-left text-[15px] font-bold uppercase tracking-wide ${hideOnMobile ? 'hidden sm:table-cell' : ''}`}
-                    style={{ color: 'hsl(var(--muted-foreground))' }}>{label}</th>
-                ))}
+                <th className="px-5 py-3 text-left align-top" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span className={headerLabelCls}>Order</span>
+                </th>
+                <th className="px-5 py-3 text-left align-top" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span className={headerLabelCls}>Customer</span>
+                </th>
+                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span className={headerLabelCls}>Amount</span>
+                </th>
+                <th className="px-5 py-3 text-left align-top" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '150px' }}>
+                  <span className={headerLabelCls}>Status</span>
+                  <select value={status} onChange={e => setStatus(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    className={headerFilterCls} style={{ color: 'hsl(var(--foreground))' }}>
+                    {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </th>
+                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))', minWidth: '160px' }}>
+                  <span className={headerLabelCls}>Date</span>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                      className={`${headerFilterCls} mt-0`} style={{ color: 'hsl(var(--foreground))' }} />
+                  </div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                      className={`${headerFilterCls} mt-0`} style={{ color: 'hsl(var(--foreground))' }} />
+                  </div>
+                </th>
+                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span className={headerLabelCls}>Paid</span>
+                </th>
               </tr>
             </thead>
             <tbody>
