@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock } from 'lucide-react'
+import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet } from 'lucide-react'
 import {
   addLineItem, removeLineItem, updateOrderStatus, updateOrderCustomer, updateJobStatus, returnRental, extendRental,
   type Order, type OrderLineItem,
@@ -132,46 +132,41 @@ export function OrderDetail({
 
       {/* Header */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-6 no-print">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+        {/* Identity row */}
+        <div className="flex items-start justify-between gap-4 flex-wrap pb-4 mb-4 border-b border-[hsl(var(--border))]">
           <div>
-            {contact ? (
-              <Link href={`/contacts/${contact.id}#payments`}
-                className="text-xl font-black hover:text-[#1a3070] transition-colors no-print"
-                style={{ color: 'hsl(var(--foreground))' }}
-                title="View payments for this customer">
-                Order #{order.id.slice(-6).toUpperCase()}
-              </Link>
-            ) : (
-              <h1 className="text-xl font-black" style={{ color: 'hsl(var(--foreground))' }}>
-                Order #{order.id.slice(-6).toUpperCase()}
-              </h1>
-            )}
-            {contact ? (
-              <Link href={`/contacts/${contact.id}`}
-                className="text-[15px] font-semibold mt-1 hover:text-[#1a3070] transition-colors"
-                style={{ color: 'hsl(var(--muted-foreground))' }}>
-                {contact.first_name} {contact.last_name}
-              </Link>
-            ) : contacts.length > 0 && (
-              <select
-                defaultValue=""
-                onChange={e => handleCustomerChange(e.target.value)}
-                disabled={pending}
-                className="text-[15px] font-semibold mt-1 px-2 py-1 rounded-lg border cursor-pointer no-print"
-                style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
-              >
-                <option value="" disabled>Link a customer…</option>
-                {contacts.map(c => (
-                  <option key={c.id} value={c.id}>{c.first_name} {c.last_name ?? ''}</option>
-                ))}
-              </select>
-            )}
-            <p className="text-[15px] mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              Created {new Date(order.created_at).toLocaleDateString()}
-            </p>
+            <h1 className="text-2xl font-black tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>
+              Order #{order.id.slice(-6).toUpperCase()}
+            </h1>
+            <div className="flex items-center gap-2 flex-wrap mt-1.5">
+              {contact ? (
+                <Link href={`/contacts/${contact.id}`}
+                  className="text-[15px] font-semibold hover:text-[#1a3070] transition-colors"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  {contact.first_name} {contact.last_name}
+                </Link>
+              ) : contacts.length > 0 && (
+                <select
+                  defaultValue=""
+                  onChange={e => handleCustomerChange(e.target.value)}
+                  disabled={pending}
+                  className="text-[15px] font-semibold px-2 py-1 rounded-lg border cursor-pointer no-print"
+                  style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+                >
+                  <option value="" disabled>Link a customer…</option>
+                  {contacts.map(c => (
+                    <option key={c.id} value={c.id}>{c.first_name} {c.last_name ?? ''}</option>
+                  ))}
+                </select>
+              )}
+              <span style={{ color: 'hsl(var(--border))' }}>·</span>
+              <p className="text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Created {new Date(order.created_at).toLocaleDateString()}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Payment status picker */}
             <select
               value={order.payment_status}
@@ -203,24 +198,36 @@ export function OrderDetail({
               <option value="in_progress">🔧 In progress</option>
               <option value="completed">✅ Completed</option>
             </select>
-
-            <SendQuoteButton
-              orderId={order.id}
-              total={order.total_amount}
-              businessName={businessName}
-              contactEmail={contact?.email ?? null}
-              contactName={contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null}
-              alreadySigned={isLocked}
-              signedBy={signedBy}
-              signedAt={signedAt}
-            />
-
-            <button onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[hsl(var(--border))] text-[15px] font-semibold hover:bg-[hsl(var(--muted))] transition-colors"
-              style={{ color: 'hsl(var(--muted-foreground))' }}>
-              <Printer className="w-3.5 h-3.5" /> Print invoice
-            </button>
           </div>
+        </div>
+
+        {/* Actions row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {contact && (
+            <Link href={`/contacts/${contact.id}#payments`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold transition-colors no-print"
+              style={{ background: 'rgba(42,82,160,0.10)', color: '#2a52a0' }}
+              title="View payments for this customer">
+              <Wallet className="w-3.5 h-3.5" /> Payment link
+            </Link>
+          )}
+
+          <SendQuoteButton
+            orderId={order.id}
+            total={order.total_amount}
+            businessName={businessName}
+            contactEmail={contact?.email ?? null}
+            contactName={contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null}
+            alreadySigned={isLocked}
+            signedBy={signedBy}
+            signedAt={signedAt}
+          />
+
+          <button onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[hsl(var(--border))] text-[15px] font-semibold hover:bg-[hsl(var(--muted))] transition-colors"
+            style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <Printer className="w-3.5 h-3.5" /> Print invoice
+          </button>
         </div>
       </div>
 
