@@ -134,9 +134,18 @@ export function OrderDetail({
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-6 no-print">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-xl font-black" style={{ color: 'hsl(var(--foreground))' }}>
-              Order #{order.id.slice(-6).toUpperCase()}
-            </h1>
+            {contact ? (
+              <Link href={`/contacts/${contact.id}#payments`}
+                className="text-xl font-black hover:text-[#1a3070] transition-colors no-print"
+                style={{ color: 'hsl(var(--foreground))' }}
+                title="View payments for this customer">
+                Order #{order.id.slice(-6).toUpperCase()}
+              </Link>
+            ) : (
+              <h1 className="text-xl font-black" style={{ color: 'hsl(var(--foreground))' }}>
+                Order #{order.id.slice(-6).toUpperCase()}
+              </h1>
+            )}
             {contact ? (
               <Link href={`/contacts/${contact.id}`}
                 className="text-[15px] font-semibold mt-1 hover:text-[#1a3070] transition-colors"

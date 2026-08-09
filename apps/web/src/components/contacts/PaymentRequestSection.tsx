@@ -32,7 +32,7 @@ export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: 
   const paid = orders.filter(o => o.payment_status === 'paid')
 
   return (
-    <div className="space-y-4">
+    <div id="payments" className="space-y-4 scroll-mt-6">
       <h2 className="text-[15px] font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Payments</h2>
 
       {unpaid.length > 0 && (
