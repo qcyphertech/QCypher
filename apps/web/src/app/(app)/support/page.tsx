@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
   HelpCircle, BookOpen, Info, MessageSquare,
-  FileText, Shield, ChevronRight, Mail,
+  FileText, Shield, ChevronRight, Mail, Database,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
@@ -46,6 +46,10 @@ const LEGAL_ROWS: Row[] = [
   {
     href: '/legal/privacy', icon: Shield, color: '#f472b6', bg: 'rgba(244,114,182,0.12)',
     title: 'Privacy Policy', desc: 'How we collect, use, and protect your data',
+  },
+  {
+    href: '/support/data-retention', icon: Database, color: '#0d9488', bg: 'rgba(13,148,136,0.12)',
+    title: 'Data Retention Policy', desc: 'What we keep, what we delete, and for how long',
   },
 ]
 

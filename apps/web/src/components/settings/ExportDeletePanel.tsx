@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { AlertTriangle, ShieldCheck, Undo2 } from 'lucide-react'
+import Link from 'next/link'
+import { AlertTriangle, Undo2, ChevronRight } from 'lucide-react'
 import { requestAccountDeletion, cancelAccountDeletion, type DeletionStatus } from '@/lib/actions/account-deletion'
 
 function fmtDate(iso: string) {
@@ -139,22 +140,17 @@ export function ExportDeletePanel({ initial }: { initial: DeletionStatus }) {
         )}
       </div>
 
-      {/* Retention policy */}
-      <div style={card}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-          <ShieldCheck style={{ width: '16px', height: '16px', color: 'hsl(var(--muted-foreground))' }} />
-          <p style={{ fontSize: '15px', fontWeight: 700 }}>Retention policy</p>
-        </div>
-        <div style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', lineHeight: 1.7 }}>
-          <p style={{ fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: '2px' }}>We keep:</p>
-          <p>• Audit logs — 90 days</p>
-          <p>• Backups — 7–30 days (auto-managed by Supabase)</p>
-          <p>• Billing records — 5 years, for tax and legal purposes</p>
-          <p style={{ fontWeight: 600, color: 'hsl(var(--foreground))', marginTop: '10px', marginBottom: '2px' }}>We delete permanently:</p>
-          <p>• Contacts, notes, and calendar events — upon request, after a 30-day grace period</p>
-          <p style={{ marginTop: '10px' }}>Questions? Contact <a href="mailto:legal@qcyphertech.com" style={{ color: '#2a52a0' }}>legal@qcyphertech.com</a></p>
-        </div>
-      </div>
+      {/* Retention policy — lives on its own Help & Support page */}
+      <Link
+        href="/support/data-retention"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          ...card, textDecoration: 'none', color: 'inherit',
+        }}
+      >
+        <p style={{ fontSize: '15px', fontWeight: 600 }}>Read our data retention policy</p>
+        <ChevronRight style={{ width: '16px', height: '16px', color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+      </Link>
     </div>
   )
 }
