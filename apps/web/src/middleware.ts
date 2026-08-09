@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/api/telnyx/') ||
     pathname.startsWith('/api/portal/') ||
-    pathname === '/helcim-webhook' ||
+    pathname === '/paymentcallback' ||
     pathname.startsWith('/api/contact') ||
     pathname.startsWith('/q/') ||
     pathname.startsWith('/portal/') ||

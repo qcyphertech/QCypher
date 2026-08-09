@@ -8,11 +8,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * completion) — same two-layer pattern as the existing
  * api/portal/helcim/webhook route for order payments.
  *
- * Lives at a single path segment (/helcim-webhook, not
- * /api/webhooks/helcim) because Helcim's own webhook-URL form validator
- * rejects multi-segment paths with "invalid value for the following
- * field/s [DeliverUrl: urlformat]" — confirmed by testing a single-segment
- * URL saved fine while the nested one didn't.
+ * Lives at /paymentcallback — deliberately no hyphen and no "helcim" in
+ * the path. Helcim's own webhook-URL form validator rejects both: a
+ * plain single-segment path with a hyphen (/helcim-webhook) failed the
+ * same "invalid value for the following field/s [DeliverUrl: urlformat]"
+ * check that a nested path did, while a hyphen-free path without
+ * "helcim" in it (/paymentcallback) saved successfully. Confirmed live
+ * by testing each variant directly in Helcim's dashboard.
  */
 
 // Helcim pings the URL with GET to validate it when saving webhook settings.
