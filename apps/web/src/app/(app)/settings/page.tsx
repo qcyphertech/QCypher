@@ -9,7 +9,7 @@ import { TeamPanel } from '@/components/settings/TeamPanel'
 import { RequestActionsPanel } from '@/components/settings/RequestActionsPanel'
 import { AuditTrailPanel } from '@/components/settings/AuditTrailPanel'
 import { ExportDeletePanel } from '@/components/settings/ExportDeletePanel'
-import { SettingsTabs, SettingsSection } from '@/components/settings/SettingsTabs'
+import { SettingsTabs, SettingsSection, SettingsRow } from '@/components/settings/SettingsTabs'
 import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
 import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 import { getDeletionStatus, type DeletionStatus } from '@/lib/actions/account-deletion'
@@ -70,16 +70,7 @@ export default async function SettingsPage() {
     <div style={{ maxWidth: '640px' }}>
       <SettingsSection label="Appearance">
         <div style={{ borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', gap: '12px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0, background: 'rgba(42,82,160,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sun style={{ width: '15px', height: '15px', color: '#2a52a0' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>Theme</p>
-              <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>Light or dark mode</p>
-            </div>
-            <ThemeToggle />
-          </div>
+          <SettingsRow icon={Sun} iconColor="#2a52a0" label="Theme" hint="Light or dark mode" right={<ThemeToggle />} />
         </div>
       </SettingsSection>
 
