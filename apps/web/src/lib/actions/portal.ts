@@ -3,6 +3,7 @@
 import { randomBytes } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { sendPaymentConfirmationEmails } from '@/lib/email/payment-notify'
+import { verifyHelcimTransaction } from '@/lib/helcim-verify'
 
 function admin() {
   return createClient(
@@ -311,7 +312,7 @@ export async function validateAndRecordPayment(input: {
   tenantId: string
   contactId: string
   secretToken: string
-  transactionId: string
+  rawEventMessage: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const db = admin()
 
@@ -326,22 +327,14 @@ export async function validateAndRecordPayment(input: {
   if (!order) return { ok: false, error: 'Order not found' }
   if (order.payment_status === 'paid') return { ok: true } // idempotent
 
-  // Server-side validation with Helcim secretToken
-  const apiKey = process.env.HELCIM_API_KEY
-  const res = await fetch(
-    `https://api.helcim.com/v2/payment/verify?secretToken=${encodeURIComponent(input.secretToken)}&transactionId=${input.transactionId}`,
-    { headers: { 'api-token': apiKey! } },
-  )
-
-  if (!res.ok) return { ok: false, error: 'Payment verification failed' }
-  const json = await res.json()
-  if (json.status !== 'APPROVED') return { ok: false, error: `Payment not approved: ${json.status}` }
+  const verified = verifyHelcimTransaction(input.rawEventMessage, input.secretToken)
+  if (!verified.ok) return verified
 
   const now = new Date().toISOString()
   await db.from('orders').update({
     payment_status: 'paid',
     paid_at: now,
-    helcim_transaction_id: input.transactionId,
+    helcim_transaction_id: verified.transactionId,
   }).eq('id', input.orderId)
 
   const contact = order.contacts as unknown as { first_name: string; last_name: string | null; email: string | null } | null
@@ -350,7 +343,7 @@ export async function validateAndRecordPayment(input: {
     tenantId: input.tenantId,
     orderId: input.orderId,
     amount: Number(order.total_amount),
-    transactionId: input.transactionId,
+    transactionId: verified.transactionId,
     customerEmail: contact?.email ?? null,
     customerName: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null,
   })

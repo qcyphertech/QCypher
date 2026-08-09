@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { sendEmail } from '@/lib/email/send'
 import { renderBrandedEmail } from '@/lib/email/brand'
+import { verifyHelcimTransaction } from '@/lib/helcim-verify'
 import { revalidatePath } from 'next/cache'
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void'
@@ -235,27 +236,21 @@ export async function initInvoiceCheckout(invoiceId: string): Promise<
 export async function validateAndRecordInvoicePayment(input: {
   invoiceId: string
   secretToken: string
-  transactionId: string
+  rawEventMessage: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const admin = createAdminClient()
   const { data: invoice } = await admin.from('invoices').select('id, tenant_id, invoice_number, amount, sent_to_email, status').eq('id', input.invoiceId).maybeSingle()
   if (!invoice) return { ok: false, error: 'Invoice not found' }
   if (invoice.status === 'paid') return { ok: true } // idempotent
 
-  const apiKey = process.env.HELCIM_API_KEY
-  const res = await fetch(
-    `https://api.helcim.com/v2/payment/verify?secretToken=${encodeURIComponent(input.secretToken)}&transactionId=${input.transactionId}`,
-    { headers: { 'api-token': apiKey! } },
-  )
-  if (!res.ok) return { ok: false, error: 'Payment verification failed' }
-  const json = await res.json()
-  if (json.status !== 'APPROVED') return { ok: false, error: `Payment not approved: ${json.status}` }
+  const verified = verifyHelcimTransaction(input.rawEventMessage, input.secretToken)
+  if (!verified.ok) return verified
 
   const now = new Date().toISOString()
   await admin.from('invoices').update({
     status: 'paid',
     paid_at: now,
-    helcim_transaction_id: input.transactionId,
+    helcim_transaction_id: verified.transactionId,
     updated_at: now,
   }).eq('id', input.invoiceId)
 
@@ -268,7 +263,7 @@ export async function validateAndRecordInvoicePayment(input: {
       resource_type: 'invoice',
       resource_id: invoice.id,
       resource_name: invoice.invoice_number,
-      details: { transaction_id: input.transactionId },
+      details: { transaction_id: verified.transactionId },
     })
   }
 
@@ -277,7 +272,7 @@ export async function validateAndRecordInvoicePayment(input: {
       <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#171a2b;">Payment received</p>
       <p style="margin:16px 0 0;">Thanks — your payment for invoice #${invoice.invoice_number} was successful.</p>
       <p style="margin:16px 0 0;"><strong>Amount:</strong> $${Number(invoice.amount).toFixed(2)}</p>
-      <p style="margin:8px 0 0;font-size:13px;color:#5b6072;">Transaction ID: ${input.transactionId}</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#5b6072;">Transaction ID: ${verified.transactionId}</p>
     `,
   })
   if (invoice.sent_to_email) {
@@ -285,14 +280,14 @@ export async function validateAndRecordInvoicePayment(input: {
       to: invoice.sent_to_email,
       subject: `Payment received — Invoice #${invoice.invoice_number}`,
       html: receiptHtml,
-      text: `Your payment for invoice #${invoice.invoice_number} ($${Number(invoice.amount).toFixed(2)}) was successful. Transaction ID: ${input.transactionId}`,
+      text: `Your payment for invoice #${invoice.invoice_number} ($${Number(invoice.amount).toFixed(2)}) was successful. Transaction ID: ${verified.transactionId}`,
     })
   }
   await sendEmail({
     to: 'hello@qcyphertech.com',
     subject: `Invoice #${invoice.invoice_number} paid — $${Number(invoice.amount).toFixed(2)}`,
     html: receiptHtml,
-    text: `Invoice #${invoice.invoice_number} was paid: $${Number(invoice.amount).toFixed(2)}. Transaction ID: ${input.transactionId}`,
+    text: `Invoice #${invoice.invoice_number} was paid: $${Number(invoice.amount).toFixed(2)}. Transaction ID: ${verified.transactionId}`,
   })
 
   return { ok: true }

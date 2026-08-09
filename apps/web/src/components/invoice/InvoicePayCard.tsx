@@ -60,21 +60,17 @@ export function InvoicePayCard({ invoice }: { invoice: Invoice }) {
       window.removeEventListener('message', handler)
       window.removeHelcimPayIframe?.()
 
-      let transactionId: string | undefined
-      try {
-        transactionId = JSON.parse(data.eventMessage ?? '{}')?.data?.data?.transactionId
-      } catch { /* fall through to the error branch below */ }
-
-      if (data.eventStatus !== 'SUCCESS' || !transactionId) {
+      if (data.eventStatus !== 'SUCCESS' || !data.eventMessage) {
         setState('error')
         setErrorMsg('Payment did not complete. Please try again.')
         return
       }
 
+      // Server verifies the hash itself — never trust the client here.
       const vResult = await validateAndRecordInvoicePayment({
         invoiceId: invoice.id,
         secretToken: result.secretToken,
-        transactionId,
+        rawEventMessage: data.eventMessage,
       })
 
       if (vResult.ok) {
