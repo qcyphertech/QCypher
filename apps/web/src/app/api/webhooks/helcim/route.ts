@@ -40,12 +40,18 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  const { data: invoice } = await admin
+  // invoiceNumber sent to Helcim is an alphanumeric-only correlation id
+  // derived from the invoice's own UUID (Helcim rejects our human-readable
+  // "INV-2026-0001" format) — see initInvoiceCheckout in
+  // lib/actions/invoices.ts. Match back the same way the existing
+  // api/portal/helcim/webhook route matches orders by id suffix.
+  const { data: invoices } = await admin
     .from('invoices')
     .select('id, tenant_id, status')
-    .eq('invoice_number', event.invoiceNumber)
-    .maybeSingle()
+    .ilike('id', `%${event.invoiceNumber.toLowerCase()}`)
+    .limit(1)
 
+  const invoice = invoices?.[0]
   if (!invoice || invoice.status === 'paid') {
     return NextResponse.json({ ok: true })
   }

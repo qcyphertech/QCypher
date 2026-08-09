@@ -197,6 +197,13 @@ export async function initInvoiceCheckout(invoiceId: string): Promise<
   const apiKey = process.env.HELCIM_API_KEY
   if (!apiKey) return { ok: false, error: 'Payment not configured' }
 
+  // Helcim rejects our human-readable "INV-2026-0001" format (punctuation
+  // not allowed) — send an alphanumeric-only correlation id derived from
+  // the invoice's own UUID instead, same pattern as the proven-working
+  // order-payment flow in lib/actions/portal.ts. invoice_number stays the
+  // pretty display value; this is purely for matching the webhook back up.
+  const helcimInvoiceNumber = invoice.id.replace(/-/g, '').slice(-8).toUpperCase()
+
   const res = await fetch('https://api.helcim.com/v2/helcim-pay/initialize', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-token': apiKey },
@@ -204,7 +211,7 @@ export async function initInvoiceCheckout(invoiceId: string): Promise<
       paymentType: 'purchase',
       amount: Number(invoice.amount),
       currency: 'USD',
-      invoiceNumber: invoice.invoice_number,
+      invoiceNumber: helcimInvoiceNumber,
       feeSaver: true,
     }),
   })
