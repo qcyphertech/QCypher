@@ -10,18 +10,18 @@ export async function sendPaymentConfirmationEmails(params: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: SupabaseClient<any>
   tenantId: string
-  orderId: string
+  orderNumber: number | null
   amount: number
   transactionId: string
   customerEmail: string | null
   customerName: string | null
 }) {
-  const { admin, tenantId, orderId, amount, transactionId, customerEmail, customerName } = params
+  const { admin, tenantId, orderNumber, amount, transactionId, customerEmail, customerName } = params
 
   try {
     const { data: tenant } = await admin.from('tenants').select('name').eq('id', tenantId).single()
     const businessName = (tenant as { name?: string } | null)?.name ?? 'your service provider'
-    const orderRef = orderId.slice(-6).toUpperCase()
+    const orderRef = String(orderNumber ?? 0).padStart(4, '0')
 
     if (customerEmail) {
       await sendEmail({

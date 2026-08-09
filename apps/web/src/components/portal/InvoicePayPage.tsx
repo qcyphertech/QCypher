@@ -21,6 +21,7 @@ type Line = {
 
 type Order = {
   id: string
+  order_number: number | null
   total_amount: number
   created_at: string
   payment_status: string
@@ -227,7 +228,7 @@ export function InvoicePayPage({
         </button>
 
         <p className="text-[12px] text-gray-400 text-center">
-          Invoice #{order.id.slice(-6).toUpperCase()} · Secured by Helcim
+          Invoice #{String(order.order_number ?? 0).padStart(4, '0')} · Secured by Helcim
         </p>
       </div>
     </div>

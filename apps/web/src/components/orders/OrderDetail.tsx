@@ -106,7 +106,7 @@ export function OrderDetail({
           <div style={{ textAlign: 'right' }}>
             <p style={{ fontSize: '11px', color: '#888', margin: 0, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Invoice</p>
             <p style={{ fontSize: '18px', fontWeight: 800, margin: '2px 0 0', color: '#111', letterSpacing: '-0.02em' }}>
-              #{order.id.slice(-6).toUpperCase()}
+              #{String(order.order_number ?? 0).padStart(4, '0')}
             </p>
           </div>
         </div>
@@ -136,7 +136,7 @@ export function OrderDetail({
         <div className="flex items-start justify-between gap-4 flex-wrap pb-4 mb-4 border-b border-[hsl(var(--border))]">
           <div>
             <h1 className="text-2xl font-black tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>
-              Order #{order.id.slice(-6).toUpperCase()}
+              Order #{String(order.order_number ?? 0).padStart(4, '0')}
             </h1>
             <div className="flex items-center gap-2 flex-wrap mt-1.5">
               {contact ? (

@@ -8,7 +8,7 @@ export default async function PaymentsPage() {
   const supabase = await createClient()
   const { data: orders } = await supabase
     .from('orders')
-    .select('id, total_amount, payment_status, notes, created_at, paid_at, contact:contacts(id, first_name, last_name)')
+    .select('id, order_number, total_amount, payment_status, notes, created_at, paid_at, contact:contacts(id, first_name, last_name)')
     .order('created_at', { ascending: false })
 
   return (

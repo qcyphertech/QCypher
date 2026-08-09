@@ -19,6 +19,7 @@ type Line = {
 
 type Order = {
   id: string
+  order_number: number | null
   total_amount: number
   created_at: string
   business_name: string
@@ -227,7 +228,7 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
                   Back to portal
                 </a>
               )}
-              <p className="text-[11px] text-gray-400">Quote #{order.id.slice(-6).toUpperCase()} · {order.business_name}</p>
+              <p className="text-[11px] text-gray-400">Quote #{String(order.order_number ?? 0).padStart(4, '0')} · {order.business_name}</p>
             </div>
           </div>
         </div>
@@ -386,7 +387,7 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
             </button>
 
             <p className="text-[12px] text-gray-400 text-center">
-              Quote #{order.id.slice(-6).toUpperCase()} · {order.business_name}
+              Quote #{String(order.order_number ?? 0).padStart(4, '0')} · {order.business_name}
             </p>
           </div>
         </form>

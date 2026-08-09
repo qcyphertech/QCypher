@@ -151,9 +151,12 @@ Questions? Reply to this email.
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
+    console.error('[sendQuoteEmail] Resend error', res.status, JSON.stringify(err))
     return { url, emailSent: false, emailError: (err as { message?: string }).message ?? 'Email delivery failed' }
   }
 
+  const okBody = await res.json().catch(() => ({}))
+  console.log('[sendQuoteEmail] Resend accepted', JSON.stringify(okBody))
   return { url, emailSent: true }
   } catch (e: unknown) {
     return { url: null, emailSent: false, emailError: e instanceof Error ? e.message : 'Unexpected error' }
@@ -169,6 +172,7 @@ export async function getQuoteByToken(token: string): Promise<{
   alreadySigned?: boolean
   order?: {
     id: string
+    order_number: number | null
     total_amount: number
     created_at: string
     business_name: string
@@ -209,7 +213,7 @@ export async function getQuoteByToken(token: string): Promise<{
 
   const [{ data: order }, { data: lines }, { data: tenant }] = await Promise.all([
     admin.from('orders')
-      .select('id, total_amount, created_at, signed_at, contact:contacts(first_name, last_name)')
+      .select('id, order_number, total_amount, created_at, signed_at, contact:contacts(first_name, last_name)')
       .eq('id', qt.order_id)
       .single(),
     admin.from('order_line_items')
@@ -228,6 +232,7 @@ export async function getQuoteByToken(token: string): Promise<{
     valid: true,
     order: {
       id: order.id,
+      order_number: order.order_number,
       total_amount: order.total_amount,
       created_at: order.created_at,
       business_name: (tenant as { name?: string } | null)?.name ?? 'Your service provider',

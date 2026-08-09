@@ -7,6 +7,7 @@ import { useUserRole } from '@/lib/hooks/useUserRole'
 
 type Order = {
   id: string
+  order_number: number | null
   total_amount: number
   payment_status: string
   notes: string | null
@@ -32,8 +33,8 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function orderLabel(order: { id: string; notes: string | null }) {
-  return order.notes || `Order #${order.id.slice(-6).toUpperCase()}`
+function orderLabel(order: { order_number: number | null; notes: string | null }) {
+  return order.notes || `Order #${String(order.order_number ?? 0).padStart(4, '0')}`
 }
 
 export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: Order[]; hasPhone: boolean; hasEmail: boolean }) {

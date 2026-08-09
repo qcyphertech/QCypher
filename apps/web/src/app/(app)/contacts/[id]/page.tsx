@@ -28,7 +28,7 @@ export default async function ContactPage({ params }: Props) {
     supabase.from('contacts').select('*').eq('id', id).single(),
     supabase.from('interactions').select('*').eq('contact_id', id).order('occurred_at', { ascending: false }),
     supabase.from('tenants').select('slug, name').single(),
-    supabase.from('orders').select('id, total_amount, payment_status, notes, created_at').eq('customer_id', id).order('created_at', { ascending: false }),
+    supabase.from('orders').select('id, order_number, total_amount, payment_status, notes, created_at').eq('customer_id', id).order('created_at', { ascending: false }),
   ])
 
   if (!contact) notFound()

@@ -319,7 +319,7 @@ export async function validateAndRecordPayment(input: {
   // Verify ownership
   const { data: order } = await db
     .from('orders')
-    .select('id, total_amount, payment_status, contacts(first_name, last_name, email)')
+    .select('id, order_number, total_amount, payment_status, contacts(first_name, last_name, email)')
     .eq('id', input.orderId)
     .eq('tenant_id', input.tenantId)
     .eq('customer_id', input.contactId)
@@ -341,7 +341,7 @@ export async function validateAndRecordPayment(input: {
   await sendPaymentConfirmationEmails({
     admin: db,
     tenantId: input.tenantId,
-    orderId: input.orderId,
+    orderNumber: order.order_number,
     amount: Number(order.total_amount),
     transactionId: verified.transactionId,
     customerEmail: contact?.email ?? null,

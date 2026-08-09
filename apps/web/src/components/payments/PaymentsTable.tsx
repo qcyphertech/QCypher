@@ -6,6 +6,7 @@ import { Search, Filter } from 'lucide-react'
 
 type Order = {
   id: string
+  order_number: number | null
   total_amount: number
   payment_status: string
   notes: string | null
@@ -30,7 +31,7 @@ const STATUS_OPTIONS = [
 ]
 
 function orderLabel(order: Order) {
-  return order.notes || `Order #${order.id.slice(-6).toUpperCase()}`
+  return order.notes || `Order #${String(order.order_number ?? 0).padStart(4, '0')}`
 }
 
 export function PaymentsTable({ orders }: { orders: Order[] }) {
@@ -54,7 +55,7 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
       if (dateFrom && new Date(o.created_at) < new Date(dateFrom)) return false
       if (dateTo && new Date(o.created_at) > new Date(dateTo + 'T23:59:59')) return false
       const label = orderLabel(o).toLowerCase()
-      const orderNum = `#${o.id.slice(-6).toUpperCase()}`.toLowerCase()
+      const orderNum = `#${String(o.order_number ?? 0).padStart(4, '0')}`.toLowerCase()
       const customerName = o.contact ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.toLowerCase() : ''
       if (oq && !label.includes(oq) && !orderNum.includes(oq)) return false
       if (cq && !customerName.includes(cq)) return false

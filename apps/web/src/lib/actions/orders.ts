@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 export type Order = {
   id: string
   tenant_id: string
+  order_number: number | null
   customer_id: string | null
   payment_status: 'draft' | 'pending' | 'paid' | 'refunded'
   job_status: 'en_route' | 'in_progress' | 'completed' | null

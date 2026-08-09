@@ -6,6 +6,7 @@ import { Filter } from 'lucide-react'
 
 type Order = {
   id: string
+  order_number: number | null
   total_amount: number
   payment_status: string
   created_at: string
@@ -41,11 +42,11 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
     const oq = orderQuery.trim().toLowerCase()
     const cq = customerQuery.trim().toLowerCase()
     const aq = amountQuery.trim().toLowerCase()
-    return orders.filter((o, i) => {
+    return orders.filter(o => {
       if (status !== 'all' && o.payment_status !== status) return false
       if (dateFrom && new Date(o.created_at) < new Date(dateFrom)) return false
       if (dateTo && new Date(o.created_at) > new Date(dateTo + 'T23:59:59')) return false
-      const orderNum = `#${String(i + 1).padStart(4, '0')}`.toLowerCase()
+      const orderNum = `#${String(o.order_number ?? 0).padStart(4, '0')}`.toLowerCase()
       const customerName = o.contact ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.toLowerCase() : ''
       if (oq && !orderNum.includes(oq)) return false
       if (cq && !customerName.includes(cq)) return false
@@ -141,14 +142,13 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                 </tr>
               ) : filtered.map(o => {
                 const s = STATUS_STYLE[o.payment_status] ?? STATUS_STYLE.draft
-                const i = orders.indexOf(o)
                 return (
                   <tr key={o.id} className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--muted))] transition-colors">
                     <td className="px-5 py-3.5">
                       <Link href={`/orders/${o.id}`}
                         className="text-[15px] font-bold hover:text-[#1a3070] transition-colors"
                         style={{ color: 'hsl(var(--foreground))' }}>
-                        #{String(i + 1).padStart(4, '0')}
+                        #{String(o.order_number ?? 0).padStart(4, '0')}
                       </Link>
                     </td>
                     <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
