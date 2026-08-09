@@ -58,12 +58,26 @@ export function PayRequestCard({ request }: { request: Req }) {
 
     window.addEventListener('message', async function handler(e) {
       if (e.origin !== 'https://secure.helcim.app') return
-      const data = e.data as { eventName?: string; eventStatus?: string; transactionId?: string }
-      if (data.eventName !== 'HELCIM_PAY_JS_TRANSACTION_COMPLETION') return
+      // Per Helcim's docs, eventName is `helcim-pay-js-${checkoutToken}` (not a
+      // fixed constant), and eventStatus is SUCCESS | ABORTED | HIDE. On
+      // SUCCESS, eventMessage is a JSON string wrapping the transaction data
+      // at eventMessage.data.data.transactionId — not a flat field.
+      const data = e.data as { eventName?: string; eventStatus?: string; eventMessage?: string }
+      if (data.eventName !== `helcim-pay-js-${result.checkoutToken}`) return
+      if (data.eventStatus === 'HIDE') {
+        window.removeEventListener('message', handler)
+        window.removeHelcimPayIframe?.()
+        return
+      }
       window.removeEventListener('message', handler)
       window.removeHelcimPayIframe?.()
 
-      if (data.eventStatus !== 'SUCCESS' || !data.transactionId) {
+      let transactionId: string | undefined
+      try {
+        transactionId = JSON.parse(data.eventMessage ?? '{}')?.data?.data?.transactionId
+      } catch { /* fall through to the error branch below */ }
+
+      if (data.eventStatus !== 'SUCCESS' || !transactionId) {
         setState('error')
         setErrorMsg('Payment did not complete. Please try again.')
         return
@@ -74,7 +88,7 @@ export function PayRequestCard({ request }: { request: Req }) {
         tenantId: request.tenantId,
         contactId: request.contactId,
         secretToken: result.secretToken,
-        transactionId: data.transactionId,
+        transactionId,
       })
 
       if (vResult.ok) {

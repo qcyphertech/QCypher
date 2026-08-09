@@ -84,15 +84,28 @@ export function InvoicePayPage({
     }
     document.head.appendChild(script)
 
-    // Listen for Helcim postMessage
+    // Listen for Helcim postMessage — per Helcim's docs, eventName is
+    // `helcim-pay-js-${checkoutToken}` (not a fixed constant), and on
+    // SUCCESS the transaction id is nested inside a JSON-stringified
+    // eventMessage at eventMessage.data.data.transactionId.
     window.addEventListener('message', async function handler(e) {
       if (e.origin !== 'https://secure.helcim.app') return
-      const data = e.data as { eventName?: string; eventStatus?: string; transactionId?: string }
-      if (data.eventName !== 'HELCIM_PAY_JS_TRANSACTION_COMPLETION') return
+      const data = e.data as { eventName?: string; eventStatus?: string; eventMessage?: string }
+      if (data.eventName !== `helcim-pay-js-${result.checkoutToken}`) return
+      if (data.eventStatus === 'HIDE') {
+        window.removeEventListener('message', handler)
+        window.removeHelcimPayIframe?.()
+        return
+      }
       window.removeEventListener('message', handler)
       window.removeHelcimPayIframe?.()
 
-      if (data.eventStatus !== 'SUCCESS' || !data.transactionId) {
+      let transactionId: string | undefined
+      try {
+        transactionId = JSON.parse(data.eventMessage ?? '{}')?.data?.data?.transactionId
+      } catch { /* fall through to the error branch below */ }
+
+      if (data.eventStatus !== 'SUCCESS' || !transactionId) {
         setState('error')
         setErrorMsg('Payment did not complete. Please try again.')
         return
@@ -104,7 +117,7 @@ export function InvoicePayPage({
         tenantId: session.tenantId,
         contactId: session.contactId,
         secretToken: result.secretToken,
-        transactionId: data.transactionId,
+        transactionId,
       })
 
       if (vResult.ok) {
