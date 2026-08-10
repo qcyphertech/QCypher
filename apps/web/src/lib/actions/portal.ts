@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { sendPaymentConfirmationEmails } from '@/lib/email/payment-notify'
 import { verifyHelcimTransaction } from '@/lib/helcim-verify'
+import { resolveHelcimApiKey } from '@/lib/helcim-connect'
 
 function admin() {
   return createClient(
@@ -272,7 +273,7 @@ export async function initHelcimCheckout(input: {
     .maybeSingle()
   if (!order) return { ok: false, error: 'Order not found' }
 
-  const apiKey = process.env.HELCIM_API_KEY
+  const apiKey = await resolveHelcimApiKey(db, input.tenantId)
   if (!apiKey) return { ok: false, error: 'Payment not configured' }
 
   const res = await fetch('https://api.helcim.com/v2/helcim-pay/initialize', {

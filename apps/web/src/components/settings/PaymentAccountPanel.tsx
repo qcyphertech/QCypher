@@ -14,6 +14,12 @@ const STRIPE_ERROR_LABELS: Record<string, string> = {
   not_owner: 'Only account admins can connect a payment account.',
 }
 
+const HELCIM_ERROR_LABELS: Record<string, string> = {
+  not_owner: 'Only account admins can connect a payment account.',
+  no_tenant: 'Account setup issue — contact support.',
+  not_configured: 'Helcim connection is not set up yet — contact support.',
+}
+
 export function PaymentAccountPanel({ account }: { account: PaymentAccount }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -22,6 +28,7 @@ export function PaymentAccountPanel({ account }: { account: PaymentAccount }) {
   const [error, setError] = useState<string | null>(null)
 
   const stripeError = searchParams.get('stripe_error')
+  const helcimError = searchParams.get('helcim_error')
   const justConnected = searchParams.get('stripe_connected') === '1'
 
   async function handleDisconnect() {
@@ -52,6 +59,12 @@ export function PaymentAccountPanel({ account }: { account: PaymentAccount }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', background: 'var(--badge-red-bg)', color: 'var(--badge-red-text)', marginBottom: '20px', fontSize: '15px', fontWeight: 600 }}>
           <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
           {STRIPE_ERROR_LABELS[stripeError] ?? 'Something went wrong connecting your payment account.'}
+        </div>
+      )}
+      {helcimError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', background: 'var(--badge-red-bg)', color: 'var(--badge-red-text)', marginBottom: '20px', fontSize: '15px', fontWeight: 600 }}>
+          <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+          {HELCIM_ERROR_LABELS[helcimError] ?? 'Something went wrong connecting your Helcim account.'}
         </div>
       )}
 
@@ -99,18 +112,16 @@ export function PaymentAccountPanel({ account }: { account: PaymentAccount }) {
                 >
                   <CreditCard style={{ width: '15px', height: '15px' }} /> Connect Stripe
                 </a>
-                <button
-                  disabled
-                  title="Coming soon"
+                <a
+                  href="/api/oauth/helcim/connect"
                   style={{
                     display: 'flex', alignItems: 'center', gap: '8px',
                     padding: '10px 18px', borderRadius: '12px', fontSize: '15px', fontWeight: 700,
-                    background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))',
-                    border: 'none', cursor: 'not-allowed', opacity: 0.6,
+                    background: 'linear-gradient(135deg,#1a2b57,#2a52a0)', color: '#fff', textDecoration: 'none',
                   }}
                 >
-                  <CreditCard style={{ width: '15px', height: '15px' }} /> Connect Helcim (coming soon)
-                </button>
+                  <CreditCard style={{ width: '15px', height: '15px' }} /> Connect Helcim
+                </a>
               </div>
             </div>
           )}
