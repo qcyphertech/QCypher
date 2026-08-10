@@ -16,6 +16,7 @@ export type AuditAction =
   | 'pricing_override_set' | 'pricing_override_cleared'
   | 'invoice_created' | 'invoice_sent' | 'invoice_paid' | 'invoice_voided' | 'invoice_marked_paid'
   | 'payment_link_created' | 'payment_link_sent' | 'payment_link_paid'
+  | 'payment_account_connected' | 'payment_account_disconnected'
 
 export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment'
 

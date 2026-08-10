@@ -10,9 +10,11 @@ import { RequestActionsPanel } from '@/components/settings/RequestActionsPanel'
 import { AuditTrailPanel } from '@/components/settings/AuditTrailPanel'
 import { ExportDeletePanel } from '@/components/settings/ExportDeletePanel'
 import { SettingsTabs, SettingsSection, SettingsRow } from '@/components/settings/SettingsTabs'
+import { PaymentAccountPanel } from '@/components/settings/PaymentAccountPanel'
 import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
 import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 import { getDeletionStatus, type DeletionStatus } from '@/lib/actions/account-deletion'
+import { getPaymentAccountStatus } from '@/lib/actions/payment-accounts'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -56,6 +58,8 @@ export default async function SettingsPage() {
     isAdmin ? getDeletionStatus().catch(() => DEFAULT_DELETION_STATUS) : Promise.resolve(DEFAULT_DELETION_STATUS),
   ])
 
+  const paymentAccount = isAdmin ? await getPaymentAccountStatus().catch(() => null) : null
+
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
   const identities  = user.identities ?? []
   const hasPassword = identities.some(i => i.provider === 'email')
@@ -93,6 +97,10 @@ export default async function SettingsPage() {
         <RequestActionsPanel />
       </SettingsSection>
     </div>
+  )
+
+  const paymentsTab = (
+    <PaymentAccountPanel account={paymentAccount} />
   )
 
   const auditTab = (
@@ -158,6 +166,7 @@ export default async function SettingsPage() {
       <SettingsTabs
         workspaceContent={workspaceTab}
         teamContent={teamTab}
+        paymentsContent={paymentsTab}
         auditContent={auditTab}
         accountContent={accountTab}
         isAdmin={isAdmin}
