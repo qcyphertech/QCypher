@@ -1,7 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Lenis from 'lenis'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import * as THREE from 'three'
 
 // Public marketing page — no auth calls, no Supabase imports.
 // Middleware handles logged-in redirect (/ → /dashboard).
@@ -38,6 +42,59 @@ const INTEGRATION_LOGOS = [
   { name: 'Anthropic', file: '/logos/anthropic.png' },
 ]
 
+// Reusable CSS glass/clay-morphic laptop with abstract CRM inscriptions —
+// used full-size in the hero (with the 3D tilt ref) and shrunk via CSS zoom
+// wherever a smaller version fits (e.g. the CRM section's CTA column).
+function ClayLaptop({ screenRef }: { screenRef?: React.Ref<HTMLDivElement> }) {
+  return (
+    <div ref={screenRef} className="clay-laptop">
+      <div className="clay-screen">
+        <div className="clay-crm" aria-hidden="true">
+          <div className="clay-crm-nav">
+            <div className="clay-crm-nav-item active"><span className="clay-crm-nav-dot" /><span>Dashboard</span></div>
+            <div className="clay-crm-nav-item"><span className="clay-crm-nav-dot" /><span>Contacts</span></div>
+            <div className="clay-crm-nav-item"><span className="clay-crm-nav-dot" /><span>Pipeline</span></div>
+            <div className="clay-crm-nav-item"><span className="clay-crm-nav-dot" /><span>Reports</span></div>
+          </div>
+          <div className="clay-crm-main">
+            <span className="clay-crm-label">Recent Contacts</span>
+            <div className="clay-crm-row">
+              <span className="clay-crm-avatar" style={{ background: 'linear-gradient(135deg,#0d6dff,#5fa0ff)' }} />
+              <div className="clay-crm-row-text">
+                <div className="clay-crm-row-name">Marcus R.</div>
+                <div className="clay-crm-row-sub">HVAC & Plumbing</div>
+              </div>
+              <span className="clay-crm-chip won">Booked</span>
+            </div>
+            <div className="clay-crm-row">
+              <span className="clay-crm-avatar" style={{ background: 'linear-gradient(135deg,#ff7a1a,#ffb066)' }} />
+              <div className="clay-crm-row-text">
+                <div className="clay-crm-row-name">Denise W.</div>
+                <div className="clay-crm-row-sub">Mobile Cleaning</div>
+              </div>
+              <span className="clay-crm-chip pending">Follow up</span>
+            </div>
+            <div className="clay-crm-row">
+              <span className="clay-crm-avatar" style={{ background: 'linear-gradient(135deg,#0d2454,#3a5a9c)' }} />
+              <div className="clay-crm-row-text">
+                <div className="clay-crm-row-name">James T.</div>
+                <div className="clay-crm-row-sub">Roofing Contractor</div>
+              </div>
+              <span className="clay-crm-chip new">New lead</span>
+            </div>
+            <div className="clay-crm-chart">
+              <svg width="100%" height="100%" viewBox="0 0 160 30" preserveAspectRatio="none">
+                <polyline points="0,24 20,20 40,22 60,12 80,16 100,8 120,10 140,4 160,6" fill="none" stroke="#0d6dff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="clay-base" />
+    </div>
+  )
+}
+
 export default function HomePage() {
   const [showReportModal, setShowReportModal] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
@@ -45,6 +102,12 @@ export default function HomePage() {
   const [formData, setFormData] = useState({ businessName: '', phone: '', email: '', message: '', selectedPackages: [] })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formSuccess, setFormSuccess] = useState(false)
+
+  const heroCanvasRef = useRef<HTMLDivElement>(null)
+  const heroPinRef = useRef<HTMLElement>(null)
+  const heroAlphaRef = useRef<HTMLDivElement>(null)
+  const heroBetaRef = useRef<HTMLDivElement>(null)
+  const mobileTiltRef = useRef<HTMLDivElement>(null)
 
   const formatPhoneNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, '')
@@ -75,6 +138,143 @@ export default function HomePage() {
     return () => observer.disconnect()
   }, [])
 
+  // Lenis smooth scroll + GSAP ScrollTrigger integration
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger)
+
+    const lenis = new Lenis({ lerp: 0.1 })
+    lenis.on('scroll', ScrollTrigger.update)
+
+    let rafId: number
+    function raf(time: number) {
+      lenis.raf(time)
+      rafId = requestAnimationFrame(raf)
+    }
+    rafId = requestAnimationFrame(raf)
+
+    const canPin = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+
+    // Hero — pinned scroll-through, Alpha -> Beta
+    let heroCtx: gsap.Context | undefined
+    if (canPin && heroPinRef.current && heroAlphaRef.current && heroBetaRef.current) {
+      heroCtx = gsap.context(() => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: heroPinRef.current,
+            start: 'top top',
+            end: '+=200%',
+            scrub: true,
+            pin: true,
+          },
+        })
+        tl.to(heroAlphaRef.current, { opacity: 0, scale: 0.85, z: -300, ease: 'none' }, 0)
+          .fromTo(
+            heroBetaRef.current,
+            { opacity: 0, scale: 0.8, z: -400, y: 60 },
+            { opacity: 1, scale: 1, z: 0, y: 0, ease: 'none' },
+            0.25
+          )
+      })
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      lenis.destroy()
+      heroCtx?.revert()
+      ScrollTrigger.getAll().forEach((st) => st.kill())
+    }
+  }, [])
+
+  // Desktop (>=768px) fixed-background WebGL scene; mouse-reactive. Mobile falls back to CSS 3D tilt.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches
+    let cleanup = () => {}
+
+    if (isDesktop && heroCanvasRef.current) {
+      const container = heroCanvasRef.current
+      const scene = new THREE.Scene()
+      const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000)
+      camera.position.z = 8
+
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
+      renderer.setSize(container.clientWidth, container.clientHeight)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      container.appendChild(renderer.domElement)
+
+      const icoGeo = new THREE.IcosahedronGeometry(2.2, 0)
+      const icoMat = new THREE.MeshBasicMaterial({ color: 0x0d6dff, wireframe: true, transparent: true, opacity: 0.55 })
+      const ico = new THREE.Mesh(icoGeo, icoMat)
+      scene.add(ico)
+
+      const particleCount = 150
+      const positions = new Float32Array(particleCount * 3)
+      for (let i = 0; i < particleCount * 3; i++) positions[i] = (Math.random() - 0.5) * 12
+      const particleGeo = new THREE.BufferGeometry()
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      const particleMat = new THREE.PointsMaterial({ color: 0x0d6dff, size: 0.04, transparent: true, opacity: 0.6 })
+      const particles = new THREE.Points(particleGeo, particleMat)
+      scene.add(particles)
+
+      let mouseX = 0
+      let mouseY = 0
+      const handleMouseMove = (e: MouseEvent) => {
+        mouseX = (e.clientX / window.innerWidth - 0.5) * 2
+        mouseY = (e.clientY / window.innerHeight - 0.5) * 2
+      }
+      window.addEventListener('mousemove', handleMouseMove)
+
+      let animId: number
+      const animate = () => {
+        animId = requestAnimationFrame(animate)
+        ico.rotation.y += 0.0025
+        ico.rotation.x += 0.0012
+        camera.position.x += (mouseX * 1.2 - camera.position.x) * 0.03
+        camera.position.y += (-mouseY * 1.2 - camera.position.y) * 0.03
+        camera.lookAt(scene.position)
+        particles.rotation.y += 0.0006
+        renderer.render(scene, camera)
+      }
+      animate()
+
+      const handleResize = () => {
+        if (!container) return
+        camera.aspect = container.clientWidth / container.clientHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(container.clientWidth, container.clientHeight)
+      }
+      window.addEventListener('resize', handleResize)
+
+      cleanup = () => {
+        cancelAnimationFrame(animId)
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('resize', handleResize)
+        icoGeo.dispose()
+        icoMat.dispose()
+        particleGeo.dispose()
+        particleMat.dispose()
+        renderer.dispose()
+        if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement)
+      }
+    } else if (!isDesktop && mobileTiltRef.current) {
+      // Mobile fallback: subtle idle CSS 3D tilt (no mouse on touch devices)
+      const el = mobileTiltRef.current
+      let raf2: number
+      let t = 0
+      const idle = () => {
+        t += 0.01
+        const rx = Math.sin(t) * 8
+        const ry = Math.cos(t * 0.8) * 10
+        el.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`
+        raf2 = requestAnimationFrame(idle)
+      }
+      idle()
+      cleanup = () => cancelAnimationFrame(raf2)
+    }
+
+    return () => cleanup()
+  }, [])
+
   return (
     <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', background: '#f8f9fc', color: '#171a2b', lineHeight: 1.5 }}>
       <style>{`
@@ -95,9 +295,22 @@ export default function HomePage() {
           --cyan: #4a9db5;
           --mint: #00a87a;
           --coral: #ff5a4e;
+
+          /* Design-brief palette (Light Mode) */
+          --navy: #0d2454;
+          --navy-line: rgba(13,36,84,0.14);
+          --navy-line-soft: rgba(13,36,84,0.08);
+          --orange: #ff7a1a;
+          --electric: #0d6dff;
+          --offwhite: #f8f9fa;
+          --offwhite-2: #f4f5f7;
         }
 
-        .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
+        /* Widened to fit all 3 package tiles (415px + 34px gaps + outline
+           bleed) side by side without horizontal scroll on desktop —
+           applied globally so nav/hero/every section stays aligned to the
+           same width. */
+        .wrap { max-width: 1380px; margin: 0 auto; padding: 0 20px; }
 
         /* NAV */
         .nav-bar {
@@ -131,224 +344,293 @@ export default function HomePage() {
         .btn-sm { min-height: 38px; padding: 0 14px; font-size: 14px; white-space: nowrap; }
         .btn-full { width: 100%; }
 
-        /* HERO */
+        /* HERO — Huly-inspired, off-white bg, navy text, electric-blue accent grid */
         .hero {
           padding: 88px 0 72px;
-          background: linear-gradient(145deg, #0e1f45 0%, #1a3070 45%, #1e4a7a 75%, #246080 100%);
+          background: var(--offwhite);
           position: relative; overflow: hidden;
+          border-bottom: 1px solid var(--navy-line);
         }
         .hero::before {
           content: '';
           position: absolute; inset: 0;
-          background: radial-gradient(ellipse 60% 70% at 80% 50%, rgba(74,157,181,0.18) 0%, transparent 70%),
-                      radial-gradient(ellipse 40% 50% at 10% 80%, rgba(42,82,160,0.3) 0%, transparent 60%);
+          background-image:
+            linear-gradient(rgba(13,109,255,0.09) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(13,109,255,0.09) 1px, transparent 1px);
+          background-size: 42px 42px;
+          -webkit-mask-image: radial-gradient(ellipse 60% 70% at 78% 45%, black 0%, transparent 72%);
+          mask-image: radial-gradient(ellipse 60% 70% at 78% 45%, black 0%, transparent 72%);
           pointer-events: none;
         }
-
-        /* Torus Animation Background - ULTRA 3D Futuristic */
-        @keyframes rorusTorus3DUltra {
-          0% { transform: perspective(500px) rotateX(35deg) rotateY(0deg) rotateZ(0deg) scale(1); }
-          25% { transform: perspective(500px) rotateX(45deg) rotateY(90deg) rotateZ(20deg) scale(1.1); }
-          50% { transform: perspective(500px) rotateX(35deg) rotateY(180deg) rotateZ(-10deg) scale(1); }
-          75% { transform: perspective(500px) rotateX(45deg) rotateY(270deg) rotateZ(20deg) scale(1.1); }
-          100% { transform: perspective(500px) rotateX(35deg) rotateY(360deg) rotateZ(0deg) scale(1); }
+        .hero-eyebrow {
+          font-size: 12px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+          color: var(--orange); margin-bottom: 14px; display: block;
         }
-        @keyframes torusGlowNeon {
-          0%, 100% {
-            filter: drop-shadow(0 0 30px rgba(0,255,255,0.8))
-                    drop-shadow(0 0 60px rgba(0,255,255,0.4))
-                    drop-shadow(10px 10px 40px rgba(74,157,181,0.3));
-          }
-          50% {
-            filter: drop-shadow(0 0 50px rgba(0,255,255,1))
-                    drop-shadow(0 0 100px rgba(100,200,255,0.6))
-                    drop-shadow(-10px -10px 50px rgba(0,255,200,0.4));
-          }
+        .hero .wrap { position: relative; z-index: 2; }
+        .hero h1 {
+          font-size: clamp(40px, 6vw, 88px); font-weight: 800; line-height: 1.02;
+          letter-spacing: -0.03em; color: var(--navy); margin-bottom: 20px;
+          font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
         }
-        @keyframes torusFloat3D {
-          0%, 100% { transform: perspective(500px) rotateX(35deg) rotateY(0deg) rotateZ(0deg) scale(1) translateY(0px) translateZ(0px); }
-          25% { transform: perspective(500px) rotateX(45deg) rotateY(90deg) rotateZ(20deg) scale(1.1) translateY(-15px) translateZ(50px); }
-          50% { transform: perspective(500px) rotateX(35deg) rotateY(180deg) rotateZ(-10deg) scale(1) translateY(0px) translateZ(100px); }
-          75% { transform: perspective(500px) rotateX(45deg) rotateY(270deg) rotateZ(20deg) scale(1.1) translateY(-15px) translateZ(50px); }
-          100% { transform: perspective(500px) rotateX(35deg) rotateY(360deg) rotateZ(0deg) scale(1) translateY(0px) translateZ(0px); }
-        }
-        @keyframes scanlineEffect {
-          0% { background-position: 0 0; }
-          100% { background-position: 0 2px; }
-        }
-        /* Hero Animations Container */
-        .hero-animations-container {
-          position: absolute;
-          top: 50%;
-          right: 5%;
-          transform: translateY(-50%);
-          width: 400px;
-          height: 400px;
-          z-index: 0;
-          pointer-events: none;
-        }
-
-        .hero .torus-bg {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 380px;
-          height: 380px;
-          opacity: 0.35;
-          animation: torusFloat3D 18s cubic-bezier(0.4, 0.0, 0.2, 1) infinite, torusGlowNeon 3s ease-in-out infinite;
-          pointer-events: none;
-          z-index: 1;
-          transform-style: preserve-3d;
-          filter: drop-shadow(0 0 30px rgba(0,255,255,0.8));
-        }
-        .hero .torus-bg::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(0,255,255,0.1) 50%,
-            transparent 100%
-          );
-          background-size: 200% 100%;
-          animation: scanlineEffect 8s linear infinite;
-          pointer-events: none;
-        }
-
-        /* Hero Orb Styling */
-        .hero-orb {
-          position: absolute;
-          top: 50%;
-          left: 80%;
-          transform: translateX(-50%) translateY(-50%) rotateX(15deg) rotateZ(-25deg);
-          width: 480px;
-          height: 480px;
-          z-index: 2;
-          perspective: 1000px;
-          transform-style: preserve-3d;
-          overflow: visible;
-        }
-        .hero-orb-blob {
-          width: 100%;
-          height: 100%;
-          background:
-            radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5), transparent 50%),
-            radial-gradient(circle at 50% 50%, rgba(0,255,255,0.5), rgba(100,50,200,0.2), rgba(0,200,200,0.1));
-          border-radius: 50%;
-          animation: blobMorph3DUltra 18s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
-          border: 3px solid rgba(0,255,255,0.7);
-          box-shadow:
-            inset 0 0 60px rgba(0,255,255,0.25),
-            inset -40px -40px 60px rgba(100,50,200,0.3),
-            inset 30px 30px 40px rgba(0,255,255,0.2),
-            0 0 80px rgba(0,255,255,0.6),
-            0 0 150px rgba(0,255,255,0.4),
-            0 0 200px rgba(100,200,255,0.3),
-            0 40px 100px rgba(0,255,255,0.4);
-          transform-style: preserve-3d;
-          filter: drop-shadow(0 50px 100px rgba(0,255,255,0.5)) drop-shadow(0 0 80px rgba(0,255,200,0.3));
-          position: relative;
-        }
-        .hero-orb-blob::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(45deg, transparent 30%, rgba(0,255,255,0.1) 50%, transparent 70%);
-          border-radius: inherit;
-          animation: globeGlitch 8s ease-in-out infinite;
-          pointer-events: none;
-        }
-        .hero-orb-nodes {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          top: 0;
-          left: 0;
-          transform-style: preserve-3d;
-          transform: rotateX(-15deg) rotateZ(25deg);
-        }
-        .hero-orb-node-pos {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 40px;
-          height: 40px;
-          margin: -20px 0 0 -20px;
-          transform-style: preserve-3d;
-        }
-        .hero-orb-node-pos:nth-child(1) { transform: rotate(0deg) translate(220px) rotate(0deg); }
-        .hero-orb-node-pos:nth-child(2) { transform: rotate(60deg) translate(220px) rotate(-60deg); }
-        .hero-orb-node-pos:nth-child(3) { transform: rotate(120deg) translate(220px) rotate(-120deg); }
-        .hero-orb-node-pos:nth-child(4) { transform: rotate(180deg) translate(220px) rotate(-180deg); }
-        .hero-orb-node-pos:nth-child(5) { transform: rotate(240deg) translate(220px) rotate(-240deg); }
-        .hero-orb-node-pos:nth-child(6) { transform: rotate(300deg) translate(220px) rotate(-300deg); }
-        .hero-orb-node {
-          position: relative;
-          width: 40px;
-          height: 40px;
-          background: rgba(0,255,255,0.08);
-          border-radius: 50%;
-          box-shadow:
-            0 0 10px rgba(0,255,255,0.6),
-            inset 0 0 8px rgba(255,255,255,0.3);
-          transform-style: preserve-3d;
-          border: 1.5px solid rgba(0,255,255,0.6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 22px;
-          filter: drop-shadow(0 0 6px rgba(0,255,255,0.5));
-          color: #00ffff;
-        }
-        .hero-orb-node svg {
-          width: 20px;
-          height: 20px;
-          fill: #00ffff;
-        }
-        .hero-orb-node-pos:nth-child(1) .hero-orb-node { animation: nodePulseUltra 16s ease-in-out infinite; }
-        .hero-orb-node-pos:nth-child(2) .hero-orb-node { animation: nodePulseUltra 18.4s ease-in-out infinite 0.2s; }
-        .hero-orb-node-pos:nth-child(3) .hero-orb-node { animation: nodePulseUltra 20.8s ease-in-out infinite 0.4s; }
-        .hero-orb-node-pos:nth-child(4) .hero-orb-node { animation: nodePulseUltra 23.2s ease-in-out infinite 0.6s; }
-        .hero-orb-node-pos:nth-child(5) .hero-orb-node { animation: nodePulseUltra 20s ease-in-out infinite 0.8s; }
-        .hero-orb-node-pos:nth-child(6) .hero-orb-node { animation: nodePulseUltra 21.6s ease-in-out infinite 1s; }
-        .hero-orb-icon {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          opacity: 0.7;
-          z-index: 3;
-          color: #00ffff;
-        }
-        .hero-orb-icon svg {
-          width: 200px;
-          height: 200px;
-          fill: #00ffff;
-        }
-        @keyframes portalSpin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .portal-spin {
-          animation: portalSpin 28s linear infinite;
-          filter: drop-shadow(0 0 25px rgba(0,220,255,0.8)) drop-shadow(0 0 60px rgba(0,180,255,0.5)) drop-shadow(0 0 100px rgba(0,150,255,0.3));
-        }
-        .hero .wrap { position: relative; }
-        .hero h1 { font-size: 46px; font-weight: 900; line-height: 1.08; letter-spacing: -0.03em; color: #fff; margin-bottom: 16px; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
-        .hero h1 em { font-style: normal; background: linear-gradient(90deg, #7dd3f7, #4a9db5, #00e5aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .hero-lead { font-size: 16px; color: rgba(255,255,255,0.95); max-width: 500px; margin-bottom: 28px; line-height: 1.7; }
+        .hero-lead { font-size: 16px; color: var(--soft); max-width: 500px; margin-bottom: 28px; line-height: 1.7; }
         .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; }
-        .hero .btn-ghost { color: #fff; border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.07); }
-        .hero .btn-ghost:hover { border-color: #fff; background: rgba(255,255,255,0.14); }
-        .trust-row { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 600; }
+        .btn-hero-primary {
+          background: linear-gradient(90deg, var(--orange) 0%, var(--orange) 55%, #ffe4cc 130%);
+          color: var(--navy); font-weight: 800;
+          letter-spacing: 0.03em; text-transform: uppercase; font-size: 14px;
+        }
+        .btn-hero-primary:hover { opacity: 0.92; }
+        .hero .btn-ghost { color: var(--navy); border-color: var(--navy-line); background: transparent; }
+        .hero .btn-ghost:hover { border-color: var(--navy); color: var(--navy); background: rgba(13,36,84,0.04); }
+        .trust-row { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: var(--soft); font-weight: 600; }
+
+        /* HERO VISUAL — CSS glass/clay-morphic laptop (replaces torus/orb) */
+        .hero-visual {
+          position: relative;
+          display: flex; align-items: center; justify-content: center;
+          height: 420px;
+          /* Without this, the grid cell refuses to shrink below its fixed-
+             width ring/laptop child's intrinsic size (CSS Grid's default
+             min-width:auto), blowing the column out past the viewport on
+             narrow screens instead of letting the oversized visual overflow
+             in place. */
+          min-width: 0;
+        }
+        .hero-canvas-3d { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+        /* Hero visual — stacked isometric 3D blocks (blue/green/orange),
+           floating in place, with a separate rotating ring orbiting them. */
+        .hero-iso-stage { perspective: 1200px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+        .hero-iso-ring {
+          position: absolute; width: 300px; height: 300px; border-radius: 50%;
+          border: 2px dashed rgba(13,109,255,0.4);
+          animation: heroRingSpin 12s linear infinite;
+        }
+        .hero-iso-ring::before, .hero-iso-ring::after {
+          content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%;
+        }
+        .hero-iso-ring::before { top: -5px; left: 50%; margin-left: -5px; background: #0d6dff; box-shadow: 0 0 10px #0d6dff; }
+        .hero-iso-ring::after { bottom: -5px; left: 50%; margin-left: -5px; background: #ff7a1a; box-shadow: 0 0 10px #ff7a1a; }
+        @keyframes heroRingSpin { to { transform: rotate(360deg); } }
+        .hero-iso { position: relative; width: 240px; height: 240px; transform-style: preserve-3d; transform: rotateX(55deg) rotateZ(45deg); animation: heroIsoFloat 6s ease-in-out infinite; }
+        @keyframes heroIsoFloat {
+          0%, 100% { transform: rotateX(55deg) rotateZ(45deg) translateZ(0); }
+          50% { transform: rotateX(55deg) rotateZ(45deg) translateZ(22px); }
+        }
+        .hero-iso-block { position: absolute; inset: 0; border-radius: 18px; box-shadow: 0 24px 48px rgba(13,36,84,0.22); }
+        .hero-iso-b1 { background: linear-gradient(135deg, #0d6dff, #4d9bff); }
+        .hero-iso-b2 { transform: translateZ(50px) scale(0.8); background: linear-gradient(135deg, #00a86b, #3fcf9a); }
+        .hero-iso-b3 { transform: translateZ(100px) scale(0.6); background: linear-gradient(135deg, #ff7a1a, #ffab5c); }
+        @media (max-width: 900px) {
+          .hero-iso { width: 180px; height: 180px; }
+          .hero-iso-ring { width: 230px; height: 230px; }
+        }
+
+        /* HERO PIN — pinned scroll-through, Alpha (current hero) -> Beta,
+           replicating the Digital Presentation Dock's pin+crossfade pattern. */
+        .hero.hero-pin {
+          height: 100vh; padding: 0; display: block;
+          /* Static background shared by both phases — lives on the pin
+             container (not the phases) so it never fades/crossfades; only
+             the phase content transitions on top of it. */
+          background: linear-gradient(160deg, #0a1440 0%, #12266b 45%, #0f3d6e 100%);
+        }
+        .hero-phase { position: absolute; inset: 0; transform-style: preserve-3d; }
+        .hero-phase-alpha { display: flex; align-items: center; }
+        .hero-phase-alpha .wrap, .hero-phase-beta .wrap { width: 100%; }
+        .hero-phase-beta {
+          display: flex; align-items: center;
+        }
+        .hero-phase-beta h2 {
+          font-size: clamp(40px, 6vw, 88px); font-weight: 800; line-height: 1.02;
+          letter-spacing: -0.03em; color: #fff; margin-bottom: 20px;
+        }
+        .hero-phase-beta .accent {
+          background: linear-gradient(90deg, #5eead4, #38bdf8);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .hero-phase-beta p { font-size: 17px; color: rgba(255,255,255,0.72); max-width: 480px; line-height: 1.7; margin-bottom: 26px; }
+        .hero-phase-beta .btn-ghost {
+          background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent;
+        }
+        .hero-phase-beta .btn-ghost:hover { opacity: 0.92; }
+        .hero-micro { font-size: 13px; color: var(--soft); font-weight: 500; margin-bottom: 28px; }
+
+        /* Phase Alpha — "We handle the tech" panel with glowing ring visual */
+        .hero-phase-alpha .wrap { position: relative; z-index: 2; }
+        .hero-phase-alpha h1 { color: #fff; }
+        .hero-phase-alpha .hero-lead { color: rgba(255,255,255,0.72); }
+        .hero-phase-alpha .accent {
+          background: linear-gradient(90deg, #5eead4, #38bdf8);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .hero-phase-alpha .accent-orange { color: var(--orange); }
+        .hero-phase-alpha .btn-hero-primary { color: var(--navy); }
+        .hero-phase-alpha .btn-ghost { background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent; }
+        .hero-phase-alpha .btn-ghost:hover { opacity: 0.92; }
+        .hero-phase-alpha .hero-micro { color: rgba(255,255,255,0.6); }
+        .hero-phase-alpha .trust-row { color: rgba(255,255,255,0.68); }
+        .hero-phase-alpha .trust-row .dot { background: #5eead4; }
+
+        .hero-ring-stage { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .hero-ring {
+          width: 425px; height: 425px;
+          /* flex-shrink:0 — otherwise, on narrow mobile columns, being a
+             flex child of hero-ring-stage lets it get squashed horizontally
+             (distorting the round image into an oval) instead of holding
+             its size and overflowing the column like it's meant to. */
+          flex-shrink: 0;
+          filter: drop-shadow(0 0 50px rgba(56,189,248,0.45));
+          animation: ringSpin 16s linear infinite;
+        }
+        .hero-ring img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        @keyframes ringSpin { to { transform: rotate(360deg); } }
+        .hero-badge {
+          position: absolute; width: 50px; height: 50px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center; color: #5eead4;
+          background: rgba(13,27,76,0.55); border: 1.5px solid rgba(94,234,212,0.55);
+          box-shadow: 0 0 22px rgba(45,212,191,0.35); backdrop-filter: blur(4px);
+          animation: badgeFloat 5s ease-in-out infinite;
+        }
+        .hero-badge svg { width: 20px; height: 20px; }
+        .hb-1 { top: 4%; left: 22%; }
+        .hb-2 { top: 4%; right: 16%; animation-delay: .6s; }
+        .hb-3 { top: 46%; left: 0%; animation-delay: 1.2s; }
+        .hb-4 { top: 46%; right: 0%; animation-delay: 1.8s; }
+        .hb-5 { bottom: 4%; left: 22%; animation-delay: 2.4s; }
+        .hb-6 { bottom: 4%; right: 16%; animation-delay: 3s; }
+        @keyframes badgeFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @media (max-width: 900px) {
+          .hero-ring { width: 460px; height: 460px; }
+          .hero-badge { display: none; }
+          .hero-ring-stage { transform: translateX(33%); }
+        }
+        @media (max-width: 767px) {
+          .hero.hero-pin { height: auto; padding: 56px 0 48px; }
+          .hero-phase { position: relative; }
+          .hero-phase-beta { display: none; }
+        }
+
+        .clay-laptop {
+          position: relative;
+          width: 340px;
+          transform: perspective(1000px) rotateX(12deg) rotateY(-14deg);
+          transform-style: preserve-3d;
+          z-index: 2;
+          animation: clayFloat 6s ease-in-out infinite;
+        }
+        @keyframes clayFloat {
+          0%, 100% { transform: perspective(1000px) rotateX(12deg) rotateY(-14deg) translateY(0px); }
+          50% { transform: perspective(1000px) rotateX(12deg) rotateY(-14deg) translateY(-14px); }
+        }
+        .clay-screen {
+          width: 100%;
+          aspect-ratio: 16 / 10.5;
+          border-radius: 22px;
+          background: linear-gradient(150deg, rgba(255,255,255,0.97), rgba(248,249,252,0.9));
+          border: 1px solid rgba(13,36,84,0.14);
+          box-shadow:
+            0 40px 80px rgba(13,36,84,0.20),
+            0 12px 30px rgba(13,109,255,0.15),
+            0 0 60px rgba(255,255,255,0.12),
+            inset 0 2px 6px rgba(255,255,255,0.95),
+            inset 0 -12px 30px rgba(13,36,84,0.05);
+          backdrop-filter: blur(6px);
+          position: relative;
+          overflow: hidden;
+        }
+        .clay-screen::before {
+          content: '';
+          position: absolute; inset: 14px;
+          border-radius: 14px;
+          background: linear-gradient(160deg, rgba(13,109,255,0.10), rgba(13,36,84,0.03));
+          border: 1px solid rgba(13,36,84,0.10);
+        }
+        .clay-screen::after {
+          content: '';
+          position: absolute; top: 30px; left: 26px; right: 26px; height: 10px;
+          border-radius: 6px;
+          background: rgba(255,138,46,0.8);
+        }
+
+        /* CRM inscriptions inside the laptop screen — abstract, on-brand
+           mockup content (not real data), sitting above the ::before/::after
+           decorative gradient + title bar. */
+        .clay-crm { position: absolute; inset: 30px 22px 22px; z-index: 1; display: flex; gap: 14px; }
+        .clay-crm-nav { width: 56px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 18px; }
+        .clay-crm-nav-item {
+          display: flex; align-items: center; gap: 6px; font-size: 8px; font-weight: 700;
+          letter-spacing: 0.02em; color: rgba(13,36,84,0.55); white-space: nowrap;
+        }
+        .clay-crm-nav-item.active { color: #0d2454; }
+        .clay-crm-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(13,36,84,0.25); flex-shrink: 0; }
+        .clay-crm-nav-item.active .clay-crm-nav-dot { background: #0d6dff; box-shadow: 0 0 0 3px rgba(13,109,255,0.18); }
+        .clay-crm-main { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 16px; min-width: 0; }
+        .clay-crm-label { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(13,36,84,0.4); margin-bottom: 2px; }
+        .clay-crm-row {
+          display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 8px;
+          background: rgba(255,255,255,0.6); border: 1px solid rgba(13,36,84,0.08);
+        }
+        .clay-crm-avatar { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+        .clay-crm-row-text { flex: 1; min-width: 0; }
+        .clay-crm-row-name { font-size: 9px; font-weight: 700; color: #0d2454; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .clay-crm-row-sub { font-size: 7px; color: rgba(13,36,84,0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .clay-crm-chip {
+          font-size: 7px; font-weight: 800; letter-spacing: 0.02em; padding: 2px 6px; border-radius: 999px;
+          flex-shrink: 0;
+        }
+        .clay-crm-chip.won { color: #0d9c6a; background: rgba(13,156,106,0.14); }
+        .clay-crm-chip.pending { color: #ff7a1a; background: rgba(255,122,26,0.14); }
+        .clay-crm-chip.new { color: #0d6dff; background: rgba(13,109,255,0.14); }
+        .clay-crm-chart {
+          margin-top: 4px; height: 30px; border-radius: 8px; padding: 6px 8px;
+          background: rgba(255,255,255,0.5); border: 1px solid rgba(13,36,84,0.08);
+        }
+        @media (max-width: 900px) {
+          .clay-crm-row-sub, .clay-crm-nav-item span { display: none; }
+        }
+
+        /* Small copy of the laptop mockup for the CRM section's narrow CTA
+           column — the CSS zoom property shrinks the whole box (including
+           the absolute-px CRM inscription text) proportionally, so nothing
+           needs re-tuning at a second scale. */
+        .crm-mini-laptop {
+          zoom: 0.84;
+          margin-top: 18px;
+          margin-right: 28px;
+          pointer-events: none;
+        }
+        @media (max-width: 680px) { .crm-mini-laptop { display: none; } }
+        .clay-base {
+          width: 112%;
+          margin-left: -6%;
+          height: 20px;
+          border-radius: 0 0 16px 16px;
+          background: linear-gradient(180deg, rgba(244,245,247,0.9), rgba(226,229,235,0.9));
+          border: 1px solid rgba(13,36,84,0.14);
+          border-top: none;
+          box-shadow: 0 24px 40px rgba(13,36,84,0.18);
+          transform: translateZ(-6px);
+        }
+        @media (max-width: 900px) {
+          .hero-visual { height: 300px; margin-top: 24px; }
+          .clay-laptop { width: 260px; }
+        }
+        @media (max-width: 767px) {
+          /* JS drives the tilt below 768px, so disable the CSS float keyframe to avoid fighting it */
+          .clay-laptop { animation: none; }
+        }
+        /* Alpha hero's trust-row — desktop keeps it in the text column;
+           mobile shows a second copy under the image instead (and hides
+           the text-column one) since the columns don't stack on mobile. */
+        .trust-row-mobile { display: none; }
+        @media (max-width: 767px) {
+          .hero-phase-alpha .hero-visual {
+            flex-direction: column; height: auto; margin-top: 0; gap: 16px; padding-bottom: 8px;
+          }
+          .trust-row-desktop { display: none; }
+          .trust-row-mobile { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        }
         .trust-row span { display: flex; align-items: center; gap: 6px; }
         .dot { width: 5px; height: 5px; border-radius: 50%; background: #00e5aa; flex-shrink: 0; }
         @media (max-width: 600px) {
@@ -367,15 +649,30 @@ export default function HomePage() {
         .section-head p { font-size: 15px; color: var(--soft); line-height: 1.65; max-width: 540px; }
         .section-head.center p { margin: 0 auto; }
 
-        /* PACKAGES */
+        /* PACKAGES — horizontal-scrolling row. Cards are ~25% wider than
+           the old fixed-3-column layout (330px -> 415px) and no longer
+           reflow into 2-up/1-up at narrower widths; they just keep
+           scrolling sideways at any viewport size. */
         .pkg-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          column-gap: 14px;
-          row-gap: 14px;
+          display: flex;
+          gap: 60px;
+          overflow-x: auto;
+          scroll-snap-type: x proximity;
+          /* Extra padding/negative-margin room so the hover glow — which
+             bleeds outside the card's outline ring — isn't clipped by this
+             scroll container's overflow, while keeping the original
+             surrounding spacing. Desktop only (see below) — on touch
+             devices there's no hover, and this much horizontal bleed room
+             was shifting the scroll-snap start position, clipping the
+             first tile off-screen. */
+          padding: 48px 46px 58px;
+          margin: -48px -46px -58px;
+          -webkit-overflow-scrolling: touch;
         }
-        @media (max-width: 960px) { .pkg-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; } }
-        @media (max-width: 540px)  { .pkg-grid { grid-template-columns: 1fr; gap: 24px; } }
+        @media (max-width: 900px) {
+          .pkg-grid { padding: 12px 10px 22px; margin: -12px -10px -22px; }
+        }
+        @media (max-width: 540px) { .pkg-grid { gap: 44px; } }
 
         .pkg-card {
           background: var(--card);
@@ -384,14 +681,33 @@ export default function HomePage() {
           padding: 22px 20px;
           display: flex; flex-direction: column;
           position: relative;
-          transition: box-shadow .2s, transform .2s;
+          transition: box-shadow .2s, transform .2s, outline-color .2s;
           border-top: 3px solid var(--border2);
+          flex: 0 0 415px;
+          scroll-snap-align: start;
+          /* Second border line — a thicker offset outline, one color per
+             tile. outline-offset keeps it as a visibly separate ring
+             rather than doubling up flush against the card's own border;
+             .pkg-grid's larger gap + padding above gives it room to
+             breathe without touching neighboring cards. */
+          outline: 3px solid var(--pkg-outline, var(--border2));
+          outline-offset: 6px;
         }
-        .pkg-card:hover { box-shadow: 0 12px 36px rgba(31,60,136,.14); transform: translateY(-2px); }
+        @media (max-width: 540px) { .pkg-card { flex-basis: 305px; } }
+        .pkg-card:hover {
+          /* Glow spread (20px) starts well past the outline ring's outer
+             edge (outline-offset 6 + outline width 3 = 9px), and blur (14px)
+             is kept small enough that even its inward half-reach (~7px)
+             stays outside that 9px boundary — so the glow never bleeds back
+             across the outline itself. */
+          box-shadow: 0 12px 36px rgba(31,60,136,.14), 0 0 14px 20px var(--pkg-outline, var(--border2));
+          transform: translateY(-2px);
+        }
+        .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #0d6dff; }
+        .pkg-grid .pkg-card:nth-of-type(2) { --pkg-outline: #00a86b; }
+        .pkg-grid .pkg-card:nth-of-type(3) { --pkg-outline: #ff7a1a; }
         .pkg-card.pop {
-          border-color: var(--indigo-d);
-          border-top: 3px solid var(--indigo-d);
-          box-shadow: 0 0 0 1px var(--indigo-d), 0 8px 32px rgba(42,82,160,.18);
+          border-top: 3px solid var(--border2);
         }
 
         /* Online Launch — full width row below the 3 monthly tiers (desktop only) */
@@ -482,8 +798,12 @@ export default function HomePage() {
         .crm-price-line { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 20px; }
         .crm-price-line span { font-size: 16px; font-weight: 700; color: #7dd3f7; }
         .crm-features { list-style: none; display: flex; flex-direction: column; gap: 0; }
-        .crm-features li { display: flex; gap: 8px; font-size: 15px; color: rgba(255,255,255,0.65); padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.1); align-items: flex-start; }
-        .crm-features li:first-child { border-top: none; }
+        .crm-features li { display: flex; gap: 8px; font-size: 15px; color: rgba(255,255,255,0.65); padding: 6px 0; position: relative; align-items: flex-start; }
+        .crm-features li::before {
+          content: ''; position: absolute; top: 0; left: 0; width: 65%; height: 1px;
+          background: rgba(255,255,255,0.1);
+        }
+        .crm-features li:first-child::before { display: none; }
         .crm-features .chk { background: rgba(0,229,170,0.2); color: #00e5aa; }
         .crm-cta-col { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 4px; }
         .crm-cta-col .btn { white-space: nowrap; }
@@ -901,6 +1221,31 @@ export default function HomePage() {
           border-radius: 16px; padding: 28px;
         }
 
+        /* TESTIMONIALS GRID — Huly-style dense bordered grid, thin navy lines */
+        .testimonial-frame {
+          border: 1px solid var(--navy-line);
+          border-radius: 0;
+          background: var(--offwhite);
+        }
+        .testimonial-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .testimonial-cell {
+          border-right: 1px solid var(--navy-line);
+          border-top: 1px solid var(--navy-line);
+          padding: 32px;
+          background: var(--offwhite-2);
+        }
+        .testimonial-grid .testimonial-cell:nth-child(3n) { border-right: none; }
+        .testimonial-grid .testimonial-cell:nth-child(-n+3) { border-top: none; }
+        @media (max-width: 900px) {
+          .testimonial-grid { grid-template-columns: 1fr; }
+          .testimonial-grid .testimonial-cell { border-right: none; border-top: 1px solid var(--navy-line); }
+          .testimonial-grid .testimonial-cell:first-child { border-top: none; }
+        }
+
+
         /* FOOTER */
         footer {
           position: relative;
@@ -1000,34 +1345,63 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* HERO */}
-      <section className="hero">
-        {/* Holographic Orb */}
-        <div className="hero-orb">
-          <div className="hero-orb-nodes">
-            <div className="hero-orb-node-pos"><div className="hero-orb-node"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 10C5.12 10 3.94 10.88 3.54 12.08C2.58 12.51 1.86 13.46 1.86 14.59C1.86 16.23 3.2 17.55 4.87 17.55H19C20.93 17.55 22.5 16.05 22.5 14.18C22.5 12.46 21.32 11.04 19.78 10.83C19.32 8.77 17.56 7.23 15.4 7.23C13.95 7.23 12.66 8.01 11.95 9.14C11.4 8.98 10.82 8.9 10.23 8.9C8.45 8.9 6.85 9.64 5.78 10.8C6.06 10.35 6.5 10 6.5 10Z"/></svg></div></div>
-            <div className="hero-orb-node-pos"><div className="hero-orb-node"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L2 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-9-5z"/></svg></div></div>
-            <div className="hero-orb-node-pos"><div className="hero-orb-node"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5s-5 2.24-5 5v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div></div>
-            <div className="hero-orb-node-pos"><div className="hero-orb-node"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div></div>
-            <div className="hero-orb-node-pos"><div className="hero-orb-node"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6H4C2.9 6 2 6.9 2 8V16C2 17.1 2.9 18 4 18H20C21.1 18 22 17.1 22 16V8C22 6.9 21.1 6 20 6M4 8H20V10H4V8M4 16V12H20V16H4Z"/></svg></div></div>
-            <div className="hero-orb-node-pos"><div className="hero-orb-node"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div></div>
-          </div>
-          <div className="hero-orb-icon">
-            <img src="/ai-circle-gate-transparent.png" alt="AI Portal" className="portal-spin" style={{ width: '480px', height: '480px', maxWidth: 'none', objectFit: 'contain' }} />
+      {/* HERO — pinned scroll-through, Alpha ("We handle the tech") -> Beta ("Let's get digital") */}
+      <section ref={heroPinRef} className="hero hero-pin">
+        <div ref={heroAlphaRef} className="hero-phase hero-phase-alpha">
+          <div className="wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '32px', alignItems: 'center' }}>
+            <div>
+              <h1>We handle the <span className="accent-orange">tech.</span><br/>You run the <span className="accent">business.</span></h1>
+              <p className="hero-lead">We build your website, handle setup with you personally, and manage everything ongoing. Real person from day one — monthly reports explained</p>
+              <div className="hero-actions">
+                <Link href="#packages-section" className="btn btn-hero-primary">See packages</Link>
+                <button onClick={() => setShowContactModal(true)} className="btn btn-ghost">Get a free quote</button>
+              </div>
+              <p className="hero-micro">Talk to Felix or Thomas directly. No sales team.</p>
+              <div className="trust-row trust-row-desktop">
+                <span><span className="dot" />No long-term contracts</span>
+                <span><span className="dot" />Switch tiers anytime</span>
+                <span><span className="dot" />Real humans, real support</span>
+              </div>
+            </div>
+            <div className="hero-visual">
+              <div className="hero-ring-stage">
+                <div className="hero-ring"><img src="/ai-circle-gate-transparent.png" alt="" /></div>
+                <div className="hero-badge hb-1"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M3 9h18" stroke="currentColor" strokeWidth="1.6"/></svg></div>
+                <div className="hero-badge hb-2"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.6"/><path d="M5 20c1.5-4 5-5.5 7-5.5s5.5 1.5 7 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></div>
+                <div className="hero-badge hb-3"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg></div>
+                <div className="hero-badge hb-4"><svg viewBox="0 0 24 24" fill="none"><path d="M7 18a4 4 0 0 1-.5-7.97A5 5 0 0 1 16.9 9.1 4.5 4.5 0 0 1 16.5 18H7Z" stroke="currentColor" strokeWidth="1.6"/></svg></div>
+                <div className="hero-badge hb-5"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.6"/></svg></div>
+                <div className="hero-badge hb-6"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg></div>
+              </div>
+              <div className="trust-row trust-row-mobile">
+                <span><span className="dot" />No long-term contracts</span>
+                <span><span className="dot" />Switch tiers anytime</span>
+                <span><span className="dot" />Real humans, real support</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="wrap">
-          <h1>We handle the tech.<br/>You run the <em>business.</em></h1>
-          <p className="hero-lead">We build your website, handle setup with you personally, and manage everything ongoing. Real person from day one — monthly reports explained</p>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '28px', alignItems: 'center' }}>
-            <Link href="#packages-section" className="btn btn-primary">See packages</Link>
-            <button onClick={() => setShowContactModal(true)} className="btn btn-ghost">Get a free quote</button>
-          </div>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: 500, marginBottom: '28px', marginTop: '-20px' }}>Talk to Felix or Thomas directly. No sales team.</p>
-          <div className="trust-row">
-            <span><span className="dot" />No long-term contracts</span>
-            <span><span className="dot" />Switch tiers anytime</span>
-            <span><span className="dot" />Real humans, real support</span>
+        <div ref={heroBetaRef} className="hero-phase hero-phase-beta" style={{ opacity: 0 }}>
+          <div className="wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '32px', alignItems: 'center' }}>
+            <div>
+              <span className="hero-eyebrow">Our new digital marketing packages are here</span>
+              <h2>Let&apos;s get<br/><span className="accent">digital</span></h2>
+              <p>From first click to first customer — websites, SEO, and marketing that actually move the needle for local businesses.</p>
+              <div className="hero-actions">
+                <Link href="#packages-section" className="btn btn-hero-primary">Learn more</Link>
+                <button onClick={() => setShowContactModal(true)} className="btn btn-ghost">Get a free quote</button>
+              </div>
+            </div>
+            <div className="hero-visual">
+              <div ref={mobileTiltRef} className="hero-iso-stage">
+                <div className="hero-iso-ring" />
+                <div className="hero-iso">
+                  <div className="hero-iso-block hero-iso-b1" />
+                  <div className="hero-iso-block hero-iso-b2" />
+                  <div className="hero-iso-block hero-iso-b3" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1037,7 +1411,7 @@ export default function HomePage() {
         <div className="wrap">
           <div className="benefit-strip-inner">
             <div className="benefit-item">
-              <div className="benefit-icon" style={{ background: 'linear-gradient(135deg, #2a52a0, #1a3070)' }}>
+              <div className="benefit-icon" style={{ background: 'linear-gradient(135deg, #ff9a4d, #ff7a1a)' }}>
                 <svg width="20" height="20" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#fff" strokeWidth="1.5"/><path d="M6 9l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <div className="benefit-text">
@@ -1241,6 +1615,9 @@ export default function HomePage() {
             <div className="crm-cta-col">
               <button onClick={() => setShowContactModal(true)} className="btn btn-primary">Get a Free Consultation</button>
               <p style={{ fontSize: 13, color: 'var(--soft)', textAlign: 'center', maxWidth: 140, lineHeight: 1.4 }}>Included free with monthly plans</p>
+              <div className="crm-mini-laptop">
+                <ClayLaptop />
+              </div>
             </div>
           </div>
         </div>
@@ -1282,79 +1659,81 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS — 10.4: structure ready; existing testimonials shown below */}
-      <section style={{ background: '#fff', borderTop: '1px solid rgba(31,60,136,.08)', padding: '56px 0' }}>
+      {/* TESTIMONIALS — real QCypher client quotes, restyled into Huly-style bordered grid */}
+      <section style={{ background: 'var(--offwhite)', borderTop: `1px solid var(--navy-line)`, padding: '72px 0' }}>
         <div className="wrap">
           <div className="section-head center">
-            <span className="eyebrow">What Our Clients Say</span>
-            <h2>Real results from real businesses</h2>
+            <span className="eyebrow" style={{ color: 'var(--orange)' }}>What Our Clients Say</span>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', color: 'var(--navy)', letterSpacing: '-0.02em' }}>Real results from real businesses</h2>
             <p>We work with local business owners who want straightforward tech — not a sales pitch.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '40px' }}>
+          <div className="testimonial-frame" style={{ marginTop: '40px' }}>
+            <div className="testimonial-grid">
 
-            <div className="tcard">
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-                {[0,1,2,3,4].map(i => (
-                  <svg key={i} width="16" height="16" viewBox="0 0 16 16" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 1l1.8 3.6 4 .6-2.9 2.8.7 4L8 10l-3.6 2 .7-4L2.2 5.2l4-.6z"/>
-                  </svg>
-                ))}
-              </div>
-              <p style={{ fontSize: '15px', color: '#171a2b', lineHeight: 1.7, marginBottom: '20px' }}>
-                &ldquo;Before QCypher, I was keeping track of everything in my head and a bunch of sticky notes.
-                Now I actually know which customers I need to follow up with. Got 8 new bookings in 30 days. It&apos;s honestly one of the best things I&apos;ve done for my business.&rdquo;
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0, background: 'rgba(42,82,160,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: '#2a52a0' }}>MR</div>
-                <div>
-                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#171a2b' }}>Marcus R.</p>
-                  <p style={{ fontSize: '14px', color: '#64748b', marginTop: '1px' }}>HVAC & Plumbing, Richmond VA</p>
+              <div className="testimonial-cell">
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
+                  {[0,1,2,3,4].map(i => (
+                    <svg key={i} width="16" height="16" viewBox="0 0 16 16" fill="var(--orange)" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 1l1.8 3.6 4 .6-2.9 2.8.7 4L8 10l-3.6 2 .7-4L2.2 5.2l4-.6z"/>
+                    </svg>
+                  ))}
+                </div>
+                <p style={{ fontSize: '15px', color: 'var(--navy)', lineHeight: 1.7, marginBottom: '20px' }}>
+                  &ldquo;Before QCypher, I was keeping track of everything in my head and a bunch of sticky notes.
+                  Now I actually know which customers I need to follow up with. Got 8 new bookings in 30 days. It&apos;s honestly one of the best things I&apos;ve done for my business.&rdquo;
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0, background: 'rgba(13,36,84,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: 'var(--navy)' }}>MR</div>
+                  <div>
+                    <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--navy)' }}>Marcus R.</p>
+                    <p style={{ fontSize: '14px', color: 'var(--soft)', marginTop: '1px' }}>HVAC & Plumbing, Richmond VA</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="tcard">
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-                {[0,1,2,3,4].map(i => (
-                  <svg key={i} width="16" height="16" viewBox="0 0 16 16" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 1l1.8 3.6 4 .6-2.9 2.8.7 4L8 10l-3.6 2 .7-4L2.2 5.2l4-.6z"/>
-                  </svg>
-                ))}
-              </div>
-              <p style={{ fontSize: '15px', color: '#171a2b', lineHeight: 1.7, marginBottom: '20px' }}>
-                &ldquo;They set up my website and Google listing in the same week. My phone started ringing
-                more within the first month. Thomas walked me through everything — no tech background needed.&rdquo;
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0, background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: '#059669' }}>DW</div>
-                <div>
-                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#171a2b' }}>Denise W.</p>
-                  <p style={{ fontSize: '14px', color: '#64748b', marginTop: '1px' }}>Mobile Cleaning Service, Annapolis MD</p>
+              <div className="testimonial-cell">
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
+                  {[0,1,2,3,4].map(i => (
+                    <svg key={i} width="16" height="16" viewBox="0 0 16 16" fill="var(--orange)" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 1l1.8 3.6 4 .6-2.9 2.8.7 4L8 10l-3.6 2 .7-4L2.2 5.2l4-.6z"/>
+                    </svg>
+                  ))}
+                </div>
+                <p style={{ fontSize: '15px', color: 'var(--navy)', lineHeight: 1.7, marginBottom: '20px' }}>
+                  &ldquo;They set up my website and Google listing in the same week. My phone started ringing
+                  more within the first month. Thomas walked me through everything — no tech background needed.&rdquo;
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0, background: 'rgba(13,36,84,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: 'var(--navy)' }}>DW</div>
+                  <div>
+                    <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--navy)' }}>Denise W.</p>
+                    <p style={{ fontSize: '14px', color: 'var(--soft)', marginTop: '1px' }}>Mobile Cleaning Service, Annapolis MD</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="tcard">
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-                {[0,1,2,3,4].map(i => (
-                  <svg key={i} width="16" height="16" viewBox="0 0 16 16" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 1l1.8 3.6 4 .6-2.9 2.8.7 4L8 10l-3.6 2 .7-4L2.2 5.2l4-.6z"/>
-                  </svg>
-                ))}
-              </div>
-              <p style={{ fontSize: '15px', color: '#171a2b', lineHeight: 1.7, marginBottom: '20px' }}>
-                &ldquo;I&apos;ve worked with a few different tech companies and most of them just hand you a login and disappear. QCypher actually shows up. Felix walked me through everything, answered my questions the same day, and the tools they built actually work the way they say they do. Couldn&apos;t ask for more.&rdquo;
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0, background: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: '#d97706' }}>JT</div>
-                <div>
-                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#171a2b' }}>James T.</p>
-                  <p style={{ fontSize: '14px', color: '#64748b', marginTop: '1px' }}>Roofing Contractor, Alexandria VA</p>
+              <div className="testimonial-cell">
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
+                  {[0,1,2,3,4].map(i => (
+                    <svg key={i} width="16" height="16" viewBox="0 0 16 16" fill="var(--orange)" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 1l1.8 3.6 4 .6-2.9 2.8.7 4L8 10l-3.6 2 .7-4L2.2 5.2l4-.6z"/>
+                    </svg>
+                  ))}
+                </div>
+                <p style={{ fontSize: '15px', color: 'var(--navy)', lineHeight: 1.7, marginBottom: '20px' }}>
+                  &ldquo;I&apos;ve worked with a few different tech companies and most of them just hand you a login and disappear. QCypher actually shows up. Felix walked me through everything, answered my questions the same day, and the tools they built actually work the way they say they do. Couldn&apos;t ask for more.&rdquo;
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0, background: 'rgba(13,36,84,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: 'var(--navy)' }}>JT</div>
+                  <div>
+                    <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--navy)' }}>James T.</p>
+                    <p style={{ fontSize: '14px', color: 'var(--soft)', marginTop: '1px' }}>Roofing Contractor, Alexandria VA</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
+            </div>
           </div>
         </div>
       </section>
