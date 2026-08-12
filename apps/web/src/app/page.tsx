@@ -509,6 +509,10 @@ export default function HomePage() {
           .hero.hero-pin { height: auto; padding: 56px 0 48px; }
           .hero-phase { position: relative; }
           .hero-phase-beta { display: none; }
+          /* The visual column was vertically centering against the much
+             taller text column, pushing the ring well below the top of the
+             headline. Top-align it instead so it sits level with the text. */
+          .hero-alpha-wrap { align-items: start !important; }
         }
 
         .clay-laptop {
@@ -601,6 +605,15 @@ export default function HomePage() {
           pointer-events: none;
         }
         @media (max-width: 680px) { .crm-mini-laptop { display: none; } }
+        /* Mobile-only copy of the laptop, shown above the checklist instead
+           of in the (hidden-on-mobile) CTA column. */
+        .crm-mini-laptop-mobile { display: none; }
+        @media (max-width: 680px) {
+          .crm-mini-laptop-mobile {
+            display: flex; justify-content: center;
+            margin: 0 0 24px; zoom: 0.72;
+          }
+        }
         .clay-base {
           width: 112%;
           margin-left: -6%;
@@ -694,18 +707,28 @@ export default function HomePage() {
           outline-offset: 6px;
         }
         @media (max-width: 540px) { .pkg-card { flex-basis: 305px; } }
-        .pkg-card:hover {
-          /* Glow spread (20px) starts well past the outline ring's outer
-             edge (outline-offset 6 + outline width 3 = 9px), and blur (14px)
-             is kept small enough that even its inward half-reach (~7px)
-             stays outside that 9px boundary — so the glow never bleeds back
-             across the outline itself. */
-          box-shadow: 0 12px 36px rgba(31,60,136,.14), 0 0 14px 20px var(--pkg-outline, var(--border2));
-          transform: translateY(-2px);
+        /* Ambient hover glow as a separate blurred layer (not box-shadow) —
+           box-shadow's rounding is tied to the card's own 18px radius, so a
+           large spread reads almost square at the corners. This pseudo has
+           its own bigger radius sized to the glow's footprint, so the glow
+           itself reads as a soft rounded shape matching the tile. */
+        .pkg-card::after {
+          content: '';
+          position: absolute; inset: -28px;
+          border-radius: 40px;
+          background: var(--pkg-glow, transparent);
+          filter: blur(20px);
+          opacity: 0; transition: opacity .25s;
+          pointer-events: none; z-index: -1;
         }
-        .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #0d6dff; }
-        .pkg-grid .pkg-card:nth-of-type(2) { --pkg-outline: #00a86b; }
-        .pkg-grid .pkg-card:nth-of-type(3) { --pkg-outline: #ff7a1a; }
+        .pkg-card:hover::after { opacity: 1; }
+        .pkg-card:hover {
+          box-shadow: 0 20px 44px rgba(15,23,42,.12);
+          transform: translateY(-3px);
+        }
+        .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #0d6dff; --pkg-glow: rgba(13,109,255,0.22); }
+        .pkg-grid .pkg-card:nth-of-type(2) { --pkg-outline: #00a86b; --pkg-glow: rgba(0,168,107,0.22); }
+        .pkg-grid .pkg-card:nth-of-type(3) { --pkg-outline: #ff7a1a; --pkg-glow: rgba(255,122,26,0.22); }
         .pkg-card.pop {
           border-top: 3px solid var(--border2);
         }
@@ -1348,7 +1371,7 @@ export default function HomePage() {
       {/* HERO — pinned scroll-through, Alpha ("We handle the tech") -> Beta ("Let's get digital") */}
       <section ref={heroPinRef} className="hero hero-pin">
         <div ref={heroAlphaRef} className="hero-phase hero-phase-alpha">
-          <div className="wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '32px', alignItems: 'center' }}>
+          <div className="wrap hero-alpha-wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '32px', alignItems: 'center' }}>
             <div>
               <h1>We handle the <span className="accent-orange">tech.</span><br/>You run the <span className="accent">business.</span></h1>
               <p className="hero-lead">We build your website, handle setup with you personally, and manage everything ongoing. Real person from day one — monthly reports explained</p>
@@ -1602,6 +1625,9 @@ export default function HomePage() {
           <div className="crm-card">
             <div>
               <p className="crm-lead">Built In-House CRM — included free with every monthly plan. We'll walk you through it, and questions get answered by a real person.</p>
+              <div className="crm-mini-laptop crm-mini-laptop-mobile">
+                <ClayLaptop />
+              </div>
               <ul className="crm-features">
                 <li><span className="chk">✓</span>Your full customer contact list — always organized</li>
                 <li><span className="chk">✓</span>Notes and call history on every customer</li>
