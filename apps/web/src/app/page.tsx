@@ -725,8 +725,16 @@ export default function HomePage() {
           border-top: 3px solid var(--border2);
           /* Fluid width — matches the pill/heading above it instead of
              forcing horizontal scroll on narrower viewports, while still
-             capping at 415px on desktop. */
-          flex: 0 0 clamp(260px, calc(100vw - 40px), 415px);
+             capping at 415px on desktop. flex-shrink stays 0 (not 0 1)
+             deliberately: with shrink enabled, all 3 cards in the row would
+             shrink together to co-exist in one screen width, breaking the
+             "one card ~full width, swipe for the next" mobile layout — the
+             sizing has to come entirely from the basis instead. Subtracts
+             58px (.wrap's 40px side padding + the outline ring's 9px-per-
+             side bleed from outline-offset 6 + outline width 3), so the
+             ring's outer edge — not just the card's own border — lines up
+             with the pill/heading above. */
+          flex: 0 0 clamp(260px, calc(100vw - 58px), 415px);
           scroll-snap-align: start;
           /* Second border line — a thicker offset outline, one color per
              tile. outline-offset keeps it as a visibly separate ring
