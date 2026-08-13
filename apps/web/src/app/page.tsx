@@ -678,7 +678,8 @@ export default function HomePage() {
              scroll on desktop: 3*415 + 2*36 = 1317, with room to spare. */
           gap: 36px;
           overflow-x: auto;
-          scroll-snap-type: x proximity;
+          scroll-snap-type: x mandatory;
+          scroll-behavior: smooth;
           /* Extra padding/negative-margin room so the hover glow — which
              bleeds outside the card's outline ring — isn't clipped by this
              scroll container's overflow, while keeping the original
@@ -739,6 +740,7 @@ export default function HomePage() {
              centered instead of leaving a big empty gap on the right. */
           flex: 0 0 clamp(260px, calc(100vw - 62px), 415px);
           scroll-snap-align: start;
+          scroll-snap-stop: always;
           /* Second border line — a thicker offset outline, one color per
              tile. outline-offset keeps it as a visibly separate ring
              rather than doubling up flush against the card's own border;
@@ -759,7 +761,7 @@ export default function HomePage() {
              but the tile itself never gets tinted. */
           box-shadow:
             0 20px 44px rgba(15,23,42,.12),
-            0 0 14px 16px var(--pkg-glow, transparent);
+            0 0 8px 8px var(--pkg-glow, transparent);
           transform: translateY(-3px);
         }
         .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #0d6dff; --pkg-glow: rgba(13,109,255,0.22); }
