@@ -672,7 +672,11 @@ export default function HomePage() {
            scrolling sideways at any viewport size. */
         .pkg-grid {
           display: flex;
-          gap: 60px;
+          /* 3 cards at 415px + 2 gaps must fit inside .wrap's content width
+             (1380 max-width - 40 padding = 1340px) so the row aligns with
+             the "Custom packages..." banner above instead of needing to
+             scroll on desktop: 3*415 + 2*36 = 1317, with room to spare. */
+          gap: 36px;
           overflow-x: auto;
           scroll-snap-type: x proximity;
           /* Extra padding/negative-margin room so the hover glow — which
@@ -685,9 +689,23 @@ export default function HomePage() {
           padding: 48px 46px 58px;
           margin: -48px -46px -58px;
           -webkit-overflow-scrolling: touch;
+          /* Modern thin scrollbar (Firefox). */
+          scrollbar-width: thin;
+          scrollbar-color: var(--border2) transparent;
         }
+        /* Modern thin, rounded scrollbar (WebKit/Blink). */
+        .pkg-grid::-webkit-scrollbar { height: 6px; }
+        .pkg-grid::-webkit-scrollbar-track { background: transparent; }
+        .pkg-grid::-webkit-scrollbar-thumb {
+          background: var(--border2); border-radius: 999px;
+        }
+        .pkg-grid::-webkit-scrollbar-thumb:hover { background: var(--indigo-d); }
         @media (max-width: 900px) {
-          .pkg-grid { padding: 12px 10px 22px; margin: -12px -10px -22px; }
+          /* No horizontal padding here — touch devices never hover, so
+             there's no glow to leave room for, and any horizontal padding
+             shows up as a visible gap before the first card at the
+             default (scrollLeft: 0) scroll position. */
+          .pkg-grid { padding: 12px 0 22px; margin: -12px 0 -22px; }
         }
         @media (max-width: 540px) { .pkg-grid { gap: 44px; } }
 
@@ -698,9 +716,17 @@ export default function HomePage() {
           padding: 22px 20px;
           display: flex; flex-direction: column;
           position: relative;
+          /* Establish our own stacking context so ::after's z-index:-1 is
+             guaranteed to resolve behind THIS element's own background —
+             without it, on some viewports the glow was rendering as a
+             wash across the whole card instead of staying behind it. */
+          z-index: 0;
           transition: box-shadow .2s, transform .2s, outline-color .2s;
           border-top: 3px solid var(--border2);
-          flex: 0 0 415px;
+          /* Fluid width — matches the pill/heading above it instead of
+             forcing horizontal scroll on narrower viewports, while still
+             capping at 415px on desktop. */
+          flex: 0 0 clamp(260px, calc(100vw - 40px), 415px);
           scroll-snap-align: start;
           /* Second border line — a thicker offset outline, one color per
              tile. outline-offset keeps it as a visibly separate ring
@@ -710,24 +736,19 @@ export default function HomePage() {
           outline: 3px solid var(--pkg-outline, var(--border2));
           outline-offset: 6px;
         }
-        @media (max-width: 540px) { .pkg-card { flex-basis: 305px; } }
-        /* Ambient hover glow as a separate blurred layer (not box-shadow) —
-           box-shadow's rounding is tied to the card's own 18px radius, so a
-           large spread reads almost square at the corners. This pseudo has
-           its own bigger radius sized to the glow's footprint, so the glow
-           itself reads as a soft rounded shape matching the tile. */
-        .pkg-card::after {
-          content: '';
-          position: absolute; inset: -28px;
-          border-radius: 40px;
-          background: var(--pkg-glow, transparent);
-          filter: blur(20px);
-          opacity: 0; transition: opacity .25s;
-          pointer-events: none; z-index: -1;
-        }
-        .pkg-card:hover::after { opacity: 1; }
         .pkg-card:hover {
-          box-shadow: 0 20px 44px rgba(15,23,42,.12);
+          /* Ambient glow via box-shadow — a filter:blur() pseudo-element
+             with negative z-index looked more evenly rounded, but is a
+             known browser compositing gotcha: the blurred layer can end up
+             painting OVER its sibling's opaque background instead of
+             behind it, washing the whole card's interior with color. A
+             plain box-shadow always respects the card's own border-radius
+             and paints correctly behind it, with no such risk — the
+             corners read a little less rounded at this blur/spread ratio,
+             but the tile itself never gets tinted. */
+          box-shadow:
+            0 20px 44px rgba(15,23,42,.12),
+            0 0 18px 22px var(--pkg-glow, transparent);
           transform: translateY(-3px);
         }
         .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #0d6dff; --pkg-glow: rgba(13,109,255,0.22); }
