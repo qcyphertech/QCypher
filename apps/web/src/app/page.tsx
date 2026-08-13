@@ -678,8 +678,7 @@ export default function HomePage() {
              scroll on desktop: 3*415 + 2*36 = 1317, with room to spare. */
           gap: 36px;
           overflow-x: auto;
-          scroll-snap-type: x mandatory;
-          scroll-behavior: smooth;
+          scroll-snap-type: x proximity;
           /* Extra padding/negative-margin room so the hover glow — which
              bleeds outside the card's outline ring — isn't clipped by this
              scroll container's overflow, while keeping the original
@@ -740,7 +739,6 @@ export default function HomePage() {
              centered instead of leaving a big empty gap on the right. */
           flex: 0 0 clamp(260px, calc(100vw - 62px), 415px);
           scroll-snap-align: start;
-          scroll-snap-stop: always;
           /* Second border line — a thicker offset outline, one color per
              tile. outline-offset keeps it as a visibly separate ring
              rather than doubling up flush against the card's own border;
