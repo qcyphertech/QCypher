@@ -701,10 +701,11 @@ export default function HomePage() {
         }
         .pkg-grid::-webkit-scrollbar-thumb:hover { background: var(--indigo-d); }
         @media (max-width: 900px) {
-          /* No horizontal padding here — touch devices never hover, so
-             there's no glow to leave room for, and any horizontal padding
-             shows up as a visible gap before the first card at the
-             default (scrollLeft: 0) scroll position. */
+          /* No horizontal padding — scroll-snap-align:start on the first
+             card was auto-scrolling to cancel out any horizontal padding
+             here entirely (the browser treats the padded content edge as
+             the natural snap rest position), so it never actually moved
+             anything on screen. The real fix is on .pkg-card below. */
           .pkg-grid { padding: 12px 0 22px; margin: -12px 0 -22px; }
         }
         @media (max-width: 540px) { .pkg-grid { gap: 44px; } }
@@ -730,11 +731,13 @@ export default function HomePage() {
              shrink together to co-exist in one screen width, breaking the
              "one card ~full width, swipe for the next" mobile layout — the
              sizing has to come entirely from the basis instead. Subtracts
-             58px (.wrap's 40px side padding + the outline ring's 9px-per-
-             side bleed from outline-offset 6 + outline width 3), so the
-             ring's outer edge — not just the card's own border — lines up
-             with the pill/heading above. */
-          flex: 0 0 clamp(260px, calc(100vw - 58px), 415px);
+             38px (.wrap's 40px side padding, minus the outline ring's 9px-
+             per-side bleed that's now real layout space via nth-of-type(1)'s
+             margin-left below) + 24px safety buffer (mobile Safari's 100vw
+             can render wider than the actual visible viewport) — a bit
+             narrower a subtraction than before so the card sits closer to
+             centered instead of leaving a big empty gap on the right. */
+          flex: 0 0 clamp(260px, calc(100vw - 62px), 415px);
           scroll-snap-align: start;
           /* Second border line — a thicker offset outline, one color per
              tile. outline-offset keeps it as a visibly separate ring
@@ -756,10 +759,28 @@ export default function HomePage() {
              but the tile itself never gets tinted. */
           box-shadow:
             0 20px 44px rgba(15,23,42,.12),
-            0 0 18px 22px var(--pkg-glow, transparent);
+            0 0 14px 16px var(--pkg-glow, transparent);
           transform: translateY(-3px);
         }
         .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #0d6dff; --pkg-glow: rgba(13,109,255,0.22); }
+        @media (max-width: 900px) {
+          /* Shift just the first card right by the outline ring's bleed
+             (9px) via margin (not .pkg-grid padding — scroll-snap-align
+             auto-scrolls to cancel that out entirely) so the ring's outer
+             edge lands flush with .wrap's padding, matching the pill and
+             heading above instead of overhanging further left. */
+          .pkg-grid .pkg-card:nth-of-type(1) {
+            margin-left: 9px;
+            /* scroll-snap-align:start on the first card makes the browser
+               auto-scroll to snap it flush at rest, silently cancelling
+               out ANY leading space before it (margin or padding, tried
+               both) the instant the page loads — there's no visible way to
+               inset just the first card while it's a snap target. Turning
+               its own snapping off (the other cards still snap normally
+               when swiped to) is what actually lets the margin show. */
+            scroll-snap-align: none;
+          }
+        }
         .pkg-grid .pkg-card:nth-of-type(2) { --pkg-outline: #00a86b; --pkg-glow: rgba(0,168,107,0.22); }
         .pkg-grid .pkg-card:nth-of-type(3) { --pkg-outline: #ff7a1a; --pkg-glow: rgba(255,122,26,0.22); }
         .pkg-card.pop {
