@@ -783,6 +783,13 @@ export default function HomePage() {
         }
         .pkg-grid .pkg-card:nth-of-type(2) { --pkg-outline: #00a86b; --pkg-glow: rgba(0,168,107,0.22); }
         .pkg-grid .pkg-card:nth-of-type(3) { --pkg-outline: #ff7a1a; --pkg-glow: rgba(255,122,26,0.22); }
+        @media (max-width: 900px) {
+          /* Mirror the first card's leading margin fix: with no trailing
+             padding on .pkg-grid at this width, the last card's outline
+             ring (9px bleed) had no scroll room to reach and was clipped
+             flush against the scroll container's right edge. */
+          .pkg-grid .pkg-card:last-child { margin-right: 9px; }
+        }
         .pkg-card.pop {
           border-top: 3px solid var(--border2);
         }
