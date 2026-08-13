@@ -503,7 +503,7 @@ export default function HomePage() {
         @media (max-width: 900px) {
           .hero-ring { width: 460px; height: 460px; }
           .hero-badge { display: none; }
-          .hero-ring-stage { transform: translateX(33%); }
+          .hero-ring-stage { transform: translateX(33%) translateY(-25%); }
         }
         @media (max-width: 767px) {
           .hero.hero-pin { height: auto; padding: 56px 0 48px; }
@@ -642,7 +642,11 @@ export default function HomePage() {
             flex-direction: column; height: auto; margin-top: 0; gap: 16px; padding-bottom: 8px;
           }
           .trust-row-desktop { display: none; }
-          .trust-row-mobile { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+          /* Pull this up to close the gap left by hero-ring-stage's
+             translateY(-25%) shift (transform doesn't affect layout flow,
+             so without this the trust-row stays where the ring used to
+             sit). */
+          .trust-row-mobile { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: -155px; }
         }
         .trust-row span { display: flex; align-items: center; gap: 6px; }
         .dot { width: 5px; height: 5px; border-radius: 50%; background: #00e5aa; flex-shrink: 0; }
