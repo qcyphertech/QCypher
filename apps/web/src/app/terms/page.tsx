@@ -140,10 +140,10 @@ export default function TermsPage() {
         <div className="wrap">
 
           <h2>What QCypher Is</h2>
-          <p>QCypher provides website hosting, a customer management tool (CRM), scheduling, and business automation for small service businesses. We don&apos;t provide accounting, legal, or tax advice.</p>
+          <p>QCypher builds websites. We also run your CRM, scheduling, and business automation. We serve small service businesses. We do not give accounting, legal, or tax advice.</p>
 
           <h2>Your Subscription &amp; Billing</h2>
-          <p>Your subscription automatically renews each month, depending on your plan:</p>
+          <p>Your plan renews each month. Here&apos;s what each plan costs:</p>
           <table className="price-table">
             <thead><tr><th>Plan</th><th>Setup fee</th><th>Monthly</th></tr></thead>
             <tbody>
@@ -152,58 +152,58 @@ export default function TermsPage() {
               <tr><td>All-In</td><td>$1,250 one-time</td><td>$149/mo</td></tr>
             </tbody>
           </table>
-          <p>Custom pricing may apply if negotiated directly with you. We&apos;ll charge your card on file on the same date each month.</p>
-          <p><strong>Before you&apos;re charged:</strong> we send a reminder email 7 days before each monthly charge, showing the amount and renewal date, with a direct link to cancel if you don&apos;t want to renew.</p>
+          <p>We may set custom pricing if we agree on it with you directly. We charge your card on the same date each month.</p>
+          <p><strong>Before you&apos;re charged:</strong> we email you 7 days ahead of time. That email shows the amount, the date, and a link to cancel.</p>
           <div className="callout">
-            <strong>Your right to cancel:</strong> you can cancel anytime by clicking the cancel link in your reminder email, or by logging into your account and clicking &ldquo;Cancel Subscription.&rdquo; Your service ends immediately, and we won&apos;t charge you again.
+            <strong>Your right to cancel:</strong> click the cancel link in that email. Or log in and click &ldquo;Cancel Subscription.&rdquo; Either way, your service stops right away. We won&apos;t charge you again.
           </div>
 
           <h2>Payment &amp; Refunds</h2>
           <ul>
-            <li>Payment is required upfront, via credit or debit card through Stripe or Helcim</li>
-            <li>If we fail to provide the service you paid for, we&apos;ll refund your setup fee</li>
-            <li>Refund requests: email legal@qcyphertech.com within 30 days of purchase</li>
+            <li>You pay upfront, by card, through Stripe or Helcim</li>
+            <li>If we don&apos;t deliver what you paid for, we&apos;ll refund your setup fee</li>
+            <li>To ask for a refund, email legal@qcyphertech.com within 30 days of your purchase</li>
           </ul>
 
           <h2>What You Can&apos;t Do</h2>
           <p>You agree not to:</p>
           <ul>
-            <li>Use QCypher for illegal activities</li>
-            <li>Attempt to hack, copy, or reverse-engineer our code</li>
-            <li>Upload viruses, malware, or harmful content</li>
+            <li>Use QCypher for anything illegal</li>
+            <li>Try to hack, copy, or take apart our code</li>
+            <li>Upload viruses or harmful files</li>
             <li>Harass other users</li>
-            <li>Violate anyone&apos;s intellectual property rights</li>
+            <li>Steal or misuse someone else&apos;s trademarks, copyrights, or other protected work</li>
           </ul>
 
           <h2>Intellectual Property</h2>
-          <p>You own all your data — contacts, notes, and customer records. We own QCypher&apos;s code and design. You have a license to use QCypher for your business, not to resell it.</p>
+          <p>You own your own data — your contacts, notes, and customer records. We own QCypher&apos;s code and design. You get a license to use QCypher for your business. You may not resell it.</p>
 
           <h2>Limitation of Liability</h2>
-          <p>We provide QCypher &ldquo;as is.&rdquo; We&apos;re not liable for:</p>
+          <p>We give you QCypher &ldquo;as is.&rdquo; We are not liable for:</p>
           <ul>
-            <li>Lost data (though we do daily backups)</li>
-            <li>Lost revenue or business interruption</li>
-            <li>Indirect or consequential damages</li>
-            <li>Third-party services (Google, Cal.com, Telnyx, etc.)</li>
+            <li>Lost data (though we run daily backups)</li>
+            <li>Lost revenue, or your business being interrupted</li>
+            <li>Indirect damages — losses that follow from a problem, rather than being caused by it directly</li>
+            <li>Problems caused by outside services (Google, Cal.com, Telnyx, etc.)</li>
           </ul>
-          <p>Our total liability is limited to what you&apos;ve paid in the last 12 months.</p>
+          <p>If we owe you anything, the most we&apos;ll pay is what you paid us in the past 12 months.</p>
 
           <h2>Disclaimer</h2>
-          <p>QCypher is a business tool, not professional advice. We don&apos;t provide legal, tax, or accounting guidance. Consult a professional for those needs.</p>
+          <p>QCypher is a business tool. It is not professional advice. We don&apos;t give legal, tax, or accounting guidance. Talk to a professional for that.</p>
 
           <h2>Termination</h2>
-          <p>We can terminate your account if you violate these terms, or if payment is more than 30 days overdue.</p>
-          <p>You can cancel anytime. Upon cancellation, your data is deleted after a 30-day grace period, which gives you time to recover it if needed.</p>
+          <p>We can close your account if you break these terms, or if your payment is more than 30 days late.</p>
+          <p>You can cancel anytime. After you cancel, we keep your data for 30 more days. That gives you time to get it back if you change your mind. Then we delete it.</p>
 
           <h2>Changes to Terms</h2>
-          <p>We may update these terms. We&apos;ll email you if there are material changes. Continued use of QCypher means you accept the changes.</p>
+          <p>We may update these terms over time. We&apos;ll email you about any big changes. If you keep using QCypher after that, it means you accept them.</p>
 
           <h2>Governing Law</h2>
-          <p>These terms are governed by the laws of the State of Maryland, without regard to its conflict of law provisions. You agree to resolve disputes in the state or federal courts located in Maryland.</p>
+          <p>Maryland law governs these terms. If there&apos;s a dispute, it will be handled in a Maryland state or federal court.</p>
 
           <h2>Contact</h2>
           <p>Questions about these terms? Email <a href="mailto:legal@qcyphertech.com" style={{ color: 'var(--steel)', fontWeight: 600 }}>legal@qcyphertech.com</a>.</p>
-          <p>Response time: within 5 business days.</p>
+          <p>We reply within 5 business days.</p>
 
         </div>
       </article>

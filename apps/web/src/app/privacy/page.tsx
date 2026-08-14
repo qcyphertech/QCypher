@@ -125,7 +125,7 @@ export default function PrivacyPage() {
       <div className="doc-hero">
         <div className="wrap">
           <h1>Your Data. Your Control.</h1>
-          <p>This page explains what we collect, how we use it, and your rights. No legal jargon — just the facts.</p>
+          <p>This page tells you what we collect. It tells you how we use it. It tells you your rights. No legal jargon — just the facts.</p>
           <div className="doc-meta">
             <span>Last updated: {LAST_UPDATED}</span>
             <span>Contact: legal@qcyphertech.com</span>
@@ -138,12 +138,12 @@ export default function PrivacyPage() {
         <div className="wrap">
 
           <h2>What Data We Collect</h2>
-          <p><strong>From you directly:</strong> Name, email, phone, business address, and payment info.</p>
-          <p><strong>From your customers:</strong> Names, emails, phone numbers, and service history — stored in your CRM.</p>
-          <p><strong>Usage data:</strong> How you use the platform (logins, features used), IP address, and browser type.</p>
-          <p><strong>Automatically:</strong> Cookies (authentication only) and basic analytics.</p>
+          <p><strong>From you:</strong> Your name, email, phone, business address, and payment info.</p>
+          <p><strong>From your customers:</strong> Their names, emails, phone numbers, and service history. This lives in your CRM.</p>
+          <p><strong>Usage data:</strong> How you use the app. This means logins, which features you use, your IP address, and your browser type.</p>
+          <p><strong>Automatic data:</strong> Login cookies and basic usage stats.</p>
           <div className="callout">
-            <strong>Your customer data belongs to you.</strong> We don&apos;t sell it, share it, or use it for marketing. We only access it to provide the service you&apos;ve paid for.
+            <strong>Your customer data belongs to you.</strong> We don&apos;t sell it. We don&apos;t share it. We don&apos;t use it for marketing. We only touch it to run the service you pay for.
           </div>
 
           <h2>How We Use Your Data</h2>
@@ -165,65 +165,65 @@ export default function PrivacyPage() {
           <p>We use AI in two places:</p>
           <p><strong>1. Monthly Customer Report (AI-generated)</strong></p>
           <ul>
-            <li>What it does: summarizes your booking trends, review scores, and customer engagement</li>
-            <li>Data used: your CRM records (contacts, notes, completed jobs)</li>
-            <li>Impact: gives you insights to improve your business</li>
-            <li>Opt-out: disable this in settings (you won&apos;t receive monthly summaries)</li>
+            <li>What it does: sums up your bookings, review scores, and customer activity</li>
+            <li>Data used: your CRM records — contacts, notes, finished jobs</li>
+            <li>Why it helps: gives you tips to grow your business</li>
+            <li>Turn it off: use Settings. You&apos;ll stop getting the monthly summary.</li>
           </ul>
-          <p><strong>2. Automatic Review Requests (automated workflow)</strong></p>
+          <p><strong>2. Automatic Review Requests</strong></p>
           <ul>
-            <li>What it does: sends review request emails/SMS after a job is marked complete</li>
-            <li>Data used: job completion date, customer email/phone</li>
-            <li>Impact: helps you collect more online reviews</li>
-            <li>Opt-out: disable in Automation settings, or turn off for a specific customer</li>
+            <li>What it does: texts or emails a review request once a job is done</li>
+            <li>Data used: the job&apos;s completion date, plus the customer&apos;s email or phone</li>
+            <li>Why it helps: gets you more online reviews</li>
+            <li>Turn it off: use Automation settings. Or turn it off for just one customer.</li>
           </ul>
 
           <h2>Third-Party Services (Who We Share With)</h2>
-          <div className="svc-row"><strong>Supabase</strong><span>Database storage (encrypted). Stores CRM data and user accounts. SOC 2 Type II compliant.</span></div>
-          <div className="svc-row"><strong>Vercel</strong><span>Website hosting. Stores site content and analytics. CDN for fast loading.</span></div>
-          <div className="svc-row"><strong>Cal.com</strong><span>Scheduling integration. Stores appointment bookings and availability.</span></div>
-          <div className="svc-row"><strong>Telnyx</strong><span>SMS/phone. Stores SMS logs and calls, used for review requests and payment reminders.</span></div>
-          <div className="svc-row"><strong>Resend</strong><span>Email service. Stores email addresses and logs, used for invoices and notifications.</span></div>
-          <div className="svc-row"><strong>Stripe / Helcim</strong><span>Payment processing. Stores billing info and transaction history. PCI-compliant.</span></div>
-          <div className="svc-row"><strong>Google Business Profile</strong><span>Your public business listing. You control what&apos;s shown.</span></div>
-          <div className="callout">We don&apos;t sell your data to advertisers or data brokers. The services above process data only to deliver QCypher&apos;s features.</div>
+          <div className="svc-row"><strong>Supabase</strong><span>Our database. Stores your CRM data and logins. Encrypted and independently audited.</span></div>
+          <div className="svc-row"><strong>Vercel</strong><span>Hosts our website. Stores site content and basic stats. Makes pages load fast.</span></div>
+          <div className="svc-row"><strong>Cal.com</strong><span>Runs our scheduling. Stores bookings and open time slots.</span></div>
+          <div className="svc-row"><strong>Telnyx</strong><span>Sends texts and calls. Stores text logs, used for reviews and payment reminders.</span></div>
+          <div className="svc-row"><strong>Resend</strong><span>Sends email. Stores email addresses and send logs, used for invoices and alerts.</span></div>
+          <div className="svc-row"><strong>Stripe / Helcim</strong><span>Handles payments. Stores billing info and past charges. Meets card-industry security rules.</span></div>
+          <div className="svc-row"><strong>Google Business Profile</strong><span>Your public listing. You choose what it shows.</span></div>
+          <div className="callout">We don&apos;t sell your data to advertisers. We don&apos;t sell it to data brokers. The services above only touch your data to run QCypher&apos;s features.</div>
 
           <h2>Data Retention &amp; Deletion</h2>
           <ul>
-            <li>Audit logs: 90 days (automatically deleted after)</li>
-            <li>Backups: 7&ndash;30 days (managed by Supabase)</li>
-            <li>Billing records: 5 years (required for tax/accounting)</li>
-            <li>Customer data: deleted immediately when an account is closed, after a 30-day grace period</li>
+            <li>Audit logs: kept 90 days, then deleted automatically</li>
+            <li>Backups: kept 7&ndash;30 days by Supabase</li>
+            <li>Billing records: kept 5 years, as tax law requires</li>
+            <li>Customer data: deleted 30 days after you close your account</li>
           </ul>
-          <p>You can export all your data as CSV anytime. You can request account deletion, and all your data will be permanently deleted after 30 days.</p>
+          <p>You can export all your data as a CSV file anytime. Ask us to delete your account, and it&apos;s gone for good in 30 days.</p>
 
           <h2>Your Rights (GDPR &amp; CCPA)</h2>
           <p>You have the right to:</p>
           <ul>
-            <li><strong>Access</strong> — request a copy of all your data</li>
-            <li><strong>Correct</strong> — update incorrect information</li>
-            <li><strong>Delete</strong> — request deletion (30-day grace period, then permanent)</li>
-            <li><strong>Export</strong> — download all your data as CSV</li>
-            <li><strong>Opt-out</strong> — disable automated features (AI reports, review requests)</li>
+            <li><strong>Access</strong> — get a copy of all your data</li>
+            <li><strong>Correct</strong> — fix wrong information</li>
+            <li><strong>Delete</strong> — ask us to delete it (gone for good after 30 days)</li>
+            <li><strong>Export</strong> — download your data as a CSV file</li>
+            <li><strong>Opt out</strong> — turn off AI reports or review requests</li>
           </ul>
-          <p>To exercise these rights, email <a href="mailto:legal@qcyphertech.com" style={{ color: 'var(--steel)', fontWeight: 600 }}>legal@qcyphertech.com</a>. We&apos;ll respond within 30 days.</p>
+          <p>To use these rights, email <a href="mailto:legal@qcyphertech.com" style={{ color: 'var(--steel)', fontWeight: 600 }}>legal@qcyphertech.com</a>. We reply within 30 days.</p>
 
           <h2>Cookies &amp; Tracking</h2>
-          <p>We use minimal cookies (authentication only). We don&apos;t track you with third-party analytics or ad pixels. If you use Google Business Profile or Stripe, their cookies may be present — read their privacy policies for details.</p>
+          <p>We use very few cookies. They&apos;re only for login. We don&apos;t track you with ad pixels. We don&apos;t use third-party analytics. Google Business Profile and Stripe may set their own cookies — check their own privacy pages for that.</p>
 
           <h2>Security</h2>
-          <p>Your data is encrypted in transit (TLS 1.2+) and at rest (AES-256). Access is restricted to authorized staff via role-based access control. We log all access and delete old logs after 90 days.</p>
-          <p>See our full <Link href="/security" style={{ color: 'var(--steel)', fontWeight: 600 }}>Security page</Link> for details.</p>
+          <p>Your data is locked with encryption, both while it travels and while it sits in our database. Only approved staff can access it, based on their role. We log every access, and we delete old logs after 90 days.</p>
+          <p>See our full <Link href="/security" style={{ color: 'var(--steel)', fontWeight: 600 }}>Security page</Link> for more.</p>
 
           <h2>Children&apos;s Privacy</h2>
-          <p>QCypher is not intended for anyone under 18. We don&apos;t knowingly collect data from minors. If we discover we have, we delete it immediately.</p>
+          <p>QCypher is not for anyone under 18. We don&apos;t knowingly collect data from kids. If we find out we did, we delete it right away.</p>
 
           <h2>Changes to This Policy</h2>
-          <p>We update this policy annually or when our practices change. We&apos;ll email you if there are material changes.</p>
+          <p>We update this page once a year, or sooner if our practices change. We&apos;ll email you about any big changes.</p>
 
           <h2>Contact</h2>
           <p>Questions about your data? Email <a href="mailto:legal@qcyphertech.com" style={{ color: 'var(--steel)', fontWeight: 600 }}>legal@qcyphertech.com</a>.</p>
-          <p>Response time: within 5 business days.</p>
+          <p>We reply within 5 business days.</p>
 
         </div>
       </article>
