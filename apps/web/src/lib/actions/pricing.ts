@@ -20,6 +20,7 @@ export type CustomerPricing = {
   effective_to: string | null
   reason: PricingReason | null
   notes: string | null
+  next_billing_date: string | null
   updated_at: string
 }
 
@@ -67,6 +68,7 @@ export async function setTenantPricing(tenantId: string, input: {
   override_one_time_amount: number | null
   reason: PricingReason | null
   notes: string | null
+  next_billing_date?: string | null
   effective_from?: string
   effective_to?: string | null
 }) {
@@ -84,6 +86,7 @@ export async function setTenantPricing(tenantId: string, input: {
       override_one_time_amount: input.override_one_time_amount,
       reason: input.reason,
       notes: input.notes,
+      next_billing_date: input.next_billing_date ?? null,
       effective_from: input.effective_from ?? new Date().toISOString(),
       effective_to: input.effective_to ?? null,
       created_by: userId,

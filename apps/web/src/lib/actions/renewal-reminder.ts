@@ -16,8 +16,10 @@ async function requireSuperAdmin() {
   return { admin, userId: user.id }
 }
 
-// Manual send only — see lib/email/renewal-reminder.ts for why there's no
-// automated cron trigger yet.
+// Ad-hoc manual send from the Admin Console — the automated path is
+// /api/cron/send-renewal-reminders, which fires 7 days before a tenant's
+// customer_pricing.next_billing_date. This action exists for one-off
+// sends outside that schedule (testing, a special case, etc).
 export async function sendRenewalReminder(input: {
   tenantId: string
   plan: string

@@ -9,11 +9,12 @@ export type RenewalReminderInput = {
   manageUrl: string
 }
 
-// FTC auto-renewal disclosure — sent manually from the Admin Console for
-// now (no cron trigger: QCypher has no recurring-subscription schedule to
-// compute "7 days out" from yet, billing is still one-off invoices created
-// by hand). Reuses the shared brand shell so it matches every other
-// QCypher transactional email rather than inventing a one-off palette.
+// FTC/AB2863 auto-renewal disclosure. Sent automatically by
+// /api/cron/send-renewal-reminders 7 days before a tenant's
+// customer_pricing.next_billing_date, or manually from the Admin Console
+// (RenewalReminderPanel) for ad-hoc sends. Reuses the shared brand shell
+// so it matches every other QCypher transactional email rather than
+// inventing a one-off palette.
 export function renderRenewalReminderEmail(input: RenewalReminderInput): string {
   const { customerName, plan, renewalDate, amount, cardLast4, manageUrl } = input
 
@@ -33,7 +34,7 @@ export function renderRenewalReminderEmail(input: RenewalReminderInput): string 
       <p style="margin:16px 0 0;">On ${renewalDate}, we'll charge the card on file and your service will continue uninterrupted.</p>
 
       <p style="margin:20px 0 0;font-weight:700;">Not ready to renew?</p>
-      <p style="margin:8px 0 0;">You can cancel anytime from your account settings — no penalty, no questions asked. Your service ends immediately once cancelled.</p>
+      <p style="margin:8px 0 0;">Log in and cancel anytime from your account settings — no penalty, no questions asked. Your service ends immediately once cancelled.</p>
     `,
     cta: { label: 'Manage my subscription', href: manageUrl },
   })

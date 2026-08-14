@@ -153,9 +153,9 @@ export default function TermsPage() {
             </tbody>
           </table>
           <p>We may set custom pricing if we agree on it with you directly. We charge your card on the same date each month.</p>
-          <p><strong>Before you&apos;re charged:</strong> we email you 7 days ahead of time. That email shows the amount, the date, and a link to cancel.</p>
+          <p><strong>Before you&apos;re charged:</strong> we email you 7 days ahead of time. That email shows the amount and the date, with a link to manage your plan.</p>
           <div className="callout">
-            <strong>Your right to cancel:</strong> click the cancel link in that email. Or log in and click &ldquo;Cancel Subscription.&rdquo; Either way, your service stops right away. We won&apos;t charge you again.
+            <strong>Your right to cancel:</strong> log in to your account and click &ldquo;Cancel Subscription.&rdquo; Your service stops right away, and we won&apos;t charge you again.
           </div>
 
           <h2>Payment &amp; Refunds</h2>

@@ -419,6 +419,7 @@ export type Database = {
           effective_from: string
           effective_to: string | null
           id: string
+          next_billing_date: string | null
           notes: string | null
           override_monthly_amount: number | null
           override_one_time_amount: number | null
@@ -433,6 +434,7 @@ export type Database = {
           effective_from?: string
           effective_to?: string | null
           id?: string
+          next_billing_date?: string | null
           notes?: string | null
           override_monthly_amount?: number | null
           override_one_time_amount?: number | null
@@ -447,6 +449,7 @@ export type Database = {
           effective_from?: string
           effective_to?: string | null
           id?: string
+          next_billing_date?: string | null
           notes?: string | null
           override_monthly_amount?: number | null
           override_one_time_amount?: number | null
@@ -1538,6 +1541,35 @@ export type Database = {
           ip?: string
         }
         Relationships: []
+      }
+      renewal_reminders_sent: {
+        Row: {
+          billing_date: string
+          id: string
+          sent_at: string
+          tenant_id: string
+        }
+        Insert: {
+          billing_date: string
+          id?: string
+          sent_at?: string
+          tenant_id: string
+        }
+        Update: {
+          billing_date?: string
+          id?: string
+          sent_at?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_reminders_sent_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rental_extensions: {
         Row: {

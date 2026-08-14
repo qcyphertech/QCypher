@@ -45,6 +45,9 @@ export function TenantPricingPanel({ tenantId }: { tenantId: string }) {
           <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
             {loading ? 'Loading…' : `${TIER_LABEL[tier]} — $${oneTime} + $${monthly}/mo${hasOverride ? ' (custom)' : ''}`}
           </p>
+          {!loading && pricing?.next_billing_date && (
+            <p className="text-[12px] text-[hsl(var(--muted-foreground))] mt-0.5">Next billing: {pricing.next_billing_date}</p>
+          )}
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -95,6 +98,7 @@ function PricingModal({ tenantId, initial, onClose, onSaved }: {
   const [overrideMonthly, setOverrideMonthly] = useState(initial?.override_monthly_amount?.toString() ?? '')
   const [reason, setReason] = useState<PricingReason | ''>(initial?.reason ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
+  const [nextBillingDate, setNextBillingDate] = useState(initial?.next_billing_date ?? '')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -108,6 +112,7 @@ function PricingModal({ tenantId, initial, onClose, onSaved }: {
           override_monthly_amount: overrideMonthly.trim() ? Number(overrideMonthly) : null,
           reason: reason || null,
           notes: notes.trim() || null,
+          next_billing_date: nextBillingDate || null,
         })
         onSaved()
       } catch (e) {
@@ -145,6 +150,12 @@ function PricingModal({ tenantId, initial, onClose, onSaved }: {
               <label className="text-[14px] font-medium">Override monthly ($)</label>
               <input type="number" min="0" step="0.01" value={overrideMonthly} onChange={e => setOverrideMonthly(e.target.value)} placeholder={`${BASE_PRICING[tier].monthly}`} className={inputCls} />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[14px] font-medium">Next billing date</label>
+            <input type="date" value={nextBillingDate ?? ''} onChange={e => setNextBillingDate(e.target.value)} className={inputCls} />
+            <p className="text-[12px] text-[hsl(var(--muted-foreground))]">Powers the automated 7-day renewal reminder email. Leave blank to disable it for this tenant.</p>
           </div>
 
           <div className="space-y-1.5">
