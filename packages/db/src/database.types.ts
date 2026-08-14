@@ -828,7 +828,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          invoice_id: string
+          payment_request_id: string
           sent_at: string
           stage: string
           tenant_id: string
@@ -836,7 +836,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          invoice_id: string
+          payment_request_id: string
           sent_at?: string
           stage: string
           tenant_id: string
@@ -844,17 +844,17 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          invoice_id?: string
+          payment_request_id?: string
           sent_at?: string
           stage?: string
           tenant_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "invoice_escalations_invoice_id_fkey"
-            columns: ["invoice_id"]
+            foreignKeyName: "invoice_escalations_payment_request_id_fkey"
+            columns: ["payment_request_id"]
             isOneToOne: false
-            referencedRelation: "invoices"
+            referencedRelation: "payment_requests"
             referencedColumns: ["id"]
           },
           {
@@ -1865,6 +1865,65 @@ export type Database = {
             foreignKeyName: "tenant_module_access_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_payment_accounts: {
+        Row: {
+          access_token_enc: string | null
+          account_email: string | null
+          account_holder_name: string | null
+          api_key_enc: string | null
+          connected_at: string | null
+          created_at: string
+          id: string
+          is_connected: boolean
+          last_verified_at: string | null
+          provider: string
+          provider_account_id: string | null
+          refresh_token_enc: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token_enc?: string | null
+          account_email?: string | null
+          account_holder_name?: string | null
+          api_key_enc?: string | null
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          last_verified_at?: string | null
+          provider: string
+          provider_account_id?: string | null
+          refresh_token_enc?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token_enc?: string | null
+          account_email?: string | null
+          account_holder_name?: string | null
+          api_key_enc?: string | null
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          last_verified_at?: string | null
+          provider?: string
+          provider_account_id?: string | null
+          refresh_token_enc?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_payment_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
