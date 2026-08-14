@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, CheckCircle2, AlertCircle, RefreshCw, Send, Loader2 } from 'lucide-react'
+import { ChevronLeft, CheckCircle2, Circle, AlertTriangle, RefreshCw, Send, Loader2, ClipboardList, FileBarChart, Users2, Sparkles } from 'lucide-react'
 import { toggleChecklist } from '@/lib/actions/admin'
 import { TenantModulesPanel } from '@/components/admin/TenantModulesPanel'
 import { TenantPricingPanel } from '@/components/admin/TenantPricingPanel'
@@ -18,6 +18,12 @@ const SERVICE_LABELS: Record<ServiceName, string> = {
   backup:      'Security & Backup',
 }
 
+// Zero activity isn't a problem for a brand-new or quiet account — only an
+// actual unconfigured integration (the scheduler) is worth flagging in
+// amber. Everything else gets a neutral "no activity yet" read instead of
+// looking like something's broken.
+const ACTIONABLE_STATS = new Set<ServiceName>(['scheduler'])
+
 type Tenant = {
   id: string; name: string; slug: string; plan: string
   status: string; created_at: string
@@ -32,6 +38,35 @@ type Props = {
   currentUserId: string
 }
 
+const BLUE = '#2a52a0'
+const TEAL = '#4a9db5'
+
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+}
+
+function SectionHeader({ icon: Icon, color, title, hint, right }: {
+  icon: React.ElementType; color: string; title: string; hint?: string; right?: React.ReactNode
+}) {
+  return (
+    <div className="px-5 py-4 border-b border-[hsl(var(--border))] flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: `${color}18`, border: `1px solid ${color}30` }}
+        >
+          <Icon className="w-4 h-4" style={{ color }} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-bold tracking-tight">{title}</h2>
+          {hint && <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{hint}</p>}
+        </div>
+      </div>
+      {right && <div className="flex-shrink-0">{right}</div>}
+    </div>
+  )
+}
+
 export function TenantDetail({ tenant, stats, checklist: initialChecklist, members, pendingInvites, currentUserId }: Props) {
   const router = useRouter()
   const [checklist, setChecklist] = useState(initialChecklist)
@@ -42,7 +77,6 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
 
   function handleToggle(row: ChecklistRow) {
     const next = !row.completed
-    // Optimistic update
     setChecklist(prev => prev.map(r => r.id === row.id
       ? { ...r, completed: next, completed_at: next ? new Date().toISOString() : null }
       : r
@@ -67,39 +101,60 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
       if (json.preview) {
         setReportResult({ ok: true, message: `Preview (no Resend key): subject — ${json.subject}` })
       } else if (json.ok) {
-        setReportResult({ ok: true, message: `Report sent to ${reportEmail}` })
+        setReportResult({ ok: true, message: `Sent to ${reportEmail}` })
       } else {
-        setReportResult({ ok: false, message: json.error ?? 'Failed' })
+        setReportResult({ ok: false, message: json.error ?? 'Something went wrong' })
       }
     } catch (e) {
-      setReportResult({ ok: false, message: e instanceof Error ? e.message : 'Failed' })
+      setReportResult({ ok: false, message: e instanceof Error ? e.message : 'Something went wrong' })
     } finally {
       setSending(false)
     }
   }
 
   const completedCount = checklist.filter(r => r.completed).length
+  const isActive = tenant.status === 'active'
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* Back + heading */}
+      {/* Header */}
       <div>
         <button
           onClick={() => router.push('/admin')}
-          className="flex items-center gap-1.5 text-[15px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-4 transition-colors"
+          className="flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-4 transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" /> Back to admin
+          <ChevronLeft className="w-4 h-4" /> All clients
         </button>
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">{tenant.name}</h1>
-            <p className="text-[15px] text-[hsl(var(--muted-foreground))] mt-0.5">
-              /{tenant.slug} · {tenant.plan} · {tenant.status}
-            </p>
+        <div className="flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-white font-black text-[16px] flex-shrink-0"
+            style={{ background: `linear-gradient(135deg,${BLUE},${TEAL})` }}
+          >
+            {initials(tenant.name)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[22px] font-black tracking-tight leading-tight">{tenant.name}</h1>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="text-[13px] font-medium text-[hsl(var(--muted-foreground))]">/{tenant.slug}</span>
+              <span
+                className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                style={{ background: `${BLUE}14`, color: BLUE }}
+              >
+                {tenant.plan} plan
+              </span>
+              <span
+                className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                  isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-current opacity-60'}`} />
+                {tenant.status}
+              </span>
+            </div>
           </div>
           <button
             onClick={() => router.refresh()}
-            className="ml-auto p-2 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
+            className="p-2.5 rounded-xl border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors flex-shrink-0"
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
@@ -107,85 +162,76 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
         </div>
       </div>
 
-      {/* 14A — Services panel */}
+      {/* Services this account is actually using */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[hsl(var(--border))]">
-          <h2 className="text-[15px] font-semibold">Services Included</h2>
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
-            Live data from this billing cycle — read only
-          </p>
-        </div>
+        <SectionHeader icon={Sparkles} color="#f59e0b" title="What's Running" hint={`This billing cycle, at a glance`} />
         <div className="divide-y divide-[hsl(var(--border))]">
-          {stats.map(stat => (
-            <div key={stat.name} className="flex items-center gap-4 px-5 py-4">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                stat.status === 'active'
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                  : 'bg-amber-100 dark:bg-amber-900/30'
-              }`}>
-                {stat.status === 'active'
-                  ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  : <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                }
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-medium">{stat.label}</p>
-                {stat.detail && (
-                  <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{stat.detail}</p>
-                )}
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-[15px] font-semibold">{stat.value}</p>
-                <p className={`text-[12px] font-medium mt-0.5 ${
-                  stat.status === 'active'
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-amber-600 dark:text-amber-400'
+          {stats.map(stat => {
+            const name = stat.name as ServiceName
+            const flagged = stat.status === 'needs_attention' && ACTIONABLE_STATS.has(name)
+            const quiet = stat.status === 'needs_attention' && !ACTIONABLE_STATS.has(name)
+            return (
+              <div key={stat.name} className="flex items-center gap-4 px-5 py-4">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  flagged ? 'bg-amber-100 dark:bg-amber-900/30' : quiet ? 'bg-[hsl(var(--muted))]' : 'bg-emerald-100 dark:bg-emerald-900/30'
                 }`}>
-                  {stat.status === 'active' ? 'Active' : 'Needs attention'}
-                </p>
+                  {flagged
+                    ? <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    : quiet
+                      ? <Circle className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                      : <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-semibold">{stat.label}</p>
+                  {stat.detail && (
+                    <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{stat.detail}</p>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[15px] font-bold">{stat.value}</p>
+                  <p className={`text-[12px] font-semibold mt-0.5 ${
+                    flagged ? 'text-amber-600 dark:text-amber-400' : quiet ? 'text-[hsl(var(--muted-foreground))]' : 'text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    {flagged ? 'Needs setup' : quiet ? 'No activity yet' : 'Working'}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
-      {/* Team — role management, gated by super admin */}
+      {/* Team */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[hsl(var(--border))]">
-          <h2 className="text-[15px] font-semibold">Team</h2>
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
-            Change roles or remove members of this account.
-          </p>
-        </div>
+        <SectionHeader icon={Users2} color="#a855f7" title="Team" hint="Who has access, and what they can do" />
         <div className="px-5 py-4">
           <TeamPanel members={members} pending={pendingInvites} currentUserId={currentUserId} tenantId={tenant.id} />
         </div>
       </div>
 
-      {/* Pricing — per-tenant billing overrides, gated by super admin */}
+      {/* Pricing + billing date — gated by super admin */}
       <TenantPricingPanel tenantId={tenant.id} />
 
-      {/* Phase 28 — manual FTC auto-renewal disclosure send, gated by super admin */}
+      {/* Manual/test send for the FTC auto-renewal disclosure — gated by super admin */}
       <RenewalReminderPanel tenantId={tenant.id} />
 
-      {/* Modules — per-tenant module access, gated by super admin */}
+      {/* Modules — per-tenant feature access, gated by super admin */}
       <TenantModulesPanel tenantId={tenant.id} />
 
-      {/* 14B — Ops checklist */}
+      {/* Ops checklist */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-          <div>
-            <h2 className="text-[15px] font-semibold">Monthly Ops Checklist</h2>
-            <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
-              {completedCount}/{checklist.length} completed this month
-            </p>
-          </div>
-          <div className="flex gap-1">
-            {checklist.map(r => (
-              <div key={r.id} className={`w-2 h-2 rounded-full ${r.completed ? 'bg-emerald-500' : 'bg-[hsl(var(--border))]'}`} />
-            ))}
-          </div>
-        </div>
+        <SectionHeader
+          icon={ClipboardList} color="#10b981" title="Monthly Ops Checklist"
+          hint={`${completedCount} of ${checklist.length} done this month`}
+          right={
+            <div className="flex gap-1">
+              {checklist.map(r => (
+                <div key={r.id} className={`w-2 h-2 rounded-full ${r.completed ? 'bg-emerald-500' : 'bg-[hsl(var(--border))]'}`} />
+              ))}
+            </div>
+          }
+        />
         <div className="divide-y divide-[hsl(var(--border))]">
           {checklist.map(row => (
             <label
@@ -215,13 +261,15 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
         </div>
       </div>
 
-      {/* 14C — Monthly report */}
+      {/* Monthly report */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[hsl(var(--border))]">
-          <h2 className="text-[15px] font-semibold">Monthly Customer Report</h2>
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
-            Assembles real numbers from this billing cycle, writes a short summary via AI, sends via email.
-            AI only narrates the pre-computed figures — it cannot invent or estimate any number.
+        <SectionHeader
+          icon={FileBarChart} color={TEAL} title="Monthly Customer Report"
+          hint="Real numbers from this account, written up by AI and emailed as a summary"
+        />
+        <div className="px-5 pt-3 pb-1">
+          <p className="text-[13px] text-[hsl(var(--muted-foreground))]">
+            The AI only writes up numbers we&apos;ve already calculated — it never makes up or estimates a figure.
           </p>
         </div>
         <form onSubmit={sendReport} className="px-5 py-4 space-y-3">
@@ -232,12 +280,12 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
               value={reportEmail}
               onChange={e => setReportEmail(e.target.value)}
               placeholder="owner@example.com"
-              className="flex-1 rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-[15px] bg-transparent outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              className="flex-1 rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-[15px] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
             />
             <button
               type="submit"
               disabled={sending}
-              className="flex items-center gap-2 bg-accent text-white text-[15px] font-medium px-4 py-2 rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 bg-accent text-white text-[15px] font-medium px-4 py-2 rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-50 flex-shrink-0"
             >
               {sending
                 ? <Loader2 className="w-4 h-4 animate-spin" />
