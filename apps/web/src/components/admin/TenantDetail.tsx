@@ -6,6 +6,7 @@ import { ChevronLeft, CheckCircle2, AlertCircle, RefreshCw, Send, Loader2 } from
 import { toggleChecklist } from '@/lib/actions/admin'
 import { TenantModulesPanel } from '@/components/admin/TenantModulesPanel'
 import { TenantPricingPanel } from '@/components/admin/TenantPricingPanel'
+import { RenewalReminderPanel } from '@/components/admin/RenewalReminderPanel'
 import { TeamPanel } from '@/components/settings/TeamPanel'
 import type { ServiceStat, ChecklistRow, ServiceName } from '@/lib/actions/admin'
 import type { TeamMember, PendingInvite } from '@/lib/actions/team'
@@ -163,6 +164,9 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
 
       {/* Pricing — per-tenant billing overrides, gated by super admin */}
       <TenantPricingPanel tenantId={tenant.id} />
+
+      {/* Phase 28 — manual FTC auto-renewal disclosure send, gated by super admin */}
+      <RenewalReminderPanel tenantId={tenant.id} />
 
       {/* Modules — per-tenant module access, gated by super admin */}
       <TenantModulesPanel tenantId={tenant.id} />

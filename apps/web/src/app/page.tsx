@@ -1847,6 +1847,8 @@ export default function HomePage() {
               <a href="#crm">Customer Management</a>
               <Link href="/about">About Us</Link>
               <Link href="/security">Security</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Service</Link>
               <Link href="/auth/login">Client Login</Link>
             </div>
           </div>

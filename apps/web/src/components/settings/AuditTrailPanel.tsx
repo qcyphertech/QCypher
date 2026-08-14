@@ -22,6 +22,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   invoice_reminder_sent: 'Invoice reminder sent', invoice_escalated: 'Invoice escalated',
   review_request_sent: 'Review request sent', review_reminder_sent: 'Review reminder sent',
   automation_settings_updated: 'Automation settings updated',
+  renewal_reminder_sent: 'Renewal reminder sent',
 }
 
 const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment', 'order', 'automation']

@@ -20,6 +20,7 @@ export type AuditAction =
   | 'invoice_reminder_sent' | 'invoice_escalated'
   | 'review_request_sent' | 'review_reminder_sent'
   | 'automation_settings_updated'
+  | 'renewal_reminder_sent'
 
 export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation'
 

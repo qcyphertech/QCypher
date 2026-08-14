@@ -40,11 +40,11 @@ const VOICE_ROWS: Row[] = [
 
 const LEGAL_ROWS: Row[] = [
   {
-    href: '/legal/terms', icon: FileText, color: '#a855f7', bg: 'rgba(168,85,247,0.12)',
+    href: '/terms', icon: FileText, color: '#a855f7', bg: 'rgba(168,85,247,0.12)',
     title: 'Terms of Service', desc: 'The rules governing your use of QCypher',
   },
   {
-    href: '/legal/privacy', icon: Shield, color: '#f472b6', bg: 'rgba(244,114,182,0.12)',
+    href: '/privacy', icon: Shield, color: '#f472b6', bg: 'rgba(244,114,182,0.12)',
     title: 'Privacy Policy', desc: 'How we collect, use, and protect your data',
   },
   {
