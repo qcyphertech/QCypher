@@ -83,7 +83,13 @@ export function TopBar({
     <>
       <header
         className="flex-shrink-0 flex items-center gap-3 px-4 md:px-5 border-b"
-        style={{ height: '60px', background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+        style={{
+          height: '64px',
+          background: 'hsl(var(--card) / 0.85)',
+          backdropFilter: 'blur(16px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+          borderColor: 'hsl(var(--border))',
+        }}
       >
         {/* Logo */}
         <button
@@ -137,22 +143,25 @@ export function TopBar({
           </div>
         )}
 
-        {/* Primary nav — desktop */}
-        <nav className="hidden md:flex items-center justify-center gap-1 flex-1">
-          {visiblePrimary.map(({ href, label, icon: Icon, color, bg }) => {
+        {/* Primary nav — desktop, segmented-control style */}
+        <nav
+          className="hidden md:flex items-center gap-0.5 flex-shrink-0"
+          style={{ background: 'hsl(var(--muted) / 0.6)', borderRadius: '14px', padding: '4px' }}
+        >
+          {visiblePrimary.map(({ href, label, icon: Icon, color }) => {
             const on = active(href)
             return (
               <Link key={href} href={href}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[15px] transition-all"
+                className="flex items-center gap-1.5 rounded-[10px] text-[14px] transition-all duration-150"
                 style={{
+                  padding: '7px 14px',
                   fontWeight: on ? 700 : 500,
-                  color: on ? color : 'hsl(var(--muted-foreground))',
-                  background: on ? bg : 'transparent',
-                  letterSpacing: on ? '0.01em' : '0',
+                  color: on ? '#fff' : 'hsl(var(--muted-foreground))',
+                  background: on ? `linear-gradient(135deg,${color},${color}cc)` : 'transparent',
+                  boxShadow: on ? `0 2px 10px -2px ${color}88` : 'none',
                 }}
               >
-                <Icon style={{ width: '16px', height: '16px', flexShrink: 0, color: on ? color : 'hsl(var(--muted-foreground))' }}
-                  strokeWidth={on ? 2.5 : 1.8} />
+                <Icon style={{ width: '15px', height: '15px', flexShrink: 0 }} strokeWidth={on ? 2.5 : 1.8} />
                 {label}
               </Link>
             )
@@ -164,21 +173,28 @@ export function TopBar({
 
         {/* Search */}
         <button onClick={onOpenCmd}
-          className="flex items-center gap-2 rounded-xl border transition-all"
+          className="flex items-center gap-2.5 rounded-full border transition-all group"
           style={{
-            padding: '7px 12px',
+            padding: '8px 14px',
             color: 'hsl(var(--muted-foreground))',
-            background: 'hsl(var(--muted))',
+            background: 'hsl(var(--muted) / 0.6)',
             borderColor: 'hsl(var(--border))',
-            width: '170px',
+            width: '210px',
+            marginLeft: 'auto',
           }}
         >
-          <Search style={{ width: '13px', height: '13px', flexShrink: 0 }} />
-          <span style={{ fontSize: '15px', fontWeight: 500 }}>Search…</span>
+          <Search style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+          <span className="flex-1 text-left truncate" style={{ fontSize: '14px', fontWeight: 500 }}>Search…</span>
+          <kbd
+            className="hidden lg:flex flex-shrink-0 items-center gap-0.5"
+            style={{ fontSize: '11px', fontWeight: 700, padding: '2px 6px', borderRadius: '6px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
+          >
+            ⌘K
+          </kbd>
         </button>
 
         {/* Right controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button onClick={onToggleDark}
             className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))] transition-colors"
             title={dark ? 'Light mode' : 'Dark mode'}>
@@ -229,7 +245,7 @@ export function TopBar({
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 border-b flex-shrink-0"
-          style={{ height: '60px', borderColor: 'hsl(var(--border))' }}>
+          style={{ height: '64px', borderColor: 'hsl(var(--border))' }}>
           <div className="flex items-center gap-2">
             <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '42px', width: 'auto' }} />
             <span className="font-black text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>Menu</span>

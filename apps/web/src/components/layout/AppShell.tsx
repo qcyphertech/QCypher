@@ -36,8 +36,8 @@ export function AppShell({
         />
       </div>
 
-      {/* Scrollable page content — offset by header height (60px) + bottom nav (64px mobile) */}
-      <main className="pt-[60px] pb-20 md:pb-6 px-4 md:px-6 print:pt-0 print:pb-0 print:px-0">
+      {/* Scrollable page content — offset by header height (64px) + bottom nav (mobile) */}
+      <main className="pt-[64px] pb-20 md:pb-6 px-4 md:px-6 print:pt-0 print:pb-0 print:px-0">
         {children}
       </main>
 
