@@ -17,8 +17,11 @@ export type AuditAction =
   | 'invoice_created' | 'invoice_sent' | 'invoice_paid' | 'invoice_voided' | 'invoice_marked_paid'
   | 'payment_link_created' | 'payment_link_sent' | 'payment_link_paid'
   | 'payment_account_connected' | 'payment_account_disconnected'
+  | 'invoice_reminder_sent' | 'invoice_escalated'
+  | 'review_request_sent' | 'review_reminder_sent'
+  | 'automation_settings_updated'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation'
 
 export type AuditLog = {
   id: string

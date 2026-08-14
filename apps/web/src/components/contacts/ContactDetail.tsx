@@ -10,6 +10,7 @@ import { AddInteractionForm } from '@/components/interactions/AddInteractionForm
 import { QuickSendButton } from '@/components/templates/QuickSendButton'
 import { SendPortalLinkButton } from '@/components/portal/SendPortalLinkButton'
 import { PaymentRequestSection } from '@/components/contacts/PaymentRequestSection'
+import { AutomationSection } from '@/components/contacts/AutomationSection'
 import { useUserRole } from '@/lib/hooks/useUserRole'
 import type { Tables } from '@/types/database'
 import { cn } from '@/lib/utils'
@@ -38,7 +39,7 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
 }) {
   const router = useRouter()
   const supabase = createClient()
-  const { canEdit } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
+  const { canEdit, isAdmin } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
 
   async function handleDelete() {
     if (!confirm(`Delete ${contact.first_name}? This cannot be undone.`)) return
@@ -126,6 +127,9 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
 
       {/* Payment requests — per-order, tenant-admin only */}
       <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} />
+
+      {/* Per-customer automation opt-out — tenant-admin only */}
+      {isAdmin && <AutomationSection contactId={contact.id} />}
 
       {/* Interaction timeline */}
       <div className="space-y-4">

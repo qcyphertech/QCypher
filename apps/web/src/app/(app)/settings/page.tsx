@@ -11,10 +11,12 @@ import { AuditTrailPanel } from '@/components/settings/AuditTrailPanel'
 import { ExportDeletePanel } from '@/components/settings/ExportDeletePanel'
 import { SettingsTabs, SettingsSection, SettingsRow } from '@/components/settings/SettingsTabs'
 import { PaymentAccountPanel } from '@/components/settings/PaymentAccountPanel'
+import { AutomationSettingsPanel } from '@/components/settings/AutomationSettingsPanel'
 import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
 import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 import { getDeletionStatus, type DeletionStatus } from '@/lib/actions/account-deletion'
 import { getPaymentAccountStatus } from '@/lib/actions/payment-accounts'
+import { getWorkflowSettings, type WorkflowSettings } from '@/lib/actions/workflow-settings'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -59,6 +61,14 @@ export default async function SettingsPage() {
   ])
 
   const paymentAccount = isAdmin ? await getPaymentAccountStatus().catch(() => null) : null
+  const DEFAULT_WORKFLOW_SETTINGS: WorkflowSettings = {
+    invoice_reminder_enabled: true, invoice_reminder_days: 3,
+    invoice_escalate_enabled: true, invoice_escalate_days: 10,
+    review_request_enabled: true, review_request_days: 1,
+    review_reminder_enabled: true, review_reminder_days: 7,
+    google_review_url: null,
+  }
+  const workflowSettings = isAdmin ? await getWorkflowSettings().catch(() => DEFAULT_WORKFLOW_SETTINGS) : DEFAULT_WORKFLOW_SETTINGS
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
   const identities  = user.identities ?? []
@@ -101,6 +111,14 @@ export default async function SettingsPage() {
 
   const paymentsTab = (
     <PaymentAccountPanel account={paymentAccount} />
+  )
+
+  const automationTab = (
+    <div>
+      <SettingsSection label="Automation" hint="Automatic invoice reminders and review requests — sent daily.">
+        <AutomationSettingsPanel initial={workflowSettings} />
+      </SettingsSection>
+    </div>
   )
 
   const auditTab = (
@@ -167,6 +185,7 @@ export default async function SettingsPage() {
         workspaceContent={workspaceTab}
         teamContent={teamTab}
         paymentsContent={paymentsTab}
+        automationContent={automationTab}
         auditContent={auditTab}
         accountContent={accountTab}
         isAdmin={isAdmin}

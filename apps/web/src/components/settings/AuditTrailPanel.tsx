@@ -19,9 +19,12 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   invoice_voided: 'Invoice voided', invoice_marked_paid: 'Invoice marked paid',
   payment_link_created: 'Payment link created', payment_link_sent: 'Payment link sent', payment_link_paid: 'Payment link paid',
   payment_account_connected: 'Payment account connected', payment_account_disconnected: 'Payment account disconnected',
+  invoice_reminder_sent: 'Invoice reminder sent', invoice_escalated: 'Invoice escalated',
+  review_request_sent: 'Review request sent', review_reminder_sent: 'Review reminder sent',
+  automation_settings_updated: 'Automation settings updated',
 }
 
-const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment']
+const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment', 'order', 'automation']
 
 const PAGE_SIZE = 25
 

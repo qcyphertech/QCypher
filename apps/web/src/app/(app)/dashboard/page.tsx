@@ -221,6 +221,9 @@ const ACTIVITY_LABEL: Record<string, string> = {
   template_created: 'created template', template_updated: 'updated template', template_deleted: 'deleted template',
   login: 'signed in', logout: 'signed out',
   invite_sent: 'sent an invite', role_changed: 'changed a role', user_removed: 'removed a user',
+  invoice_reminder_sent: 'sent an invoice reminder', invoice_escalated: 'escalated an unpaid invoice',
+  review_request_sent: 'sent a review request', review_reminder_sent: 'sent a review follow-up',
+  automation_settings_updated: 'updated automation settings',
 }
 function ActivityRow({ log }: { log: AuditLog }) {
   return (
@@ -254,6 +257,22 @@ export default async function DashboardPage() {
   const showWelcome = (profile as { has_seen_welcome?: boolean } | null)?.has_seen_welcome === false
   const isAdmin = user?.app_metadata?.role === 'owner'
   const recentActivity = isAdmin ? await getRecentAuditLogs(5) : []
+  let recentEscalations: { id: string; stage: string; sent_at: string }[] = []
+  let escalationCount = 0
+  let recentReviewRequests: { id: string; stage: string; sent_at: string }[] = []
+  let reviewRequestCount = 0
+  if (isAdmin) {
+    try {
+      const [escalations, reviewRequests] = await Promise.all([
+        supabase.from('invoice_escalations').select('id, stage, sent_at', { count: 'exact' }).order('sent_at', { ascending: false }).limit(5),
+        supabase.from('review_requests').select('id, stage, sent_at', { count: 'exact' }).order('sent_at', { ascending: false }).limit(5),
+      ])
+      recentEscalations = (escalations.data ?? []) as typeof recentEscalations
+      escalationCount = escalations.count ?? 0
+      recentReviewRequests = (reviewRequests.data ?? []) as typeof recentReviewRequests
+      reviewRequestCount = reviewRequests.count ?? 0
+    } catch { /* tables not migrated yet */ }
+  }
 
   const [
     { count: totalContacts },
@@ -347,6 +366,36 @@ export default async function DashboardPage() {
           }
         </Panel>
       </div>
+
+      {/* Automation widgets (admin only) */}
+      {isAdmin && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }} className="lg:grid-cols-2">
+          <Panel title="Invoice Escalations" href="/settings" linkLabel="Payments">
+            <p style={{ fontSize: '24px', fontWeight: 900, color: 'hsl(var(--foreground))', marginBottom: '8px' }}>{escalationCount ?? 0}</p>
+            {(recentEscalations ?? []).length === 0
+              ? <p style={{ fontSize: '15px', textAlign: 'center', padding: '16px 0', color: 'hsl(var(--muted-foreground))' }}>No escalations sent yet.</p>
+              : (recentEscalations as { id: string; stage: string; sent_at: string }[]).map(e => (
+                  <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', fontSize: '13px', color: 'hsl(var(--foreground))' }}>
+                    <span style={{ textTransform: 'capitalize' }}>{e.stage}</span>
+                    <span style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(e.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                ))
+            }
+          </Panel>
+          <Panel title="Review Requests" href="/settings" linkLabel="Automation">
+            <p style={{ fontSize: '24px', fontWeight: 900, color: 'hsl(var(--foreground))', marginBottom: '8px' }}>{reviewRequestCount ?? 0}</p>
+            {(recentReviewRequests ?? []).length === 0
+              ? <p style={{ fontSize: '15px', textAlign: 'center', padding: '16px 0', color: 'hsl(var(--muted-foreground))' }}>No review requests sent yet.</p>
+              : (recentReviewRequests as { id: string; stage: string; sent_at: string }[]).map(r => (
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', fontSize: '13px', color: 'hsl(var(--foreground))' }}>
+                    <span style={{ textTransform: 'capitalize' }}>{r.stage}</span>
+                    <span style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(r.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                ))
+            }
+          </Panel>
+        </div>
+      )}
 
       {/* Recent activity (admin only) */}
       {isAdmin && (
