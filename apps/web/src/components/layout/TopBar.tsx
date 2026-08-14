@@ -30,13 +30,13 @@ const HOME_ITEM: NavItem = {
 const PRIMARY_NAV: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, color: '#4a9db5', bg: 'rgba(74,157,181,0.12)',  flag: null },
   { href: '/contacts',  label: 'Contacts',  icon: Users,           color: '#10b981', bg: 'rgba(16,185,129,0.12)', flag: null },
-  { href: '/pipeline',  label: 'Pipeline',  icon: GitBranch,       color: '#f97316', bg: 'rgba(249,115,22,0.12)', flag: 'show_pipeline' },
+  { href: '/orders',    label: 'Orders',    icon: ShoppingBag,     color: '#f97316', bg: 'rgba(249,115,22,0.12)', flag: 'show_orders' },
   { href: '/calendar',  label: 'Calendar',  icon: Calendar,        color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', flag: 'show_calendar' },
 ]
 
 const SECONDARY_NAV: NavItem[] = [
+  { href: '/pipeline',  label: 'Pipeline',  icon: GitBranch,   color: '#f97316', bg: 'rgba(249,115,22,0.12)',  flag: 'show_pipeline'  },
   { href: '/inventory', label: 'Inventory', icon: Package,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   flag: 'show_catalog'   },
-  { href: '/orders',    label: 'Orders',    icon: ShoppingBag, color: '#10b981', bg: 'rgba(16,185,129,0.12)',  flag: 'show_orders'    },
   { href: '/payments',  label: 'Payments',  icon: Wallet,      color: '#2a52a0', bg: 'rgba(42,82,160,0.12)',   flag: 'show_orders'    },
   { href: '/templates', label: 'Templates', icon: FileText,    color: '#a855f7', bg: 'rgba(168,85,247,0.12)',  flag: 'show_templates' },
   { href: '/overview',  label: 'Overview',  icon: BarChart2,   color: '#22c55e', bg: 'rgba(34,197,94,0.12)',   flag: 'show_overview'  },
