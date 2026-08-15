@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Repeat, Pause, Play, X } from 'lucide-react'
+import { Repeat, Pause, Play, X, Pencil } from 'lucide-react'
 import { pauseRecurringJob, resumeRecurringJob, cancelRecurringJob, type RecurringJob } from '@/lib/actions/recurring-jobs'
 import { CreateRecurringJobModal } from '@/components/contacts/CreateRecurringJobModal'
 import { formatTimeLabel } from '@/lib/recurrence'
@@ -41,6 +41,7 @@ export function RecurringJobsSection({
 }) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
+  const [editingJob, setEditingJob] = useState<RecurringJob | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
 
   async function handlePause(id: string) {
@@ -113,6 +114,16 @@ export function RecurringJobsSection({
                 )}
                 {job.status !== 'cancelled' && (
                   <button
+                    onClick={() => setEditingJob(job)}
+                    disabled={busyId === job.id}
+                    title="Edit series"
+                    className="p-1.5 rounded-lg hover:bg-[hsl(var(--muted))] disabled:opacity-40"
+                  >
+                    <Pencil className="w-3.5 h-3.5" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                  </button>
+                )}
+                {job.status !== 'cancelled' && (
+                  <button
                     onClick={() => handleCancel(job.id)}
                     disabled={busyId === job.id}
                     title="Cancel series"
@@ -135,6 +146,18 @@ export function RecurringJobsSection({
           catalogItems={catalogItems}
           onClose={() => setShowModal(false)}
           onCreated={() => { setShowModal(false); router.refresh() }}
+        />
+      )}
+
+      {editingJob && (
+        <CreateRecurringJobModal
+          contactId={contactId}
+          tenantId={tenantId}
+          businessName={businessName}
+          catalogItems={catalogItems}
+          editJob={editingJob}
+          onClose={() => setEditingJob(null)}
+          onCreated={() => { setEditingJob(null); router.refresh() }}
         />
       )}
     </div>

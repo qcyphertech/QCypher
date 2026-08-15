@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createRecurringJob } from '@/lib/actions/recurring-jobs'
+import { createRecurringJob, updateRecurringJob, type RecurringJob } from '@/lib/actions/recurring-jobs'
 import { computeNextOccurrence, type RecurrenceFrequency } from '@/lib/recurrence'
 
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
@@ -18,6 +18,7 @@ const FREQUENCIES: { value: RecurrenceFrequency; label: string }[] = [
 export function CreateRecurringJobModal({
   contactId,
   catalogItems,
+  editJob,
   onClose,
   onCreated,
 }: {
@@ -25,22 +26,24 @@ export function CreateRecurringJobModal({
   tenantId: string
   businessName: string
   catalogItems: CatalogItem[]
+  editJob?: RecurringJob
   onClose: () => void
   onCreated: () => void
 }) {
+  const isEdit = !!editJob
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [frequency, setFrequency] = useState<RecurrenceFrequency>('monthly')
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState('')
-  const [dayOfMonth, setDayOfMonth] = useState('1')
-  const [intervalDays, setIntervalDays] = useState('30')
+  const [frequency, setFrequency] = useState<RecurrenceFrequency>(editJob?.frequency ?? 'monthly')
+  const [name, setName] = useState(editJob?.title ?? '')
+  const [description, setDescription] = useState(editJob?.description ?? '')
+  const [amount, setAmount] = useState(editJob ? String(editJob.amount) : '')
+  const [dayOfMonth, setDayOfMonth] = useState(editJob?.day_of_month ? String(editJob.day_of_month) : '1')
+  const [intervalDays, setIntervalDays] = useState(editJob?.interval_days ? String(editJob.interval_days) : '30')
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [scheduledTime, setScheduledTime] = useState('')
-  const [sendReminder, setSendReminder] = useState(true)
-  const [reminderDaysBefore, setReminderDaysBefore] = useState('3')
-  const [autoConfirm, setAutoConfirm] = useState(true)
+  const [scheduledTime, setScheduledTime] = useState(editJob?.scheduled_time?.slice(0, 5) ?? '')
+  const [sendReminder, setSendReminder] = useState(editJob?.send_reminder ?? true)
+  const [reminderDaysBefore, setReminderDaysBefore] = useState(editJob ? String(editJob.reminder_days_before) : '3')
+  const [autoConfirm, setAutoConfirm] = useState(editJob?.auto_confirm_if_no_reply ?? true)
 
   const needsDayOfMonth = frequency === 'monthly' || frequency === 'quarterly' || frequency === 'annually'
   const needsInterval = frequency === 'custom'
@@ -53,7 +56,7 @@ export function CreateRecurringJobModal({
     setAmount(String(item.base_price))
   }
 
-  const previewNextDate = startDate
+  const previewNextDate = !isEdit && startDate
     ? computeNextOccurrence(startDate, frequency, needsDayOfMonth ? Number(dayOfMonth) : null, needsInterval ? Number(intervalDays) : null)
     : null
 
@@ -62,21 +65,34 @@ export function CreateRecurringJobModal({
     setError(null)
     const fd = new FormData(e.currentTarget)
     startTransition(async () => {
-      const result = await createRecurringJob({
-        contactId,
-        catalogItemId: (fd.get('catalog_item_id') as string) || null,
-        title: name,
-        description: description || null,
-        amount: parseFloat(amount) || 0,
-        frequency,
-        intervalDays: needsInterval ? parseInt(intervalDays, 10) : null,
-        dayOfMonth: needsDayOfMonth ? parseInt(dayOfMonth, 10) : null,
-        startDate,
-        scheduledTime: scheduledTime || null,
-        sendReminder,
-        reminderDaysBefore: parseInt(reminderDaysBefore, 10) || 3,
-        autoConfirmIfNoReply: autoConfirm,
-      })
+      const result = isEdit
+        ? await updateRecurringJob(editJob!.id, {
+            title: name,
+            description: description || null,
+            amount: parseFloat(amount) || 0,
+            frequency,
+            intervalDays: needsInterval ? parseInt(intervalDays, 10) : null,
+            dayOfMonth: needsDayOfMonth ? parseInt(dayOfMonth, 10) : null,
+            scheduledTime: scheduledTime || null,
+            sendReminder,
+            reminderDaysBefore: parseInt(reminderDaysBefore, 10) || 3,
+            autoConfirmIfNoReply: autoConfirm,
+          })
+        : await createRecurringJob({
+            contactId,
+            catalogItemId: (fd.get('catalog_item_id') as string) || null,
+            title: name,
+            description: description || null,
+            amount: parseFloat(amount) || 0,
+            frequency,
+            intervalDays: needsInterval ? parseInt(intervalDays, 10) : null,
+            dayOfMonth: needsDayOfMonth ? parseInt(dayOfMonth, 10) : null,
+            startDate,
+            scheduledTime: scheduledTime || null,
+            sendReminder,
+            reminderDaysBefore: parseInt(reminderDaysBefore, 10) || 3,
+            autoConfirmIfNoReply: autoConfirm,
+          })
       if (!result.ok) { setError(result.error); return }
       onCreated()
     })
@@ -89,11 +105,13 @@ export function CreateRecurringJobModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
       <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
-          <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>Schedule recurring job</h2>
+          <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>
+            {isEdit ? 'Edit recurring job' : 'Schedule recurring job'}
+          </h2>
           <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {catalogItems.length > 0 && (
+          {!isEdit && catalogItems.length > 0 && (
             <div className="space-y-1.5">
               <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>From catalog (optional)</label>
               <select name="catalog_item_id" onChange={handleCatalogSelect} className={inputCls} style={{ color: 'hsl(var(--foreground))' }}>
@@ -139,18 +157,30 @@ export function CreateRecurringJobModal({
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>First occurrence</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+          {isEdit ? (
+            <div className="space-y-1.5">
+              <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>Appointment time</label>
               <input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
-            </div>
-            {previewNextDate && (
               <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                After that, the next one repeats on {new Date(previewNextDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}.
+                Next scheduled: {editJob!.next_scheduled_date
+                  ? new Date(editJob!.next_scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+                  : '—'}. Frequency/day-of-month changes apply starting the occurrence after that.
               </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>First occurrence</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+                <input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+              </div>
+              {previewNextDate && (
+                <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  After that, the next one repeats on {new Date(previewNextDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2 pt-2 border-t border-[hsl(var(--border))]">
             <label className="flex items-center gap-2 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
@@ -180,7 +210,7 @@ export function CreateRecurringJobModal({
               Cancel
             </button>
             <button type="submit" disabled={pending} className="flex-1 py-2.5 rounded-xl font-bold text-[15px] text-white disabled:opacity-50" style={{ background: 'hsl(var(--accent))' }}>
-              {pending ? 'Saving…' : 'Save & Schedule'}
+              {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Save & Schedule'}
             </button>
           </div>
         </form>
