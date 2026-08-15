@@ -5,6 +5,7 @@ import { CheckCircle2, XCircle, CalendarClock } from 'lucide-react'
 import { respondToRecurringOrder } from '@/lib/actions/recurring-jobs'
 import { formatTimeLabel } from '@/lib/recurrence'
 import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
+import { TimePicker } from '@/components/shared/TimePicker'
 
 type Appointment = {
   token: string
@@ -180,13 +181,7 @@ export function RecurringJobConfirmCard({ appointment }: { appointment: Appointm
               <label style={{ fontSize: '13px', fontWeight: 600, color: '#4a5568', display: 'block', marginBottom: '6px' }}>
                 New time (optional)
               </label>
-              <input
-                type="time"
-                step={1800}
-                value={rescheduleTime}
-                onChange={e => setRescheduleTime(e.target.value)}
-                style={{ width: '100%', fontSize: '15px', padding: '12px', borderRadius: '10px', border: '1px solid rgba(26,48,112,0.15)', marginBottom: '6px' }}
-              />
+              <TimePicker variant="standalone" value={rescheduleTime} onChange={setRescheduleTime} className="mb-1.5" />
               <p style={{ fontSize: '12px', color: '#9aa0ae', marginBottom: '14px' }}>
                 {appointment.businessName} will confirm your new time works with their schedule.
               </p>
