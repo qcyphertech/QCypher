@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'
 import type { PortalSession } from '@/lib/actions/portal'
-import { initHelcimCheckout, validateAndRecordPayment } from '@/lib/actions/portal'
+import { initHelcimCheckout, validateAndRecordPayment, initStripeCheckout, confirmStripePayment } from '@/lib/actions/portal'
 
 const UNIT_LABELS: Record<string, string> = {
   flat: '', hourly: '/hr', daily: '/day', weekly: '/wk', monthly: '/mo',
@@ -42,21 +43,49 @@ export function InvoicePayPage({
   lines,
   session,
   backHref,
+  returnPath,
+  paymentProvider,
 }: {
   order: Order
   lines: Line[]
   session: PortalSession
   backHref: string
+  returnPath: string
+  paymentProvider: 'stripe' | 'helcim' | null
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const stripeSessionId = searchParams.get('stripe_session_id')
+
   const [state, setState] = useState<'idle' | 'loading' | 'paid' | 'error'>(
-    order.payment_status === 'paid' ? 'paid' : 'idle',
+    order.payment_status === 'paid' ? 'paid' : (stripeSessionId ? 'loading' : 'idle'),
   )
   const [errorMsg, setErrorMsg] = useState('')
-  const [secretToken, setSecretToken] = useState('')
 
   const alreadyPaid = order.payment_status === 'paid'
 
-  async function handlePay() {
+  // Returning from Stripe's hosted checkout — re-verify server-side before
+  // trusting it, then strip the query param so a refresh doesn't re-check.
+  useEffect(() => {
+    if (!stripeSessionId || alreadyPaid) return
+    confirmStripePayment({
+      orderId: order.id,
+      tenantId: session.tenantId,
+      contactId: session.contactId,
+      sessionId: stripeSessionId,
+    }).then(result => {
+      if (result.ok) {
+        setState('paid')
+      } else {
+        setState('error')
+        setErrorMsg(result.error)
+      }
+      router.replace(returnPath)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stripeSessionId])
+
+  async function handlePayHelcim() {
     setState('loading')
     setErrorMsg('')
 
@@ -74,8 +103,6 @@ export function InvoicePayPage({
       setErrorMsg(result.error)
       return
     }
-
-    setSecretToken(result.secretToken)
 
     // Load HelcimPay.js and open modal
     const script = document.createElement('script')
@@ -127,6 +154,30 @@ export function InvoicePayPage({
 
     setState('idle') // Modal handles UX from here
   }
+
+  async function handlePayStripe() {
+    setState('loading')
+    setErrorMsg('')
+
+    const result = await initStripeCheckout({
+      orderId: order.id,
+      tenantId: session.tenantId,
+      contactId: session.contactId,
+      amountCents: Math.round(order.total_amount * 100),
+      customerEmail: '',
+      returnPath,
+    })
+
+    if (!result.ok) {
+      setState('error')
+      setErrorMsg(result.error)
+      return
+    }
+
+    window.location.href = result.url // full redirect to Stripe's hosted checkout
+  }
+
+  const handlePay = paymentProvider === 'stripe' ? handlePayStripe : handlePayHelcim
 
   if (state === 'paid' || alreadyPaid) {
     return (
@@ -207,29 +258,39 @@ export function InvoicePayPage({
           </div>
         </div>
 
-        {/* Fee Saver notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3">
-          <p className="text-[13px] text-blue-800">
-            A small processing fee will be added at checkout to cover card transaction costs.
-          </p>
-        </div>
+        {paymentProvider === 'helcim' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3">
+            <p className="text-[13px] text-blue-800">
+              A small processing fee will be added at checkout to cover card transaction costs.
+            </p>
+          </div>
+        )}
 
         {state === 'error' && (
           <p className="text-[13px] text-red-600 font-medium">{errorMsg}</p>
         )}
 
-        <button
-          onClick={handlePay}
-          disabled={state === 'loading'}
-          className="w-full py-3.5 rounded-xl text-[15px] font-bold text-white transition-opacity disabled:opacity-50"
-          style={{ background: 'linear-gradient(135deg, #1a3070, #2a52a0)' }}
-        >
-          {state === 'loading' ? 'Preparing payment…' : `Pay $${Number(order.total_amount).toFixed(2)}`}
-        </button>
+        {paymentProvider === null ? (
+          <div className="bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 text-center">
+            <p className="text-[15px] font-medium text-gray-700">Online payment isn&apos;t set up yet.</p>
+            <p className="text-[13px] text-gray-500 mt-1">Please contact {session.businessName} directly to arrange payment.</p>
+          </div>
+        ) : (
+          <button
+            onClick={handlePay}
+            disabled={state === 'loading'}
+            className="w-full py-3.5 rounded-xl text-[15px] font-bold text-white transition-opacity disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #1a3070, #2a52a0)' }}
+          >
+            {state === 'loading' ? 'Preparing payment…' : `Pay $${Number(order.total_amount).toFixed(2)}`}
+          </button>
+        )}
 
-        <p className="text-[12px] text-gray-400 text-center">
-          Invoice #{String(order.order_number ?? 0).padStart(4, '0')} · Secured by Helcim
-        </p>
+        {paymentProvider && (
+          <p className="text-[12px] text-gray-400 text-center">
+            Invoice #{String(order.order_number ?? 0).padStart(4, '0')} · Secured by {paymentProvider === 'stripe' ? 'Stripe' : 'Helcim'}
+          </p>
+        )}
       </div>
     </div>
   )

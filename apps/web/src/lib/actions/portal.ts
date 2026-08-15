@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendPaymentConfirmationEmails } from '@/lib/email/payment-notify'
 import { verifyHelcimTransaction } from '@/lib/helcim-verify'
 import { resolveHelcimApiKey } from '@/lib/helcim-connect'
+import { resolveStripeAccount } from '@/lib/stripe-connect'
 
 function admin() {
   return createClient(
@@ -345,6 +346,145 @@ export async function validateAndRecordPayment(input: {
     orderNumber: order.order_number,
     amount: Number(order.total_amount),
     transactionId: verified.transactionId,
+    customerEmail: contact?.email ?? null,
+    customerName: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null,
+  })
+
+  return { ok: true }
+}
+
+// ─── Which payment provider (if any) this tenant has connected ───────────────
+// The portal previously assumed Helcim unconditionally. A tenant may have
+// connected Stripe instead, or nothing at all.
+export async function getTenantPaymentProvider(tenantId: string): Promise<'stripe' | 'helcim' | null> {
+  const db = admin()
+  const { data } = await db
+    .from('tenant_payment_accounts')
+    .select('provider')
+    .eq('tenant_id', tenantId)
+    .eq('is_connected', true)
+    .maybeSingle()
+  if (data?.provider === 'stripe' || data?.provider === 'helcim') return data.provider
+  // No Stripe account connected — fall back to Helcim only if QCypher's
+  // platform key is configured (resolveHelcimApiKey's own fallback).
+  return process.env.HELCIM_API_KEY ? 'helcim' : null
+}
+
+// ─── Stripe: create a Checkout Session on the tenant's connected account ─────
+
+export async function initStripeCheckout(input: {
+  orderId: string
+  tenantId: string
+  contactId: string
+  amountCents: number
+  customerEmail: string
+  returnPath: string // e.g. /portal/acme/invoice/<id> — session id gets appended
+}): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const db = admin()
+
+  const { data: order } = await db
+    .from('orders')
+    .select('id, order_number')
+    .eq('id', input.orderId)
+    .eq('tenant_id', input.tenantId)
+    .eq('customer_id', input.contactId)
+    .maybeSingle()
+  if (!order) return { ok: false, error: 'Order not found' }
+
+  const account = await resolveStripeAccount(db, input.tenantId)
+  if (!account) return { ok: false, error: 'Stripe is not connected for this business' }
+
+  const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
+  const successUrl = `${appUrl}${input.returnPath}?stripe_session_id={CHECKOUT_SESSION_ID}`
+  const cancelUrl = `${appUrl}${input.returnPath}`
+
+  const body = new URLSearchParams({
+    mode: 'payment',
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    'line_items[0][price_data][currency]': 'usd',
+    'line_items[0][price_data][product_data][name]': `Invoice #${String(order.order_number ?? 0).padStart(4, '0')}`,
+    'line_items[0][price_data][unit_amount]': String(input.amountCents),
+    'line_items[0][quantity]': '1',
+    'metadata[order_id]': input.orderId,
+    'metadata[tenant_id]': input.tenantId,
+  })
+  if (input.customerEmail) body.set('customer_email', input.customerEmail)
+
+  const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${account.accessToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    console.error('[initStripeCheckout] Stripe error', JSON.stringify(err))
+    return { ok: false, error: (err as { error?: { message?: string } }).error?.message ?? 'Could not start checkout' }
+  }
+
+  const session = await res.json()
+  return { ok: true, url: session.url }
+}
+
+// ─── Stripe: re-verify a Checkout Session server-side and mark paid ──────────
+// No webhook — the customer returns to this exact URL after Stripe
+// redirects them, and we re-fetch the session directly from Stripe's API
+// (never trust the redirect alone) before marking the order paid. This
+// mirrors validateAndRecordPayment's Helcim re-verification pattern. The
+// tradeoff: if a customer pays but closes the tab before the redirect
+// completes, the order won't auto-mark paid — a real webhook would close
+// that gap, but needs a Stripe Dashboard webhook + secret configured per
+// deploy, which this intentionally avoids for now.
+export async function confirmStripePayment(input: {
+  orderId: string
+  tenantId: string
+  contactId: string
+  sessionId: string
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const db = admin()
+
+  const { data: order } = await db
+    .from('orders')
+    .select('id, order_number, total_amount, payment_status, contacts(first_name, last_name, email)')
+    .eq('id', input.orderId)
+    .eq('tenant_id', input.tenantId)
+    .eq('customer_id', input.contactId)
+    .maybeSingle()
+  if (!order) return { ok: false, error: 'Order not found' }
+  if (order.payment_status === 'paid') return { ok: true } // idempotent
+
+  const account = await resolveStripeAccount(db, input.tenantId)
+  if (!account) return { ok: false, error: 'Stripe is not connected for this business' }
+
+  const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${input.sessionId}`, {
+    headers: { Authorization: `Bearer ${account.accessToken}` },
+  })
+  if (!res.ok) return { ok: false, error: 'Could not verify payment with Stripe' }
+
+  const session = await res.json()
+  if (session.payment_status !== 'paid') return { ok: false, error: 'Payment was not completed' }
+  // Session belongs to this order (defense in depth, alongside the tenant-scoped API key used to fetch it)
+  if (session.metadata?.order_id !== input.orderId) return { ok: false, error: 'Payment does not match this invoice' }
+
+  const now = new Date().toISOString()
+  await db.from('orders').update({
+    payment_status: 'paid',
+    paid_at: now,
+    stripe_checkout_session_id: session.id,
+    stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+  }).eq('id', input.orderId)
+
+  const contact = order.contacts as unknown as { first_name: string; last_name: string | null; email: string | null } | null
+  await sendPaymentConfirmationEmails({
+    admin: db,
+    tenantId: input.tenantId,
+    orderNumber: order.order_number,
+    amount: Number(order.total_amount),
+    transactionId: session.id,
     customerEmail: contact?.email ?? null,
     customerName: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null,
   })
