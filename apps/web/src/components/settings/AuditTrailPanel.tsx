@@ -23,6 +23,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   review_request_sent: 'Review request sent', review_reminder_sent: 'Review reminder sent',
   automation_settings_updated: 'Automation settings updated',
   renewal_reminder_sent: 'Renewal reminder sent',
+  quote_approved: 'Quote approved', quote_change_requested: 'Customer requested quote changes',
 }
 
 const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment', 'order', 'automation']

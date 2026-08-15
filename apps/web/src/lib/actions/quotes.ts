@@ -5,6 +5,8 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { randomBytes } from 'crypto'
 import { renderNeutralEmail } from '@/lib/email/neutral'
+import { renderBrandedEmail } from '@/lib/email/brand'
+import { sendEmail } from '@/lib/email/send'
 
 const RESEND_API_KEY  = process.env.RESEND_API_KEY ?? ''
 const RESEND_FROM     = process.env.RESEND_FROM_EMAIL ?? 'hello@qcyphertech.com'
@@ -243,6 +245,23 @@ export async function getQuoteByToken(token: string): Promise<{
   }
 }
 
+// Emails every owner of a tenant — used to notify staff of customer-side
+// portal/quote actions (approval, change requests) that previously had no
+// notification at all despite the customer-facing UI claiming otherwise.
+async function notifyTenantOwners(admin: ReturnType<typeof adminClient>, tenantId: string, subject: string, bodyHtml: string) {
+  const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const emails = users
+    .filter(u => u.app_metadata?.tenant_id === tenantId && u.app_metadata?.role === 'owner')
+    .map(u => u.email ?? '')
+    .filter(Boolean)
+  if (!emails.length) return
+  await sendEmail({
+    to: emails,
+    subject,
+    html: renderBrandedEmail({ bodyHtml, cta: { label: 'View order', href: `${APP_URL}/orders` } }),
+  })
+}
+
 // Record a customer's signature. Service-role only. Called from the public quote page.
 export async function signQuote(input: {
   token: string
@@ -263,7 +282,7 @@ export async function signQuote(input: {
   if (!qt) return { ok: false, error: 'This link is no longer valid.' }
   if (new Date(qt.token_expires_at) < new Date()) return { ok: false, error: 'This link has expired. Please ask for a new one.' }
 
-  const { data: order } = await admin.from('orders').select('signed_at').eq('id', qt.order_id).single()
+  const { data: order } = await admin.from('orders').select('signed_at, order_number, total_amount').eq('id', qt.order_id).single()
   if (!order) return { ok: false, error: 'Quote not found.' }
   if (order.signed_at) return { ok: false, error: 'This quote has already been signed.' }
 
@@ -294,6 +313,85 @@ export async function signQuote(input: {
 
   // Consume token
   await admin.from('quote_tokens').delete().eq('order_id', qt.order_id)
+
+  const orderLabel = `Quote #${String(order.order_number ?? 0).padStart(4, '0')}`
+  await notifyTenantOwners(admin, qt.tenant_id,
+    `${orderLabel} approved by ${input.signedByName.trim()}`,
+    `
+      <p style="margin:0 0 4px;font-size:20px;font-weight:800;">Quote approved</p>
+      <p style="margin:16px 0 0;"><strong>${input.signedByName.trim()}</strong> approved ${orderLabel} for $${Number(order.total_amount).toFixed(2)}.</p>
+    `,
+  )
+
+  await admin.from('audit_logs').insert({
+    tenant_id: qt.tenant_id,
+    user_id: null,
+    user_email: 'system',
+    action: 'quote_approved',
+    resource_type: 'order',
+    resource_id: qt.order_id,
+    resource_name: orderLabel,
+    details: { signed_by: input.signedByName.trim() },
+  })
+
+  return { ok: true }
+}
+
+// Records a customer's "request changes" on a quote — the decline/feedback
+// path that was previously entirely missing (only approve-via-signature
+// existed). Does NOT consume the quote token — the customer can still
+// approve later, or the tenant revises the order and re-sends a fresh
+// token, which naturally supersedes this one.
+export async function requestQuoteChanges(input: {
+  token: string
+  message: string
+  requestedByName?: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const admin = adminClient()
+
+  const { data: qt } = await admin
+    .from('quote_tokens')
+    .select('order_id, tenant_id, token_expires_at')
+    .eq('access_token', input.token)
+    .maybeSingle()
+
+  if (!qt) return { ok: false, error: 'This link is no longer valid.' }
+  if (new Date(qt.token_expires_at) < new Date()) return { ok: false, error: 'This link has expired. Please ask for a new one.' }
+
+  const { data: order } = await admin.from('orders').select('signed_at, order_number').eq('id', qt.order_id).single()
+  if (!order) return { ok: false, error: 'Quote not found.' }
+  if (order.signed_at) return { ok: false, error: 'This quote has already been approved.' }
+
+  const message = input.message.trim()
+  if (!message) return { ok: false, error: 'Please describe what you’d like changed.' }
+
+  const now = new Date().toISOString()
+  await admin.from('orders').update({
+    change_requested_at: now,
+    change_request_message: message,
+  }).eq('id', qt.order_id)
+
+  const orderLabel = `Quote #${String(order.order_number ?? 0).padStart(4, '0')}`
+  const requester = input.requestedByName?.trim() || 'The customer'
+  await notifyTenantOwners(admin, qt.tenant_id,
+    `${requester} requested changes on ${orderLabel}`,
+    `
+      <p style="margin:0 0 4px;font-size:20px;font-weight:800;">Changes requested</p>
+      <p style="margin:16px 0 0;"><strong>${requester}</strong> asked for changes on ${orderLabel}:</p>
+      <p style="margin:12px 0 0;padding:16px 20px;background:#f8f9fc;border-radius:10px;border-left:3px solid #2a52a0;">${message.replace(/</g, '&lt;')}</p>
+    `,
+  )
+
+  await admin.from('audit_logs').insert({
+    tenant_id: qt.tenant_id,
+    user_id: null,
+    user_email: 'system',
+    action: 'quote_change_requested',
+    resource_type: 'order',
+    resource_id: qt.order_id,
+    resource_name: orderLabel,
+    details: { message },
+  })
 
   return { ok: true }
 }

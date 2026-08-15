@@ -1081,6 +1081,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          change_request_message: string | null
+          change_requested_at: string | null
           created_at: string
           customer_id: string | null
           helcim_transaction_id: string | null
@@ -1095,6 +1097,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          change_request_message?: string | null
+          change_requested_at?: string | null
           created_at?: string
           customer_id?: string | null
           helcim_transaction_id?: string | null
@@ -1109,6 +1113,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          change_request_message?: string | null
+          change_requested_at?: string | null
           created_at?: string
           customer_id?: string | null
           helcim_transaction_id?: string | null

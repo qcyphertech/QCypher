@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { signQuote } from '@/lib/actions/quotes'
-import { CheckCircle2 } from 'lucide-react'
+import { signQuote, requestQuoteChanges } from '@/lib/actions/quotes'
+import { CheckCircle2, MessageSquareText } from 'lucide-react'
 
 const UNIT_LABELS: Record<string, string> = {
   flat: '', hourly: '/hr', daily: '/day', weekly: '/wk', monthly: '/mo',
@@ -149,7 +149,37 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
   const [signedAt, setSignedAt] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const [requestingChanges, setRequestingChanges] = useState(false)
+  const [changeMessage, setChangeMessage] = useState('')
+  const [changeName, setChangeName] = useState('')
+  const [changeSubmitting, setChangeSubmitting] = useState(false)
+  const [changeSent, setChangeSent] = useState(false)
+  const [changeError, setChangeError] = useState<string | null>(null)
+
   const canSubmit = mode === 'type' ? name.trim().length > 0 : drawnData !== null
+
+  async function handleRequestChanges(e: React.FormEvent) {
+    e.preventDefault()
+    if (!changeMessage.trim()) return
+    setChangeSubmitting(true)
+    setChangeError(null)
+    try {
+      const result = await requestQuoteChanges({
+        token,
+        message: changeMessage,
+        requestedByName: changeName.trim() || undefined,
+      })
+      if (result.ok) {
+        setChangeSent(true)
+      } else {
+        setChangeError(result.error ?? 'Something went wrong. Please try again.')
+      }
+    } catch {
+      setChangeError('Something went wrong. Please try again.')
+    } finally {
+      setChangeSubmitting(false)
+    }
+  }
 
   async function handleSign(e: React.FormEvent) {
     e.preventDefault()
@@ -220,6 +250,37 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
                   <span className="text-[13px] text-gray-500">Amount</span>
                   <span className="text-[13px] font-bold text-gray-900">${Number(order.total_amount).toFixed(2)}</span>
                 </div>
+              </div>
+              {backHref && (
+                <a href={backHref}
+                  className="block w-full py-3 rounded-2xl text-[15px] font-bold text-white text-center"
+                  style={{ background: 'linear-gradient(135deg, #1a3070, #2a52a0)' }}>
+                  Back to portal
+                </a>
+              )}
+              <p className="text-[11px] text-gray-400">Quote #{String(order.order_number ?? 0).padStart(4, '0')} · {order.business_name}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (changeSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #f8f9fa 100%)' }}>
+        <div className="w-full max-w-sm">
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+            <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg, #1a3070, #2a52a0, #4a9db5)' }} />
+            <div className="px-8 py-10 text-center space-y-6">
+              <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mx-auto border-4 border-blue-100">
+                <MessageSquareText className="w-9 h-9 text-blue-500" />
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-gray-900">Request sent</h1>
+                <p className="text-[15px] text-gray-500 leading-relaxed">
+                  <span className="font-semibold text-gray-700">{order.business_name}</span> has been notified. We&apos;ll review your request and send an updated quote.
+                </p>
               </div>
               {backHref && (
                 <a href={backHref}
@@ -391,6 +452,67 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
             </p>
           </div>
         </form>
+
+        {/* Request changes — the decline/feedback path */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {!requestingChanges ? (
+            <button
+              type="button"
+              onClick={() => setRequestingChanges(true)}
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <MessageSquareText className="w-4 h-4" />
+              Not quite right? Request changes instead
+            </button>
+          ) : (
+            <form onSubmit={handleRequestChanges} className="px-6 py-5 space-y-4">
+              <div>
+                <h2 className="text-[15px] font-semibold text-gray-900">What would you like changed?</h2>
+                <p className="text-[13px] text-gray-500 mt-0.5">We&apos;ll pass this along to {order.business_name} and they&apos;ll send an updated quote.</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[15px] font-medium text-gray-700">Your name (optional)</label>
+                <input
+                  type="text"
+                  value={changeName}
+                  onChange={e => setChangeName(e.target.value)}
+                  placeholder="Jane Smith"
+                  autoComplete="name"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[15px] text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[15px] font-medium text-gray-700">What should change? *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={changeMessage}
+                  onChange={e => setChangeMessage(e.target.value)}
+                  placeholder="e.g. Can you remove the second visit and adjust the price?"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[15px] text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              {changeError && <p className="text-[13px] text-red-600 font-medium">{changeError}</p>}
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={changeSubmitting || !changeMessage.trim()}
+                  className="flex-1 py-3 rounded-xl text-[15px] font-bold text-white transition-opacity"
+                  style={{ background: '#374151', opacity: changeSubmitting || !changeMessage.trim() ? 0.5 : 1 }}
+                >
+                  {changeSubmitting ? 'Sending…' : 'Send request'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequestingChanges(false)}
+                  className="px-4 py-3 rounded-xl text-[15px] font-medium text-gray-500 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
 
       </div>
     </div>

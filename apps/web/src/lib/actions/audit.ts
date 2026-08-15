@@ -21,6 +21,7 @@ export type AuditAction =
   | 'review_request_sent' | 'review_reminder_sent'
   | 'automation_settings_updated'
   | 'renewal_reminder_sent'
+  | 'quote_approved' | 'quote_change_requested'
 
 export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation'
 
