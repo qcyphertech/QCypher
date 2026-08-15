@@ -100,9 +100,16 @@ function HistoryCard({ order }: { order: Order }) {
           </p>
           {order.notes && <p className="text-[13px] text-gray-500 mt-0.5 truncate">{order.notes}</p>}
         </div>
-        <span className="text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-          Paid
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+            Paid
+          </span>
+          {order.job_status && (
+            <span className="text-[11px] font-medium text-gray-500">
+              {JOB_STATUS_LABEL[order.job_status]}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
