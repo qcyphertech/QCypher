@@ -89,6 +89,43 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
   )
 }
 
+const TIER_COLOR: Record<string, string> = { bronze: '#b45309', silver: '#64748b', gold: '#ca8a04' }
+const TIER_EMOJI: Record<string, string> = { bronze: '🥉', silver: '🥈', gold: '🏆' }
+
+function LoyaltyCard({
+  tier, lifetimeSpend, creditBalance, settings,
+}: {
+  tier: 'bronze' | 'silver' | 'gold'
+  lifetimeSpend: number
+  creditBalance: number
+  settings: { bronze_discount_percent: number; silver_discount_percent: number; gold_discount_percent: number; silver_min_amount: number; gold_min_amount: number }
+}) {
+  const discountPercent = tier === 'gold' ? settings.gold_discount_percent : tier === 'silver' ? settings.silver_discount_percent : settings.bronze_discount_percent
+  const nextTier = tier === 'bronze' ? 'silver' : tier === 'silver' ? 'gold' : null
+  const nextThreshold = tier === 'bronze' ? settings.silver_min_amount : tier === 'silver' ? settings.gold_min_amount : null
+  const remaining = nextThreshold != null ? Math.max(0, nextThreshold - lifetimeSpend) : 0
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[18px]">{TIER_EMOJI[tier]}</span>
+          <span className="text-[15px] font-bold capitalize" style={{ color: TIER_COLOR[tier] }}>{tier} Member</span>
+        </div>
+        <span className="text-[13px] font-semibold text-gray-500">{discountPercent}% off</span>
+      </div>
+      {creditBalance > 0 && (
+        <p className="text-[14px] text-gray-700 mb-2">💳 ${creditBalance.toFixed(2)} credit available</p>
+      )}
+      {nextTier && nextThreshold != null && (
+        <p className="text-[13px] text-gray-400">
+          {remaining > 0 ? `$${remaining.toFixed(2)} more to reach ${nextTier}` : `You've unlocked ${nextTier}!`}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function HistoryCard({ order }: { order: Order }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4">
@@ -115,16 +152,23 @@ function HistoryCard({ order }: { order: Order }) {
   )
 }
 
+type LoyaltyData = { current_tier: 'bronze' | 'silver' | 'gold'; lifetime_spend: number; credit_balance: number } | null
+type LoyaltySettingsData = { bronze_discount_percent: number; silver_discount_percent: number; gold_discount_percent: number; silver_min_amount: number; gold_min_amount: number }
+
 export function PortalDashboard({
   session,
   quotes,
   invoices,
   history,
+  loyalty = null,
+  loyaltySettings,
 }: {
   session: PortalSession
   quotes: Order[]
   invoices: Order[]
   history: Order[]
+  loyalty?: LoyaltyData
+  loyaltySettings?: LoyaltySettingsData
 }) {
   const hasAnything = quotes.length + invoices.length + history.length > 0
   const invoicesDueTotal = invoices.reduce((sum, o) => sum + Number(o.total_amount), 0)
@@ -154,6 +198,15 @@ export function PortalDashboard({
             <StatTile label="Due now" value={fmt(invoicesDueTotal)} accent="#3b82f6" />
             <StatTile label="Total paid" value={fmt(totalPaid)} accent="#059669" />
           </div>
+        )}
+
+        {loyalty && loyaltySettings && (
+          <LoyaltyCard
+            tier={loyalty.current_tier}
+            lifetimeSpend={Number(loyalty.lifetime_spend)}
+            creditBalance={Number(loyalty.credit_balance)}
+            settings={loyaltySettings}
+          />
         )}
 
         {!hasAnything && (

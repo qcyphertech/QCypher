@@ -8,6 +8,7 @@ import { resolveHelcimApiKey } from '@/lib/helcim-connect'
 import { resolveStripeAccount } from '@/lib/stripe-connect'
 import { renderNeutralEmail } from '@/lib/email/neutral'
 import { sendSms } from '@/lib/telnyx'
+import { awardLoyaltyForPaidOrder, redeemLoyaltyAtCheckout } from '@/lib/actions/loyalty'
 
 function admin() {
   return createClient(
@@ -366,13 +367,14 @@ export async function validateAndRecordPayment(input: {
   contactId: string
   secretToken: string
   rawEventMessage: string
+  creditRedeemed?: number
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const db = admin()
 
   // Verify ownership
   const { data: order } = await db
     .from('orders')
-    .select('id, order_number, total_amount, payment_status, contacts(first_name, last_name, email)')
+    .select('id, order_number, total_amount, payment_status, recurring_job_id, contacts(first_name, last_name, email)')
     .eq('id', input.orderId)
     .eq('tenant_id', input.tenantId)
     .eq('customer_id', input.contactId)
@@ -389,6 +391,15 @@ export async function validateAndRecordPayment(input: {
     paid_at: now,
     helcim_transaction_id: verified.transactionId,
   }).eq('id', input.orderId)
+
+  await awardLoyaltyForPaidOrder(db, {
+    tenantId: input.tenantId,
+    contactId: input.contactId,
+    orderId: input.orderId,
+    amount: Number(order.total_amount),
+    isRecurringOccurrence: !!order.recurring_job_id,
+    creditRedeemed: input.creditRedeemed,
+  })
 
   const contact = order.contacts as unknown as { first_name: string; last_name: string | null; email: string | null } | null
   await sendPaymentConfirmationEmails({
@@ -430,6 +441,7 @@ export async function initStripeCheckout(input: {
   amountCents: number
   customerEmail: string
   returnPath: string // e.g. /portal/acme/invoice/<id> — session id gets appended
+  creditRedeemed?: number
 }): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const db = admin()
 
@@ -459,6 +471,7 @@ export async function initStripeCheckout(input: {
     'line_items[0][quantity]': '1',
     'metadata[order_id]': input.orderId,
     'metadata[tenant_id]': input.tenantId,
+    'metadata[credit_redeemed]': String(input.creditRedeemed ?? 0),
   })
   if (input.customerEmail) body.set('customer_email', input.customerEmail)
 
@@ -489,7 +502,7 @@ export async function initStripeCheckout(input: {
 async function markOrderPaidFromStripeSession(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: ReturnType<typeof admin>,
-  order: { id: string; order_number: number | null; total_amount: number; contacts: unknown },
+  order: { id: string; order_number: number | null; total_amount: number; customer_id: string; recurring_job_id: string | null; contacts: unknown },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   session: any,
   tenantId: string,
@@ -501,6 +514,16 @@ async function markOrderPaidFromStripeSession(
     stripe_checkout_session_id: session.id,
     stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
   }).eq('id', order.id)
+
+  const creditRedeemed = Number(session.metadata?.credit_redeemed ?? 0)
+  await awardLoyaltyForPaidOrder(db, {
+    tenantId,
+    contactId: order.customer_id,
+    orderId: order.id,
+    amount: Number(order.total_amount),
+    isRecurringOccurrence: !!order.recurring_job_id,
+    creditRedeemed: creditRedeemed > 0 ? creditRedeemed : undefined,
+  })
 
   const contact = order.contacts as unknown as { first_name: string; last_name: string | null; email: string | null } | null
   await sendPaymentConfirmationEmails({
@@ -532,7 +555,7 @@ export async function confirmStripePayment(input: {
 
   const { data: order } = await db
     .from('orders')
-    .select('id, order_number, total_amount, payment_status, contacts(first_name, last_name, email)')
+    .select('id, order_number, total_amount, payment_status, customer_id, recurring_job_id, contacts(first_name, last_name, email)')
     .eq('id', input.orderId)
     .eq('tenant_id', input.tenantId)
     .eq('customer_id', input.contactId)
@@ -578,7 +601,7 @@ export async function handleStripeCheckoutCompleted(
   const db = admin()
   const { data: order } = await db
     .from('orders')
-    .select('id, order_number, total_amount, payment_status, contacts(first_name, last_name, email)')
+    .select('id, order_number, total_amount, payment_status, customer_id, recurring_job_id, contacts(first_name, last_name, email)')
     .eq('id', orderId)
     .eq('tenant_id', tenantId)
     .maybeSingle()

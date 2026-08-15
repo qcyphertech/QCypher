@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'
 import type { PortalSession } from '@/lib/actions/portal'
 import { initHelcimCheckout, validateAndRecordPayment, initStripeCheckout, confirmStripePayment } from '@/lib/actions/portal'
+import { getLoyaltyCheckoutInfo, redeemLoyaltyAtCheckout } from '@/lib/actions/loyalty'
 
 const UNIT_LABELS: Record<string, string> = {
   flat: '', hourly: '/hr', daily: '/day', weekly: '/wk', monthly: '/mo',
@@ -113,6 +114,19 @@ export function InvoicePayPage({
 
   const alreadyPaid = order.payment_status === 'paid'
 
+  const [loyalty, setLoyalty] = useState<{ enabled: boolean; tier: string; discountPercent: number; creditBalance: number; discountedAmount: number } | null>(null)
+  const [applyLoyalty, setApplyLoyalty] = useState(true)
+
+  useEffect(() => {
+    if (alreadyPaid) return
+    getLoyaltyCheckoutInfo(session.tenantId, session.contactId, Number(order.total_amount)).then(setLoyalty)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const hasLoyaltyBenefit = !!loyalty?.enabled && (loyalty.discountPercent > 0 || loyalty.creditBalance > 0)
+  const savings = loyalty ? Number(order.total_amount) - loyalty.discountedAmount : 0
+  const displayAmount = hasLoyaltyBenefit && applyLoyalty ? loyalty!.discountedAmount : Number(order.total_amount)
+
   // Returning from Stripe's hosted checkout — re-verify server-side before
   // trusting it, then strip the query param so a refresh doesn't re-check.
   useEffect(() => {
@@ -138,11 +152,13 @@ export function InvoicePayPage({
     setState('loading')
     setErrorMsg('')
 
+    const redeemed = await redeemLoyaltyAtCheckout(session.tenantId, session.contactId, Number(order.total_amount), hasLoyaltyBenefit && applyLoyalty)
+
     const result = await initHelcimCheckout({
       orderId: order.id,
       tenantId: session.tenantId,
       contactId: session.contactId,
-      amountCents: Math.round(order.total_amount * 100),
+      amountCents: redeemed.finalAmountCents,
       customerName: session.contactName,
       customerEmail: '',
     })
@@ -191,6 +207,7 @@ export function InvoicePayPage({
         contactId: session.contactId,
         secretToken: result.secretToken,
         rawEventMessage: data.eventMessage,
+        creditRedeemed: redeemed.creditToUse,
       })
 
       if (vResult.ok) {
@@ -208,13 +225,16 @@ export function InvoicePayPage({
     setState('loading')
     setErrorMsg('')
 
+    const redeemed = await redeemLoyaltyAtCheckout(session.tenantId, session.contactId, Number(order.total_amount), hasLoyaltyBenefit && applyLoyalty)
+
     const result = await initStripeCheckout({
       orderId: order.id,
       tenantId: session.tenantId,
       contactId: session.contactId,
-      amountCents: Math.round(order.total_amount * 100),
+      amountCents: redeemed.finalAmountCents,
       customerEmail: '',
       returnPath,
+      creditRedeemed: redeemed.creditToUse,
     })
 
     if (!result.ok) {
@@ -313,6 +333,29 @@ export function InvoicePayPage({
           </div>
         </div>
 
+        {hasLoyaltyBenefit && (
+          <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-amber-100 bg-amber-50 flex items-center gap-2">
+              <span className="text-[16px]">🏆</span>
+              <h2 className="text-[15px] font-semibold text-gray-900 capitalize">{loyalty!.tier} member benefits</h2>
+            </div>
+            <div className="px-6 py-4 space-y-2">
+              {loyalty!.discountPercent > 0 && (
+                <p className="text-[14px] text-gray-600">{loyalty!.discountPercent}% member discount</p>
+              )}
+              {loyalty!.creditBalance > 0 && (
+                <p className="text-[14px] text-gray-600">${loyalty!.creditBalance.toFixed(2)} available credit</p>
+              )}
+              <label className="flex items-center gap-2 pt-2 cursor-pointer">
+                <input type="checkbox" checked={applyLoyalty} onChange={e => setApplyLoyalty(e.target.checked)} />
+                <span className="text-[14px] font-medium text-gray-800">
+                  Apply my benefits — save ${savings.toFixed(2)}
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
+
         {paymentProvider === 'helcim' && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3">
             <p className="text-[13px] text-blue-800">
@@ -337,7 +380,7 @@ export function InvoicePayPage({
             className="w-full py-3.5 rounded-xl text-[15px] font-bold text-white transition-opacity disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #1a3070, #2a52a0)' }}
           >
-            {state === 'loading' ? 'Preparing payment…' : `Pay $${Number(order.total_amount).toFixed(2)}`}
+            {state === 'loading' ? 'Preparing payment…' : `Pay $${displayAmount.toFixed(2)}`}
           </button>
         )}
 

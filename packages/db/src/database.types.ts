@@ -318,6 +318,7 @@ export type Database = {
           last_name: string | null
           notes: string | null
           phone: string | null
+          referred_by_contact_id: string | null
           source: string | null
           status: Database["public"]["Enums"]["contact_status"]
           tags: string[] | null
@@ -334,6 +335,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          referred_by_contact_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["contact_status"]
           tags?: string[] | null
@@ -350,6 +352,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          referred_by_contact_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["contact_status"]
           tags?: string[] | null
@@ -357,6 +360,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contacts_referred_by_contact_id_fkey"
+            columns: ["referred_by_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contacts_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -404,6 +414,60 @@ export type Database = {
           },
           {
             foreignKeyName: "customer_automation_overrides_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_loyalty: {
+        Row: {
+          bonus_points: number
+          contact_id: string
+          created_at: string
+          credit_balance: number
+          current_tier: string
+          id: string
+          lifetime_spend: number
+          tenant_id: string
+          tier_promoted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          bonus_points?: number
+          contact_id: string
+          created_at?: string
+          credit_balance?: number
+          current_tier?: string
+          id?: string
+          lifetime_spend?: number
+          tenant_id: string
+          tier_promoted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bonus_points?: number
+          contact_id?: string
+          created_at?: string
+          credit_balance?: number
+          current_tier?: string
+          id?: string
+          lifetime_spend?: number
+          tenant_id?: string
+          tier_promoted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_loyalty_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_loyalty_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1003,6 +1067,127 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_settings: {
+        Row: {
+          bronze_discount_percent: number
+          bronze_min_amount: number
+          gold_discount_percent: number
+          gold_min_amount: number
+          referral_credit_amount: number
+          referral_program_enabled: boolean
+          referral_requires_completion: boolean
+          silver_discount_percent: number
+          silver_min_amount: number
+          tenant_id: string
+          tier_program_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          bronze_discount_percent?: number
+          bronze_min_amount?: number
+          gold_discount_percent?: number
+          gold_min_amount?: number
+          referral_credit_amount?: number
+          referral_program_enabled?: boolean
+          referral_requires_completion?: boolean
+          silver_discount_percent?: number
+          silver_min_amount?: number
+          tenant_id: string
+          tier_program_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          bronze_discount_percent?: number
+          bronze_min_amount?: number
+          gold_discount_percent?: number
+          gold_min_amount?: number
+          referral_credit_amount?: number
+          referral_program_enabled?: boolean
+          referral_requires_completion?: boolean
+          silver_discount_percent?: number
+          silver_min_amount?: number
+          tenant_id?: string
+          tier_program_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_transactions: {
+        Row: {
+          amount: number | null
+          contact_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          points: number | null
+          referred_contact_id: string | null
+          tenant_id: string
+          type: string
+        }
+        Insert: {
+          amount?: number | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          points?: number | null
+          referred_contact_id?: string | null
+          tenant_id: string
+          type: string
+        }
+        Update: {
+          amount?: number | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          points?: number | null
+          referred_contact_id?: string | null
+          tenant_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_referred_contact_id_fkey"
+            columns: ["referred_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_line_items: {
         Row: {
           actual_return_date: string | null
@@ -1123,6 +1308,7 @@ export type Database = {
           reminder_sent_at: string | null
           reschedule_to_date: string | null
           scheduled_date: string | null
+          scheduled_time: string | null
           signed_at: string | null
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -1150,6 +1336,7 @@ export type Database = {
           reminder_sent_at?: string | null
           reschedule_to_date?: string | null
           scheduled_date?: string | null
+          scheduled_time?: string | null
           signed_at?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -1177,6 +1364,7 @@ export type Database = {
           reminder_sent_at?: string | null
           reschedule_to_date?: string | null
           scheduled_date?: string | null
+          scheduled_time?: string | null
           signed_at?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -1628,6 +1816,7 @@ export type Database = {
           next_scheduled_date: string | null
           paused_at: string | null
           reminder_days_before: number
+          scheduled_time: string | null
           send_reminder: boolean
           status: string
           tenant_id: string
@@ -1650,6 +1839,7 @@ export type Database = {
           next_scheduled_date?: string | null
           paused_at?: string | null
           reminder_days_before?: number
+          scheduled_time?: string | null
           send_reminder?: boolean
           status?: string
           tenant_id: string
@@ -1672,6 +1862,7 @@ export type Database = {
           next_scheduled_date?: string | null
           paused_at?: string | null
           reminder_days_before?: number
+          scheduled_time?: string | null
           send_reminder?: boolean
           status?: string
           tenant_id?: string
@@ -2121,6 +2312,57 @@ export type Database = {
           },
         ]
       }
+      tenant_referrals: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          credit_amount: number
+          credit_type: string | null
+          fulfilled_at: string | null
+          id: string
+          referred_tenant_id: string
+          referrer_tenant_id: string
+          status: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          credit_amount?: number
+          credit_type?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          referred_tenant_id: string
+          referrer_tenant_id: string
+          status?: string
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          credit_amount?: number
+          credit_type?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          referred_tenant_id?: string
+          referrer_tenant_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_referrals_referred_tenant_id_fkey"
+            columns: ["referred_tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_referrals_referrer_tenant_id_fkey"
+            columns: ["referrer_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -2132,6 +2374,7 @@ export type Database = {
           is_admin: boolean
           name: string
           plan: string
+          referred_by_tenant_id: string | null
           settings: Json
           slug: string
           status: string
@@ -2148,6 +2391,7 @@ export type Database = {
           is_admin?: boolean
           name: string
           plan?: string
+          referred_by_tenant_id?: string | null
           settings?: Json
           slug: string
           status?: string
@@ -2164,13 +2408,22 @@ export type Database = {
           is_admin?: boolean
           name?: string
           plan?: string
+          referred_by_tenant_id?: string | null
           settings?: Json
           slug?: string
           status?: string
           telnyx_number?: string | null
           twilio_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_referred_by_tenant_id_fkey"
+            columns: ["referred_by_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {

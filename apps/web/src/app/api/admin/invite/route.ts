@@ -42,9 +42,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { name, slug, email } = await request.json() as { name: string; slug: string; email: string }
+  const { name, slug, email, referredByTenantId } = await request.json() as { name: string; slug: string; email: string; referredByTenantId?: string }
   if (!name?.trim() || !slug?.trim() || !email?.trim()) {
     return NextResponse.json({ error: 'name, slug, and email are required' }, { status: 400 })
+  }
+
+  if (referredByTenantId) {
+    const { data: referrer } = await admin.from('tenants').select('id').eq('id', referredByTenantId).maybeSingle()
+    if (!referrer) return NextResponse.json({ error: 'referredByTenantId does not match an existing tenant' }, { status: 400 })
   }
 
   // Pre-check for an existing account before provisioning a whole tenant
@@ -60,7 +65,11 @@ export async function POST(request: NextRequest) {
   // 1. Create tenant row
   const { data: tenant, error: tenantErr } = await admin
     .from('tenants')
-    .insert({ name: name.trim(), slug: slug.trim().toLowerCase() })
+    .insert({
+      name: name.trim(),
+      slug: slug.trim().toLowerCase(),
+      ...(referredByTenantId ? { referred_by_tenant_id: referredByTenantId } : {}),
+    } as never)
     .select('id')
     .single()
 
@@ -91,6 +100,14 @@ export async function POST(request: NextRequest) {
   await admin.auth.admin.updateUserById(invite.user.id, {
     app_metadata: { tenant_id: tenant.id },
   })
+
+  // 4. Record the tenant referral (Layer 2 loyalty) — tracked for manual fulfillment
+  if (referredByTenantId) {
+    await admin.from('tenant_referrals').insert({
+      referrer_tenant_id: referredByTenantId,
+      referred_tenant_id: tenant.id,
+    } as never)
+  }
 
   return NextResponse.json({ tenantId: tenant.id, email: invite.user.email })
 }

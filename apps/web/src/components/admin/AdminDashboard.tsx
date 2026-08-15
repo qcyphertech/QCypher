@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
@@ -10,6 +10,7 @@ import { IncidentsPanel } from '@/components/admin/IncidentsPanel'
 import { PlatformModulesPanel } from '@/components/admin/PlatformModulesPanel'
 import { InvoicesPanel } from '@/components/admin/InvoicesPanel'
 import { ClientsPanel } from '@/components/admin/ClientsPanel'
+import { ReferralProgramPanel } from '@/components/admin/ReferralProgramPanel'
 import { listTenants, type TenantSummary } from '@/lib/actions/admin-console'
 
 type Tenant = {
@@ -22,6 +23,7 @@ const TABS = [
   { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck },
   { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
   { id: 'invoices', label: 'Invoices', icon: Receipt },
+  { id: 'referrals', label: 'Referrals', icon: Gift },
   { id: 'modules', label: 'Modules', icon: LayoutGrid },
   { id: 'audit', label: 'Audit Trail', icon: ScrollText },
 ] as const
@@ -119,6 +121,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
       {tab === 'approvals' && isSuperAdmin && <ApprovalRequestsPanel />}
       {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={allTenants} />}
       {tab === 'invoices' && isSuperAdmin && <InvoicesPanel tenants={allTenants} />}
+      {tab === 'referrals' && isSuperAdmin && <ReferralProgramPanel />}
       {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}
       {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={allTenants} />}
 
@@ -132,10 +135,15 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [form, setForm] = useState({ name: '', slug: '', email: '' })
+  const [form, setForm] = useState({ name: '', slug: '', email: '', referredByTenantId: '' })
+  const [referrerOptions, setReferrerOptions] = useState<TenantSummary[]>([])
+
+  useEffect(() => {
+    listTenants().then(setReferrerOptions)
+  }, [])
 
   function set(field: string) {
-    return (e: React.ChangeEvent<HTMLInputElement>) =>
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }))
   }
 
@@ -150,7 +158,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
       const res = await fetch('/api/admin/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, referredByTenantId: form.referredByTenantId || undefined }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.error ?? 'Failed'); return }
@@ -194,6 +202,13 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-1.5">
               <label className="text-[15px] font-medium">Owner email *</label>
               <input required type="email" value={form.email} onChange={set('email')} placeholder="owner@example.com" className={inputCls} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[15px] font-medium">Referred by (optional)</label>
+              <select value={form.referredByTenantId} onChange={set('referredByTenantId')} className={inputCls}>
+                <option value="">No referral</option>
+                {referrerOptions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
             </div>
             {error && <p className="text-[15px] text-red-500">{error}</p>}
             <div className="flex gap-3">

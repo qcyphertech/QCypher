@@ -12,11 +12,15 @@ import { ExportDeletePanel } from '@/components/settings/ExportDeletePanel'
 import { SettingsTabs, SettingsSection, SettingsRow } from '@/components/settings/SettingsTabs'
 import { PaymentAccountPanel } from '@/components/settings/PaymentAccountPanel'
 import { AutomationSettingsPanel } from '@/components/settings/AutomationSettingsPanel'
+import { LoyaltyRewardsPanel } from '@/components/settings/LoyaltyRewardsPanel'
+import { ReferQCypherPanel } from '@/components/settings/ReferQCypherPanel'
 import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
 import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 import { getDeletionStatus, type DeletionStatus } from '@/lib/actions/account-deletion'
 import { getPaymentAccountStatus } from '@/lib/actions/payment-accounts'
 import { getWorkflowSettings, type WorkflowSettings } from '@/lib/actions/workflow-settings'
+import { getLoyaltySettings, type LoyaltySettings } from '@/lib/actions/loyalty'
+import { getMyTenantReferrals } from '@/lib/actions/tenant-referrals'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -69,6 +73,8 @@ export default async function SettingsPage() {
     google_review_url: null,
   }
   const workflowSettings = isAdmin ? await getWorkflowSettings().catch(() => DEFAULT_WORKFLOW_SETTINGS) : DEFAULT_WORKFLOW_SETTINGS
+  const loyaltySettings: LoyaltySettings | null = isAdmin && tenantId ? await getLoyaltySettings(tenantId).catch(() => null) : null
+  const myReferrals = isAdmin ? await getMyTenantReferrals().catch(() => []) : []
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
   const identities  = user.identities ?? []
@@ -117,6 +123,17 @@ export default async function SettingsPage() {
     <div>
       <SettingsSection label="Automation" hint="Automatic invoice reminders and review requests — sent daily.">
         <AutomationSettingsPanel initial={workflowSettings} />
+      </SettingsSection>
+    </div>
+  )
+
+  const loyaltyTab = (
+    <div>
+      <SettingsSection label="Loyalty & Rewards" hint="Reward repeat customers with tier discounts and referral credit, redeemable at checkout.">
+        {loyaltySettings && <LoyaltyRewardsPanel initial={loyaltySettings} />}
+      </SettingsSection>
+      <SettingsSection label="Refer QCypher" hint="Earn $50 for every service business you refer to QCypher.">
+        <ReferQCypherPanel initial={myReferrals} />
       </SettingsSection>
     </div>
   )
@@ -186,6 +203,7 @@ export default async function SettingsPage() {
         teamContent={teamTab}
         paymentsContent={paymentsTab}
         automationContent={automationTab}
+        loyaltyContent={loyaltyTab}
         auditContent={auditTab}
         accountContent={accountTab}
         isAdmin={isAdmin}

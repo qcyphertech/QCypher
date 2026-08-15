@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
@@ -19,6 +19,7 @@ export function ContactForm({ contact }: { contact?: Contact }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
+  const [referralOptions, setReferralOptions] = useState<{ id: string; name: string }[]>([])
 
   const [form, setForm] = useState({
     first_name: contact?.first_name ?? '',
@@ -31,7 +32,24 @@ export function ContactForm({ contact }: { contact?: Contact }) {
     tags: contact?.tags?.join(', ') ?? '',
     source: contact?.source ?? '',
     status: contact?.status ?? 'lead',
+    referred_by_contact_id: (contact as unknown as { referred_by_contact_id?: string | null })?.referred_by_contact_id ?? '',
   })
+
+  useEffect(() => {
+    supabase
+      .from('contacts')
+      .select('id, first_name, last_name')
+      .order('first_name')
+      .then(({ data }) => {
+        if (!data) return
+        setReferralOptions(
+          data
+            .filter(c => c.id !== contact?.id)
+            .map(c => ({ id: c.id, name: `${c.first_name} ${c.last_name ?? ''}`.trim() }))
+        )
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function set(field: string) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -53,12 +71,13 @@ export function ContactForm({ contact }: { contact?: Contact }) {
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : null,
       source: form.source.trim() || null,
       status: form.status as Contact['status'],
+      referred_by_contact_id: form.referred_by_contact_id || null,
     }
 
     startTransition(async () => {
       const contactName = `${payload.first_name} ${payload.last_name ?? ''}`.trim()
       if (contact) {
-        const { error } = await supabase.from('contacts').update(payload).eq('id', contact.id)
+        const { error } = await supabase.from('contacts').update(payload as never).eq('id', contact.id)
         if (error) { setError(error.message); return }
         logAudit({ action: 'contact_updated', resource_type: 'contact', resource_id: contact.id, resource_name: contactName })
         router.push(`/contacts/${contact.id}`)
@@ -66,7 +85,7 @@ export function ContactForm({ contact }: { contact?: Contact }) {
         const { data: { user } } = await supabase.auth.getUser()
         const tenantId = user?.app_metadata?.tenant_id ?? user?.user_metadata?.tenant_id
         if (!tenantId) { setError('Session error — please refresh and try again.'); return }
-        const { data, error } = await supabase.from('contacts').insert({ ...payload, tenant_id: tenantId }).select('id').single()
+        const { data, error } = await supabase.from('contacts').insert({ ...payload, tenant_id: tenantId } as never).select('id').single()
         if (error) { setError(error.message); return }
         logAudit({ action: 'contact_created', resource_type: 'contact', resource_id: data.id, resource_name: contactName })
         router.push(`/contacts/${data.id}`)
@@ -106,6 +125,12 @@ export function ContactForm({ contact }: { contact?: Contact }) {
       <Field label="Status">
         <select value={form.status} onChange={set('status')} className={input}>
           {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </Field>
+      <Field label="Referred by">
+        <select value={form.referred_by_contact_id} onChange={set('referred_by_contact_id')} className={input}>
+          <option value="">— None —</option>
+          {referralOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </Field>
       <Field label="Notes">
