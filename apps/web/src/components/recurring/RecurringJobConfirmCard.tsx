@@ -182,6 +182,7 @@ export function RecurringJobConfirmCard({ appointment }: { appointment: Appointm
               </label>
               <input
                 type="time"
+                step={1800}
                 value={rescheduleTime}
                 onChange={e => setRescheduleTime(e.target.value)}
                 style={{ width: '100%', fontSize: '15px', padding: '12px', borderRadius: '10px', border: '1px solid rgba(26,48,112,0.15)', marginBottom: '6px' }}

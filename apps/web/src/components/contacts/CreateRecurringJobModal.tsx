@@ -172,7 +172,7 @@ export function CreateRecurringJobModal({
           {isEdit ? (
             <div className="space-y-1.5">
               <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>Appointment time</label>
-              <input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+              <input type="time" step={1800} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
               <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 Next scheduled: {editJob!.next_scheduled_date
                   ? new Date(editJob!.next_scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
@@ -184,7 +184,7 @@ export function CreateRecurringJobModal({
               <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>First occurrence</label>
               <div className="grid grid-cols-2 gap-2">
                 <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
-                <input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+                <input type="time" step={1800} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
               </div>
               {previewNextDate && (
                 <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
