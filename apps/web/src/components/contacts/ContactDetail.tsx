@@ -1,8 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2 } from 'lucide-react'
+import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { InteractionTimeline } from '@/components/interactions/InteractionTimeline'
@@ -32,6 +33,7 @@ function initials(c: Contact) {
 }
 
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
+type TabKey = 'timeline' | 'payments' | 'recurring' | 'automation'
 
 export function ContactDetail({ contact, interactions, orders = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [] }: {
   contact: Contact
@@ -46,6 +48,7 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
   const router = useRouter()
   const supabase = createClient()
   const { canEdit, isAdmin } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
+  const [tab, setTab] = useState<TabKey>('timeline')
 
   async function handleDelete() {
     if (!confirm(`Delete ${contact.first_name}? This cannot be undone.`)) return
@@ -55,25 +58,38 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
     router.refresh()
   }
 
+  const tabs: { key: TabKey; label: string; icon: React.ReactNode; count?: number }[] = [
+    { key: 'timeline', label: 'Timeline', icon: <Clock className="w-4 h-4" />, count: interactions.length },
+    { key: 'payments', label: 'Payments', icon: <CreditCard className="w-4 h-4" />, count: orders.length },
+    { key: 'recurring', label: 'Recurring Jobs', icon: <Repeat className="w-4 h-4" />, count: recurringJobs.length },
+    ...(isAdmin ? [{ key: 'automation' as TabKey, label: 'Automation', icon: <Zap className="w-4 h-4" /> }] : []),
+  ]
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-5xl space-y-6">
       {/* Header card */}
-      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-soft border border-[hsl(var(--border))] p-6">
+      <div
+        className="bg-[hsl(var(--card))] rounded-3xl border border-[hsl(var(--border))] p-6"
+        style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 8px 24px rgba(15,23,42,0.05)' }}
+      >
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-accent/10 text-accent flex items-center justify-center text-xl font-bold flex-shrink-0">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold flex-shrink-0 text-white"
+            style={{ background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent) / 0.65))' }}
+          >
             {initials(contact)}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg font-semibold">{contact.first_name} {contact.last_name}</h1>
-              <span className={cn('text-[15px] px-2 py-0.5 rounded-full font-medium capitalize', STATUS_COLOR[contact.status])}>
+              <h1 className="text-lg font-semibold tracking-tight">{contact.first_name} {contact.last_name}</h1>
+              <span className={cn('text-[13px] px-2 py-0.5 rounded-full font-semibold capitalize', STATUS_COLOR[contact.status])}>
                 {contact.status}
               </span>
             </div>
             {contact.company && <p className="text-[15px] text-[hsl(var(--muted-foreground))] mt-0.5">{contact.company}</p>}
           </div>
           {canEdit && (
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex gap-1.5 flex-shrink-0">
               <Link href={`/contacts/${contact.id}/edit`} className="p-2 rounded-xl hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] transition-colors">
                 <Pencil className="w-4 h-4" />
               </Link>
@@ -108,7 +124,7 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
           <div className="mt-4 flex items-center gap-2 flex-wrap">
             <Tag className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
             {contact.tags.map(tag => (
-              <span key={tag} className="text-[15px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium">{tag}</span>
+              <span key={tag} className="text-[13px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-semibold">{tag}</span>
             ))}
           </div>
         )}
@@ -132,26 +148,60 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
         </div>
       </div>
 
-      {/* Payment requests — per-order, tenant-admin only */}
-      <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} />
+      {/* Sidebar tabs + content */}
+      <div className="flex flex-col md:flex-row gap-6">
+        <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible md:w-52 flex-shrink-0 pb-1 md:pb-0">
+          {tabs.map(t => {
+            const active = tab === t.key
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  'flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[14px] font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+                  active
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]',
+                )}
+              >
+                <span className={active ? 'text-accent' : 'text-[hsl(var(--muted-foreground))]'}>{t.icon}</span>
+                {t.label}
+                {typeof t.count === 'number' && t.count > 0 && (
+                  <span
+                    className={cn(
+                      'ml-auto text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center',
+                      active ? 'bg-accent text-white' : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]',
+                    )}
+                  >
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </nav>
 
-      {/* Recurring jobs — tenant-admin only */}
-      <RecurringJobsSection
-        contactId={contact.id}
-        tenantId={tenantId}
-        businessName={businessName}
-        catalogItems={catalogItems}
-        jobs={recurringJobs}
-      />
-
-      {/* Per-customer automation opt-out — tenant-admin only */}
-      {isAdmin && <AutomationSection contactId={contact.id} />}
-
-      {/* Interaction timeline */}
-      <div className="space-y-4">
-        <h2 className="text-[15px] font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Timeline</h2>
-        <AddInteractionForm contactId={contact.id} />
-        <InteractionTimeline interactions={interactions} />
+        <div className="flex-1 min-w-0">
+          {tab === 'timeline' && (
+            <div className="space-y-4">
+              <AddInteractionForm contactId={contact.id} />
+              <InteractionTimeline interactions={interactions} />
+            </div>
+          )}
+          {tab === 'payments' && (
+            <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} />
+          )}
+          {tab === 'recurring' && (
+            <RecurringJobsSection
+              contactId={contact.id}
+              tenantId={tenantId}
+              businessName={businessName}
+              catalogItems={catalogItems}
+              jobs={recurringJobs}
+            />
+          )}
+          {tab === 'automation' && isAdmin && <AutomationSection contactId={contact.id} />}
+        </div>
       </div>
     </div>
   )

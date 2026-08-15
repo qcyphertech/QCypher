@@ -100,8 +100,11 @@ export async function updateRecurringJob(id: string, input: {
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const { tenantId, admin } = await requireOwnerCaller()
 
-  const { data: job } = await admin.from('recurring_jobs').select('contact_id').eq('id', id).eq('tenant_id', tenantId).maybeSingle()
+  const { data: job } = await admin.from('recurring_jobs').select('contact_id, title, amount, scheduled_time').eq('id', id).eq('tenant_id', tenantId).maybeSingle()
   if (!job) return { ok: false, error: 'Recurring job not found' }
+
+  const priceChanged = Number(job.amount) !== input.amount
+  const timeChanged = (job.scheduled_time?.slice(0, 5) ?? '') !== (input.scheduledTime ?? '')
 
   const { error } = await admin.from('recurring_jobs').update({
     title: input.title,
@@ -119,7 +122,82 @@ export async function updateRecurringJob(id: string, input: {
 
   if (error) return { ok: false, error: error.message }
   revalidatePath(`/contacts/${job.contact_id}`)
+
+  if (priceChanged || timeChanged) {
+    await notifyAffectedOccurrences(admin, id, tenantId, {
+      title: input.title, description: input.description ?? null, amount: input.amount,
+      scheduledTime: input.scheduledTime ?? null, priceChanged, timeChanged,
+    })
+  }
+
   return { ok: true }
+}
+
+// Propagates a price/time edit to any not-yet-paid occurrence already
+// created for this series, and lets the customer know — the reminder email
+// they may have already gotten (or the appointment they already confirmed)
+// would otherwise silently go stale.
+async function notifyAffectedOccurrences(
+  admin: ReturnType<typeof createAdminClient>,
+  recurringJobId: string,
+  tenantId: string,
+  changes: { title: string; description: string | null; amount: number; scheduledTime: string | null; priceChanged: boolean; timeChanged: boolean },
+) {
+  const { data: orders } = await admin
+    .from('orders')
+    .select('id, confirm_token, scheduled_date, customer_response, contacts(first_name, email)')
+    .eq('recurring_job_id', recurringJobId)
+    .neq('payment_status', 'paid')
+  if (!orders?.length) return
+
+  const { data: tenant } = await admin.from('tenants').select('name').eq('id', tenantId).single()
+  const businessName = tenant?.name ?? 'your service provider'
+  const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
+
+  for (const order of orders as unknown as Array<{
+    id: string; confirm_token: string; scheduled_date: string; customer_response: string | null
+    contacts: { first_name: string; email: string | null } | null
+  }>) {
+    // Price always reflects the current series terms; time only if the
+    // customer hasn't already picked their own via reschedule.
+    const patch: Record<string, unknown> = {}
+    if (changes.priceChanged) {
+      await admin.from('order_line_items')
+        .update({ item_name_snapshot: changes.title, description_snapshot: changes.description, unit_price: changes.amount })
+        .eq('order_id', order.id)
+    }
+    if (changes.timeChanged && order.customer_response !== 'reschedule_requested') {
+      patch.scheduled_time = changes.scheduledTime
+    }
+    if (Object.keys(patch).length) {
+      await admin.from('orders').update(patch).eq('id', order.id)
+    }
+
+    const contact = order.contacts
+    if (!contact?.email) continue
+
+    const dateLabel = new Date(`${order.scheduled_date}T00:00:00.000Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+    const link = `${appUrl}/recurring/${order.confirm_token}`
+
+    await sendEmail({
+      to: contact.email,
+      subject: `Updated details for your ${changes.title} appointment`,
+      html: renderNeutralEmail({
+        senderName: businessName,
+        bodyHtml: `
+          <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#1a202c;">Your appointment details changed</p>
+          <p style="margin:16px 0 0;">Hi ${contact.first_name ?? 'there'},</p>
+          <p style="margin:16px 0 0;">${businessName} updated your ${changes.title} appointment on ${dateLabel}:</p>
+          <ul style="margin:12px 0 0;padding-left:20px;color:#1a202c;">
+            ${changes.priceChanged ? `<li>New price: <strong>$${changes.amount.toFixed(2)}</strong></li>` : ''}
+            ${changes.timeChanged && order.customer_response !== 'reschedule_requested' ? `<li>New time: <strong>${changes.scheduledTime ? formatTimeLabel(changes.scheduledTime) : 'unscheduled'}</strong></li>` : ''}
+          </ul>
+          <p style="margin:16px 0 0;font-size:13px;color:#718096;">Review and reconfirm using the button below if needed.</p>
+        `,
+        cta: { label: 'Review appointment', href: link },
+      }),
+    })
+  }
 }
 
 async function setStatus(id: string, status: 'active' | 'paused' | 'cancelled') {

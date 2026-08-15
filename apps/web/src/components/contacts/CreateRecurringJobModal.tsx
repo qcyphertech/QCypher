@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { Repeat } from 'lucide-react'
 import { createRecurringJob, updateRecurringJob, type RecurringJob } from '@/lib/actions/recurring-jobs'
 import { computeNextOccurrence, type RecurrenceFrequency } from '@/lib/recurrence'
 
@@ -98,17 +99,28 @@ export function CreateRecurringJobModal({
     })
   }
 
-  const labelCls = 'text-[15px] font-bold uppercase tracking-wide'
-  const inputCls = 'w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]'
+  const labelCls = 'text-[12px] font-bold uppercase tracking-wider'
+  const inputCls = 'w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2.5 text-[15px] outline-none transition-shadow focus:ring-2 focus:ring-accent/40 focus:border-accent'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))] max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+    >
+      <div
+        className="bg-[hsl(var(--card))] rounded-3xl w-full max-w-md border border-[hsl(var(--border))] max-h-[90vh] overflow-y-auto"
+        style={{ boxShadow: '0 24px 64px -12px rgba(15,23,42,0.35), 0 0 0 1px rgba(15,23,42,0.03)' }}
+      >
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
-          <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>
-            {isEdit ? 'Edit recurring job' : 'Schedule recurring job'}
-          </h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">✕</button>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-accent/10 text-accent flex items-center justify-center flex-shrink-0">
+              <Repeat className="w-4 h-4" />
+            </div>
+            <h2 className="text-base font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>
+              {isEdit ? 'Edit recurring job' : 'Schedule recurring job'}
+            </h2>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] transition-colors">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {!isEdit && catalogItems.length > 0 && (
@@ -206,10 +218,15 @@ export function CreateRecurringJobModal({
           {error && <p className="text-[14px] text-red-500">{error}</p>}
 
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl font-bold text-[15px]" style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl font-bold text-[15px] transition-colors hover:brightness-95" style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
               Cancel
             </button>
-            <button type="submit" disabled={pending} className="flex-1 py-2.5 rounded-xl font-bold text-[15px] text-white disabled:opacity-50" style={{ background: 'hsl(var(--accent))' }}>
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex-1 py-2.5 rounded-xl font-bold text-[15px] text-white disabled:opacity-50 transition-transform active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent) / 0.8))', boxShadow: '0 4px 14px -2px hsl(var(--accent) / 0.4)' }}
+            >
               {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Save & Schedule'}
             </button>
           </div>

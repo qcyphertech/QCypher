@@ -65,7 +65,7 @@ export function RecurringJobsSection({
   }
 
   return (
-    <div className="mt-6 pt-6 border-t border-[hsl(var(--border))]">
+    <div>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-[15px] font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Recurring Jobs</h2>
         <button
