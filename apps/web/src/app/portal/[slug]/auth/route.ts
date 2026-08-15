@@ -30,7 +30,11 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     expires: new Date(result.expiresAt),
-    path: `/portal/${params.slug}`,
+    // Scoped to /portal (not /portal/${slug}) — cookie Path is compared as a
+    // literal string against the request path, but slugs with reserved URL
+    // characters (e.g. a space) get percent-encoded on the wire, so a
+    // slug-scoped path silently never matches and the cookie never gets sent.
+    path: '/portal',
   })
   return response
 }
