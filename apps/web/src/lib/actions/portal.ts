@@ -427,7 +427,8 @@ export async function initStripeCheckout(input: {
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${account.accessToken}`,
+      Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      'Stripe-Account': account.accountId,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body,
@@ -505,13 +506,16 @@ export async function confirmStripePayment(input: {
   if (!account) return { ok: false, error: 'Stripe is not connected for this business' }
 
   const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${input.sessionId}`, {
-    headers: { Authorization: `Bearer ${account.accessToken}` },
+    headers: {
+      Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      'Stripe-Account': account.accountId,
+    },
   })
   if (!res.ok) return { ok: false, error: 'Could not verify payment with Stripe' }
 
   const session = await res.json()
   if (session.payment_status !== 'paid') return { ok: false, error: 'Payment was not completed' }
-  // Session belongs to this order (defense in depth, alongside the tenant-scoped API key used to fetch it)
+  // Session belongs to this order (defense in depth, alongside the Stripe-Account scoping used to fetch it)
   if (session.metadata?.order_id !== input.orderId) return { ok: false, error: 'Payment does not match this invoice' }
 
   await markOrderPaidFromStripeSession(db, order, session, input.tenantId)
