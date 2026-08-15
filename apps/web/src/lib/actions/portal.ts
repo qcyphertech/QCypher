@@ -7,6 +7,7 @@ import { verifyHelcimTransaction } from '@/lib/helcim-verify'
 import { resolveHelcimApiKey } from '@/lib/helcim-connect'
 import { resolveStripeAccount } from '@/lib/stripe-connect'
 import { renderNeutralEmail } from '@/lib/email/neutral'
+import { sendSms } from '@/lib/telnyx'
 
 function admin() {
   return createClient(
@@ -18,21 +19,25 @@ function admin() {
 
 // ─── Magic-link generation ────────────────────────────────────────────────────
 
-export async function sendPortalMagicLink(input: {
+// Shared by both delivery channels — generates and stores the token, returns
+// the portal sign-in link plus the contact record it belongs to.
+async function createPortalMagicLink(input: {
   contactId: string
   tenantId: string
   tenantSlug: string
-  businessName: string
-}) {
+}): Promise<
+  | { ok: true; link: string; contact: { email: string | null; phone: string | null; first_name: string | null } }
+  | { ok: false; error: string }
+> {
   const db = admin()
   const { data: contact } = await db
     .from('contacts')
-    .select('email, first_name')
+    .select('email, phone, first_name')
     .eq('id', input.contactId)
     .eq('tenant_id', input.tenantId)
     .single()
 
-  if (!contact?.email) return { ok: false, error: 'Contact has no email address' }
+  if (!contact) return { ok: false, error: 'Contact not found' }
 
   const token = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
@@ -47,6 +52,19 @@ export async function sendPortalMagicLink(input: {
 
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
   const link = `${appUrl}/portal/${input.tenantSlug}/auth?token=${token}`
+  return { ok: true, link, contact }
+}
+
+export async function sendPortalMagicLink(input: {
+  contactId: string
+  tenantId: string
+  tenantSlug: string
+  businessName: string
+}) {
+  const created = await createPortalMagicLink(input)
+  if (!created.ok) return created
+  const { link, contact } = created
+  if (!contact.email) return { ok: false, error: 'Contact has no email address' }
 
   const text = [
     `Hi ${contact.first_name ?? 'there'},`,
@@ -90,6 +108,26 @@ export async function sendPortalMagicLink(input: {
     const err = await mailRes.json().catch(() => ({}))
     return { ok: false, error: (err as { message?: string }).message ?? 'Failed to send email' }
   }
+  return { ok: true }
+}
+
+export async function sendPortalMagicLinkSms(input: {
+  contactId: string
+  tenantId: string
+  tenantSlug: string
+  businessName: string
+}) {
+  const created = await createPortalMagicLink(input)
+  if (!created.ok) return created
+  const { link, contact } = created
+  if (!contact.phone) return { ok: false, error: 'Contact has no phone number' }
+
+  const result = await sendSms({
+    to: contact.phone,
+    body: `Hi ${contact.first_name ?? 'there'}, ${input.businessName} invited you to their client portal — view quotes, approve work, and pay invoices online. Sign in (valid 24h): ${link}`,
+  })
+  if ('error' in result) return { ok: false, error: result.error }
+
   return { ok: true }
 }
 

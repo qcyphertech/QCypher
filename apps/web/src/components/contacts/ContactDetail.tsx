@@ -121,6 +121,7 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
             tenantSlug={tenantSlug}
             businessName={businessName}
             hasEmail={!!contact.email}
+            hasPhone={!!contact.phone}
           />
         </div>
       </div>
