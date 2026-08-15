@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { encryptPaymentToken } from '@/lib/payments-encrypt'
 import { cookies } from 'next/headers'
 
@@ -63,11 +64,27 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.redirect(`${process.env.APP_URL}/auth/login`)
 
-  const tenantId = (user.app_metadata?.tenant_id ?? user.user_metadata?.tenant_id) as string
-  if (!tenantId) return NextResponse.redirect(`${process.env.APP_URL}/settings?stripe_error=no_tenant`)
+  // Same JWT-staleness issue documented elsewhere (lib/supabase/admin.ts):
+  // app_metadata.tenant_id can be missing right after a role/tenant change
+  // made via the Admin API. getTenantId() falls back to a DB lookup.
+  let tenantId: string
+  try {
+    tenantId = await getTenantId(user.id, user.app_metadata)
+  } catch {
+    return NextResponse.redirect(`${process.env.APP_URL}/settings?stripe_error=no_tenant`)
+  }
+
+  // Writes via the admin client — the regular RLS-scoped client failed
+  // here in practice with "new row violates row-level security policy",
+  // since tenant_payment_accounts' RLS reads tenant_id off the JWT
+  // directly rather than through getTenantId()'s DB fallback. The
+  // ownership check above (a valid session + resolved tenantId) already
+  // establishes who's allowed to write, same as every other admin-client
+  // write in this codebase.
+  const admin = createAdminClient()
 
   const now = new Date().toISOString()
-  const { error: dbErr } = await supabase.from('tenant_payment_accounts').upsert({
+  const { error: dbErr } = await admin.from('tenant_payment_accounts').upsert({
     tenant_id:            tenantId,
     provider:             'stripe',
     provider_account_id:  stripe_user_id,
@@ -86,7 +103,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${process.env.APP_URL}/settings?stripe_error=save_failed`)
   }
 
-  await supabase.from('audit_logs').insert({
+  await admin.from('audit_logs').insert({
     tenant_id: tenantId,
     user_id: user.id,
     user_email: user.email ?? '',
