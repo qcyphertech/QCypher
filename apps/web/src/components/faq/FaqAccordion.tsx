@@ -20,19 +20,21 @@ export function FaqAccordion() {
 
   return (
     <div>
-      <div className="faq-search">
-        <Search size={16} className="faq-search-icon" />
-        <input
-          type="text"
-          value={query}
-          onChange={e => { setQuery(e.target.value); setOpenKey(null) }}
-          placeholder="Search questions — try “cancel”, “billing”, “data”…"
-        />
-        {query && (
-          <button className="faq-search-clear" onClick={() => setQuery('')} aria-label="Clear search">
-            <X size={14} />
-          </button>
-        )}
+      <div className="faq-search-wrap">
+        <div className="faq-search">
+          <Search size={18} className="faq-search-icon" />
+          <input
+            type="text"
+            value={query}
+            onChange={e => { setQuery(e.target.value); setOpenKey(null) }}
+            placeholder="Search questions — try “cancel”, “billing”, “data”…"
+          />
+          {query && (
+            <button className="faq-search-clear" onClick={() => setQuery('')} aria-label="Clear search">
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {query && (
@@ -56,7 +58,7 @@ export function FaqAccordion() {
                     aria-expanded={open}
                   >
                     <span>{item.q}</span>
-                    <ChevronDown size={16} className="faq-chevron" />
+                    <span className="faq-chevron-wrap"><ChevronDown size={15} className="faq-chevron" /></span>
                   </button>
                   {open && <p className="faq-answer">{item.a}</p>}
                 </div>
