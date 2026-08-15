@@ -18,9 +18,11 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]',
 }
 
+// next_scheduled_date is a plain date (no time) — format in UTC or
+// negative-offset timezones (all of the US) display one day early.
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 export function RecurringJobsSection({

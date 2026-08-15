@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const businessName = order.tenants?.name ?? 'your service provider'
     const contact = order.contacts
     const link = `${appUrl}/recurring/${order.confirm_token}`
-    const dateLabel = scheduled.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    const dateLabel = scheduled.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
     const expiresAt = new Date(scheduled)
     expiresAt.setUTCDate(expiresAt.getUTCDate() + 1)
 

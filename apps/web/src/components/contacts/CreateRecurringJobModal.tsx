@@ -142,7 +142,7 @@ export function CreateRecurringJobModal({
             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
             {previewNextDate && (
               <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                After that, the next one repeats on {new Date(previewNextDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.
+                After that, the next one repeats on {new Date(previewNextDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}.
               </p>
             )}
           </div>

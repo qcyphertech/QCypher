@@ -16,8 +16,10 @@ type Appointment = {
   isExpired: boolean
 }
 
+// scheduled_date is a plain date (no time component) — must format in UTC,
+// otherwise negative-offset timezones (all of the US) display one day early.
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 export function RecurringJobConfirmCard({ appointment }: { appointment: Appointment }) {
