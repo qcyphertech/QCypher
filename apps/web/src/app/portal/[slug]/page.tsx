@@ -7,7 +7,20 @@ import { PortalLoginForm } from '@/components/portal/PortalLoginForm'
 
 export const metadata: Metadata = { title: 'Client Portal' }
 
-export default async function PortalLoginPage({ params }: { params: { slug: string } }) {
+const AUTH_ERROR_MESSAGE: Record<string, string> = {
+  missing: 'No sign-in link provided.',
+  already_used: 'This sign-in link has already been used. Please request a new one.',
+  expired: 'This sign-in link has expired (links are valid for 24 hours). Please request a new one.',
+  not_found: 'This sign-in link is not valid.',
+}
+
+export default async function PortalLoginPage({
+  params,
+  searchParams,
+}: {
+  params: { slug: string }
+  searchParams: { auth_error?: string }
+}) {
   const db = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -21,6 +34,10 @@ export default async function PortalLoginPage({ params }: { params: { slug: stri
 
   if (!tenant) notFound()
 
+  const authError = searchParams.auth_error
+    ? (AUTH_ERROR_MESSAGE[searchParams.auth_error] ?? 'This sign-in link is not valid.')
+    : null
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
       <div className="max-w-sm w-full space-y-6">
@@ -31,6 +48,11 @@ export default async function PortalLoginPage({ params }: { params: { slug: stri
             Enter your email to receive a sign-in link.
           </p>
         </div>
+        {authError && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-[14px] text-amber-800">{authError}</p>
+          </div>
+        )}
         <PortalLoginForm tenantSlug={params.slug} businessName={tenant.name} />
         <p className="text-[12px] text-gray-400 text-center">
           No account needed — we&apos;ll email you a secure link.
