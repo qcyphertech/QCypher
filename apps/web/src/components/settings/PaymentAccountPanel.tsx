@@ -85,7 +85,7 @@ export function PaymentAccountPanel({ account }: { account: PaymentAccount }) {
                     Connected to {account.provider === 'stripe' ? 'Stripe' : 'Helcim'}
                   </p>
                   <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))' }}>
-                    {account.account_email ?? account.account_holder_name ?? 'Connected account'}
+                    Ready to accept payments
                   </p>
                 </div>
               </div>
