@@ -68,6 +68,15 @@ function OrderCard({
   )
 }
 
+function StatTile({ label, value, accent }: { label: string; value: string; accent: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 px-4 py-3.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{label}</p>
+      <p className="text-[19px] font-bold" style={{ color: accent }}>{value}</p>
+    </div>
+  )
+}
+
 function HistoryCard({ order }: { order: Order }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4">
@@ -99,6 +108,8 @@ export function PortalDashboard({
   history: Order[]
 }) {
   const hasAnything = quotes.length + invoices.length + history.length > 0
+  const invoicesDueTotal = invoices.reduce((sum, o) => sum + Number(o.total_amount), 0)
+  const totalPaid = history.reduce((sum, o) => sum + Number(o.total_amount), 0)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -118,6 +129,14 @@ export function PortalDashboard({
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-8 space-y-8">
+        {hasAnything && (
+          <div className="grid grid-cols-3 gap-3">
+            <StatTile label="Open quotes" value={String(quotes.length)} accent="#f59e0b" />
+            <StatTile label="Due now" value={fmt(invoicesDueTotal)} accent="#3b82f6" />
+            <StatTile label="Total paid" value={fmt(totalPaid)} accent="#059669" />
+          </div>
+        )}
+
         {!hasAnything && (
           <div className="text-center py-12 text-gray-400 text-[15px]">
             No quotes or invoices yet.
