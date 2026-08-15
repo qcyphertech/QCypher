@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/security' ||
     pathname === '/privacy' ||
     pathname === '/terms' ||
+    pathname === '/faq' ||
     pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/api/telnyx/') ||
     pathname.startsWith('/api/portal/') ||

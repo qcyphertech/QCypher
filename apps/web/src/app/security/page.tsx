@@ -532,6 +532,7 @@ export default function SecurityPage() {
             <div className="contact-cta-docs">
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms of Service</Link>
+              <Link href="/faq">FAQs</Link>
             </div>
             <p className="contact-cta-updated">Last updated: August 7, 2026</p>
           </div>
@@ -560,6 +561,7 @@ export default function SecurityPage() {
               <Link href="/security">Security</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
+              <Link href="/faq">FAQs</Link>
               <Link href="/auth/login">Client Login</Link>
             </div>
           </div>

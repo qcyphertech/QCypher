@@ -401,6 +401,13 @@ export default function PricingPage() {
             </div>
 
           </div>
+
+          <p style={{ textAlign: 'center', marginTop: '32px', fontSize: '15px', color: '#5b6072' }}>
+            Questions about pricing? See our <Link href="/faq" style={{ color: '#2a52a0', fontWeight: 700 }}>FAQs</Link> or{' '}
+            <button onClick={() => setShowContactModal(true)} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: '#2a52a0', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
+              get a free consultation
+            </button>.
+          </p>
         </div>
       </section>
 
@@ -559,6 +566,9 @@ export default function PricingPage() {
               <Link href="/">Home</Link>
               <Link href="/about">About Us</Link>
               <Link href="/security">Security</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/faq">FAQs</Link>
               <Link href="/auth/login">Client Login</Link>
             </div>
           </div>

@@ -1849,6 +1849,7 @@ export default function HomePage() {
               <Link href="/security">Security</Link>
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms of Service</Link>
+              <Link href="/faq">FAQs</Link>
               <Link href="/auth/login">Client Login</Link>
             </div>
           </div>

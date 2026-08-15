@@ -246,6 +246,7 @@ export default function PrivacyPage() {
               <Link href="/security">Security</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
+              <Link href="/faq">FAQs</Link>
               <Link href="/auth/login">Client Login</Link>
             </div>
           </div>

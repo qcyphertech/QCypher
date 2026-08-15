@@ -1,20 +1,21 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { PrintButton } from '@/components/legal/PrintButton'
+import { FaqAccordion } from '@/components/faq/FaqAccordion'
+import { FAQ_CATEGORIES } from '@/lib/faq-data'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service',
-  description: 'The terms that apply when you use QCypher — billing, cancellation, and what you can expect from us.',
-  alternates: { canonical: 'https://www.qcyphertech.com/terms' },
+  title: 'FAQs',
+  description: 'Answers to common questions about QCypher pricing, setup, billing, cancellation, data privacy, and support.',
+  alternates: { canonical: 'https://www.qcyphertech.com/faq' },
   openGraph: {
-    title: 'Terms of Service — QCypher Technologies',
-    description: 'The terms that apply when you use QCypher — billing, cancellation, and what you can expect from us.',
-    url: 'https://www.qcyphertech.com/terms',
+    title: 'FAQs — QCypher Technologies',
+    description: 'Answers to common questions about pricing, setup, billing, cancellation, data privacy, and support.',
+    url: 'https://www.qcyphertech.com/faq',
     type: 'website',
   },
 }
 
-const LAST_UPDATED = 'August 14, 2026'
+const LAST_UPDATED = 'August 15, 2026'
 
 const INTEGRATION_LOGOS = [
   { name: 'Google Business Profile', file: '/logos/googlebusiness.png' },
@@ -28,7 +29,7 @@ const INTEGRATION_LOGOS = [
   { name: 'Anthropic', file: '/logos/anthropic.png' },
 ]
 
-export default function TermsPage() {
+export default function FaqPage() {
   return (
     <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', background: '#f8f9fc', color: '#171a2b', lineHeight: 1.5 }}>
       <style>{`
@@ -44,7 +45,7 @@ export default function TermsPage() {
           --cyan: #4a9db5; --teal: #17C9E8; --mint: #00a87a;
         }
 
-        .wrap { max-width: 780px; margin: 0 auto; padding: 0 20px; }
+        .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
 
         .nav-bar { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
         .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; max-width: 1060px; margin: 0 auto; }
@@ -68,19 +69,56 @@ export default function TermsPage() {
         .doc-meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 22px; }
         .doc-meta span { font-size: 13px; color: rgba(255,255,255,0.6); }
 
-        .legal-article { padding: 48px 0 64px; background: #fff; }
-        .legal-article h2 { font-size: 21px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; margin: 40px 0 12px; }
-        .legal-article h2:first-child { margin-top: 0; }
-        .legal-article p { font-size: 16px; color: var(--soft); line-height: 1.75; margin-bottom: 12px; }
-        .legal-article ul { margin: 0 0 12px 20px; }
-        .legal-article li { font-size: 16px; color: var(--soft); line-height: 1.75; margin-bottom: 6px; }
-        .legal-article strong { color: var(--ink); }
-        .callout { margin: 16px 0; padding: 16px 20px; background: rgba(43,95,168,0.06); border-left: 3px solid var(--steel); border-radius: 8px; font-size: 15px; color: var(--soft); line-height: 1.65; }
-        .callout strong { color: var(--ink); }
-        .price-table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 15px; }
-        .price-table th, .price-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-        .price-table th { color: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
-        .price-table td { color: var(--ink); font-weight: 600; }
+        /* CATEGORY JUMP NAV */
+        .cat-nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 20px 0 0; }
+        .cat-nav a {
+          font-size: 13px; font-weight: 600; color: var(--steel);
+          background: rgba(43,95,168,0.08); border: 1px solid var(--border2);
+          padding: 7px 14px; border-radius: 999px; transition: background .15s, color .15s;
+        }
+        .cat-nav a:hover { background: rgba(43,95,168,0.16); }
+
+        /* SEARCH */
+        .faq-search {
+          position: relative; margin: 28px 0 8px;
+          display: flex; align-items: center;
+        }
+        .faq-search-icon { position: absolute; left: 16px; color: var(--soft); pointer-events: none; }
+        .faq-search input {
+          width: 100%; font-size: 16px; padding: 14px 44px;
+          border-radius: 14px; border: 1px solid var(--border2);
+          background: var(--card); color: var(--ink);
+          outline: none; transition: border-color .15s, box-shadow .15s;
+        }
+        .faq-search input:focus { border-color: var(--steel); box-shadow: 0 0 0 3px rgba(43,95,168,0.12); }
+        .faq-search-clear {
+          position: absolute; right: 12px; width: 26px; height: 26px; border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          background: var(--border); border: none; color: var(--soft); cursor: pointer;
+        }
+        .faq-search-clear:hover { background: var(--border2); }
+        .faq-result-count { font-size: 13px; color: var(--soft); margin: 0 0 8px 2px; }
+
+        /* CATEGORIES + ACCORDION */
+        .faq-category { margin-top: 40px; scroll-margin-top: 80px; }
+        .faq-category-title {
+          font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+          color: var(--steel); margin-bottom: 14px;
+        }
+        .faq-list { display: flex; flex-direction: column; gap: 10px; }
+        .faq-item {
+          background: var(--card); border: 1px solid var(--border2); border-radius: 14px;
+          overflow: hidden; transition: border-color .15s, box-shadow .15s;
+        }
+        .faq-item-open { border-color: var(--steel); box-shadow: 0 4px 16px -6px rgba(43,95,168,0.18); }
+        .faq-question {
+          width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+          padding: 16px 18px; background: none; border: none; cursor: pointer; text-align: left;
+          font-size: 16px; font-weight: 700; color: var(--ink); font-family: inherit;
+        }
+        .faq-chevron { flex-shrink: 0; color: var(--soft); transition: transform .2s; }
+        .faq-item-open .faq-chevron { transform: rotate(180deg); color: var(--steel); }
+        .faq-answer { padding: 0 18px 18px; font-size: 16px; color: var(--soft); line-height: 1.7; }
 
         footer { position: relative; padding: 22px 0 12px; background: linear-gradient(145deg, #0e1f45 0%, #1a3070 45%, #1e4a7a 75%, #246080 100%); overflow: hidden; }
         footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--cyan), var(--mint), transparent); opacity: 0.7; }
@@ -99,16 +137,13 @@ export default function TermsPage() {
         .integration-card { width: 60px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.92); display: flex; align-items: center; justify-content: center; padding: 6px; flex: 0 0 auto; }
         .integration-card img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
 
-        @media print {
-          .nav-bar, footer, .print-btn, .doc-meta { display: none !important; }
-          .doc-hero { background: #fff !important; padding: 0 0 24px; }
-          .doc-hero h1, .doc-hero p { color: #171a2b !important; }
-          .legal-article { padding: 0; }
-        }
         @media (max-width: 480px) {
           .nav-inner { padding: 10px 16px; } .nav-logo img { height: 32px; }
           .nav-links { display: none; }
           .doc-hero h1 { font-size: 28px; }
+          .faq-search input { padding: 13px 40px; font-size: 15px; }
+          .faq-question { font-size: 15px; padding: 14px 16px; }
+          .faq-answer { font-size: 15px; padding: 0 16px 16px; }
         }
       `}</style>
 
@@ -117,7 +152,7 @@ export default function TermsPage() {
           <Link href="/" className="nav-logo"><img src="/qcypher-logo-horizontal.png" alt="QCypher Technologies" /></Link>
           <nav className="nav-links">
             <Link href="/" className="nav-link">Home</Link>
-            <Link href="/about" className="nav-link">About</Link>
+            <Link href="/pricing" className="nav-link">Pricing</Link>
             <Link href="/security" className="nav-link">Security</Link>
           </nav>
           <div className="nav-cta"><Link href="/auth/login" className="btn btn-ghost btn-sm">Sign in</Link></div>
@@ -126,91 +161,38 @@ export default function TermsPage() {
 
       <div className="doc-hero">
         <div className="wrap">
-          <h1>Terms of Service</h1>
-          <p>These terms apply when you use QCypher. By signing up, you agree to these terms.</p>
+          <h1>Frequently Asked Questions</h1>
+          <p>Real answers to the questions business owners actually ask us — about setup, pricing, billing, data, and support.</p>
           <div className="doc-meta">
             <span>Last updated: {LAST_UPDATED}</span>
-            <span>Effective: {LAST_UPDATED}</span>
-            <PrintButton label="Download as PDF" />
+            <span>Contact: info@qcyphertech.com</span>
           </div>
+          <nav className="cat-nav" aria-label="Jump to category">
+            {FAQ_CATEGORIES.map(cat => (
+              <a key={cat.id} href={`#${cat.id}`}>{cat.label}</a>
+            ))}
+          </nav>
         </div>
       </div>
 
-      <article className="legal-article">
-        <div className="wrap">
+      <main className="wrap" style={{ paddingBottom: '64px' }}>
+        <FaqAccordion />
 
-          <h2>What QCypher Is</h2>
-          <p>QCypher builds websites. We also run your CRM, scheduling, and business automation. We serve small service businesses. We do not give accounting, legal, or tax advice.</p>
-
-          <h2>Your Subscription &amp; Billing</h2>
-          <p>Your plan renews each month. Here&apos;s what each plan costs:</p>
-          <table className="price-table">
-            <thead><tr><th>Plan</th><th>Setup fee</th><th>Monthly</th></tr></thead>
-            <tbody>
-              <tr><td>Starter</td><td>$1,250 one-time</td><td>$49/mo</td></tr>
-              <tr><td>Growth</td><td>$1,250 one-time</td><td>$99/mo</td></tr>
-              <tr><td>All-In</td><td>$1,250 one-time</td><td>$149/mo</td></tr>
-            </tbody>
-          </table>
-          <p>We may set custom pricing if we agree on it with you directly. We charge your card on the same date each month.</p>
-          <p><strong>Before you&apos;re charged:</strong> we email you 7 days ahead of time. That email shows the amount and the date, with a link to manage your plan.</p>
-          <div className="callout">
-            <strong>Your right to cancel:</strong> log in to your account and click &ldquo;Cancel Subscription.&rdquo; Your service stops right away, and we won&apos;t charge you again.
-          </div>
-
-          <h2>Payment &amp; Refunds</h2>
-          <ul>
-            <li>You pay upfront, by card, through Stripe or Helcim</li>
-            <li>If we don&apos;t deliver what you paid for, we&apos;ll refund your setup fee</li>
-            <li>To ask for a refund, email legal@qcyphertech.com within 30 days of your purchase</li>
-          </ul>
-
-          <h2>What You Can&apos;t Do</h2>
-          <p>You agree not to:</p>
-          <ul>
-            <li>Use QCypher for anything illegal</li>
-            <li>Try to hack, copy, or take apart our code</li>
-            <li>Upload viruses or harmful files</li>
-            <li>Harass other users</li>
-            <li>Steal or misuse someone else&apos;s trademarks, copyrights, or other protected work</li>
-          </ul>
-
-          <h2>Intellectual Property</h2>
-          <p>You own your own data — your contacts, notes, and customer records. We own QCypher&apos;s code and design. You get a license to use QCypher for your business. You may not resell it.</p>
-
-          <h2>Limitation of Liability</h2>
-          <p>We give you QCypher &ldquo;as is.&rdquo; We are not liable for:</p>
-          <ul>
-            <li>Lost data (though we run daily backups)</li>
-            <li>Lost revenue, or your business being interrupted</li>
-            <li>Indirect damages — losses that follow from a problem, rather than being caused by it directly</li>
-            <li>Problems caused by outside services (Google, Cal.com, Telnyx, etc.)</li>
-          </ul>
-          <p>If we owe you anything, the most we&apos;ll pay is what you paid us in the past 12 months.</p>
-
-          <h2>Disclaimer</h2>
-          <p>QCypher is a business tool. It is not professional advice. We don&apos;t give legal, tax, or accounting guidance. Talk to a professional for that.</p>
-
-          <h2>Termination</h2>
-          <p>We can close your account if you break these terms, or if your payment is more than 30 days late.</p>
-          <p>You can cancel anytime. After you cancel, we keep your data for 30 more days. That gives you time to get it back if you change your mind. Then we delete it.</p>
-
-          <h2>Changes to Terms</h2>
-          <p>We may update these terms over time. We&apos;ll email you about any big changes. If you keep using QCypher after that, it means you accept them.</p>
-
-          <h2>Governing Law</h2>
-          <p>Maryland law governs these terms. If there&apos;s a dispute, it will be handled in a Maryland state or federal court.</p>
-
-          <h2>Contact</h2>
-          <p>Questions about these terms? Email <a href="mailto:legal@qcyphertech.com" style={{ color: 'var(--steel)', fontWeight: 600 }}>legal@qcyphertech.com</a>.</p>
-          <p>We reply within 5 business days.</p>
-
-          <div className="callout" style={{ marginTop: '32px' }}>
-            <strong>Still have questions?</strong> Check out our <Link href="/faq" style={{ color: 'var(--steel)', fontWeight: 700 }}>FAQs</Link> or email <a href="mailto:legal@qcyphertech.com" style={{ color: 'var(--steel)', fontWeight: 600 }}>legal@qcyphertech.com</a>.
-          </div>
-
+        <div style={{ marginTop: '48px', padding: '24px', background: '#fff', border: '1px solid var(--border2)', borderRadius: '16px', textAlign: 'center' }}>
+          <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>Still have a question?</p>
+          <p style={{ fontSize: '15px', color: 'var(--soft)', marginBottom: '16px' }}>
+            Read the full <Link href="/privacy" style={{ color: 'var(--steel)', fontWeight: 600 }}>Privacy Policy</Link>, {' '}
+            <Link href="/terms" style={{ color: 'var(--steel)', fontWeight: 600 }}>Terms of Service</Link>, or {' '}
+            <Link href="/security" style={{ color: 'var(--steel)', fontWeight: 600 }}>Security page</Link> — or just email us.
+          </p>
+          <a
+            href="mailto:info@qcyphertech.com"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg, #2a52a0, #4a9db5)', padding: '12px 24px', borderRadius: '12px' }}
+          >
+            info@qcyphertech.com
+          </a>
         </div>
-      </article>
+      </main>
 
       <footer>
         <div className="wrap">
