@@ -37,6 +37,7 @@ export function CreateRecurringJobModal({
   const [dayOfMonth, setDayOfMonth] = useState('1')
   const [intervalDays, setIntervalDays] = useState('30')
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [scheduledTime, setScheduledTime] = useState('')
   const [sendReminder, setSendReminder] = useState(true)
   const [reminderDaysBefore, setReminderDaysBefore] = useState('3')
   const [autoConfirm, setAutoConfirm] = useState(true)
@@ -71,6 +72,7 @@ export function CreateRecurringJobModal({
         intervalDays: needsInterval ? parseInt(intervalDays, 10) : null,
         dayOfMonth: needsDayOfMonth ? parseInt(dayOfMonth, 10) : null,
         startDate,
+        scheduledTime: scheduledTime || null,
         sendReminder,
         reminderDaysBefore: parseInt(reminderDaysBefore, 10) || 3,
         autoConfirmIfNoReply: autoConfirm,
@@ -139,7 +141,10 @@ export function CreateRecurringJobModal({
 
           <div className="space-y-1.5">
             <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>First occurrence</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+            <div className="grid grid-cols-2 gap-2">
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+              <input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+            </div>
             {previewNextDate && (
               <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 After that, the next one repeats on {new Date(previewNextDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}.

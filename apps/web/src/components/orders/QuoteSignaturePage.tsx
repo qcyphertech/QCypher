@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { signQuote, requestQuoteChanges } from '@/lib/actions/quotes'
 import { CheckCircle2, MessageSquareText } from 'lucide-react'
+import { PoweredByFooter } from '@/components/shared/PoweredByFooter'
 
 const UNIT_LABELS: Record<string, string> = {
   flat: '', hourly: '/hr', daily: '/day', weekly: '/wk', monthly: '/mo',
@@ -260,6 +261,7 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
               )}
               <p className="text-[11px] text-gray-400">Quote #{String(order.order_number ?? 0).padStart(4, '0')} · {order.business_name}</p>
             </div>
+            {!backHref && <PoweredByFooter />}
           </div>
         </div>
       </div>
@@ -291,6 +293,7 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
               )}
               <p className="text-[11px] text-gray-400">Quote #{String(order.order_number ?? 0).padStart(4, '0')} · {order.business_name}</p>
             </div>
+            {!backHref && <PoweredByFooter />}
           </div>
         </div>
       </div>
@@ -513,6 +516,12 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
             </form>
           )}
         </div>
+
+        {!backHref && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <PoweredByFooter />
+          </div>
+        )}
 
       </div>
     </div>

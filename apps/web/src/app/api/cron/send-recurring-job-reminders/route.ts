@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderNeutralEmail } from '@/lib/email/neutral'
 import { sendSms } from '@/lib/telnyx'
+import { formatTimeLabel } from '@/lib/recurrence'
 
 // Daily: for each pending recurring-job order whose scheduled_date is
 // exactly `reminder_days_before` away, send the customer an approve/
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   const { data: candidates } = await admin
     .from('orders')
     .select(`
-      id, tenant_id, scheduled_date, confirm_token, total_amount,
+      id, tenant_id, scheduled_date, scheduled_time, confirm_token, total_amount,
       recurring_jobs!inner(title, description, send_reminder, reminder_days_before),
       contacts(first_name, email, phone),
       tenants(name)
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
   today.setUTCHours(0, 0, 0, 0)
 
   for (const order of candidates as unknown as Array<{
-    id: string; tenant_id: string; scheduled_date: string; confirm_token: string; total_amount: number
+    id: string; tenant_id: string; scheduled_date: string; scheduled_time: string | null; confirm_token: string; total_amount: number
     recurring_jobs: { title: string; description: string | null; send_reminder: boolean; reminder_days_before: number }
     contacts: { first_name: string; email: string | null; phone: string | null } | null
     tenants: { name: string } | null
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
     const contact = order.contacts
     const link = `${appUrl}/recurring/${order.confirm_token}`
     const dateLabel = scheduled.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+      + (order.scheduled_time ? ` at ${formatTimeLabel(order.scheduled_time)}` : '')
     const expiresAt = new Date(scheduled)
     expiresAt.setUTCDate(expiresAt.getUTCDate() + 1)
 

@@ -5,7 +5,7 @@ import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/send'
 import { renderNeutralEmail } from '@/lib/email/neutral'
 import { revalidatePath } from 'next/cache'
-import { computeNextOccurrence, type RecurrenceFrequency } from '@/lib/recurrence'
+import { computeNextOccurrence, formatTimeLabel, type RecurrenceFrequency } from '@/lib/recurrence'
 
 export type RecurringJob = {
   id: string
@@ -18,6 +18,7 @@ export type RecurringJob = {
   interval_days: number | null
   day_of_month: number | null
   next_scheduled_date: string | null
+  scheduled_time: string | null
   status: 'active' | 'paused' | 'cancelled'
   send_reminder: boolean
   reminder_days_before: number
@@ -51,6 +52,7 @@ export async function createRecurringJob(input: {
   intervalDays?: number | null
   dayOfMonth?: number | null
   startDate: string
+  scheduledTime?: string | null
   sendReminder: boolean
   reminderDaysBefore: number
   autoConfirmIfNoReply: boolean
@@ -70,6 +72,7 @@ export async function createRecurringJob(input: {
       interval_days: input.frequency === 'custom' ? (input.intervalDays ?? 30) : null,
       day_of_month: ['monthly', 'quarterly', 'annually'].includes(input.frequency) ? input.dayOfMonth : null,
       next_scheduled_date: input.startDate,
+      scheduled_time: input.scheduledTime || null,
       send_reminder: input.sendReminder,
       reminder_days_before: input.reminderDaysBefore,
       auto_confirm_if_no_reply: input.autoConfirmIfNoReply,
@@ -90,6 +93,7 @@ export async function updateRecurringJob(id: string, input: {
   frequency: RecurrenceFrequency
   intervalDays?: number | null
   dayOfMonth?: number | null
+  scheduledTime?: string | null
   sendReminder: boolean
   reminderDaysBefore: number
   autoConfirmIfNoReply: boolean
@@ -106,6 +110,7 @@ export async function updateRecurringJob(id: string, input: {
     frequency: input.frequency,
     interval_days: input.frequency === 'custom' ? (input.intervalDays ?? 30) : null,
     day_of_month: ['monthly', 'quarterly', 'annually'].includes(input.frequency) ? input.dayOfMonth : null,
+    scheduled_time: input.scheduledTime || null,
     send_reminder: input.sendReminder,
     reminder_days_before: input.reminderDaysBefore,
     auto_confirm_if_no_reply: input.autoConfirmIfNoReply,
@@ -152,7 +157,7 @@ export async function listRecurringJobsForContact(contactId: string): Promise<Re
   const supabase = await createClient()
   const { data } = await supabase
     .from('recurring_jobs')
-    .select('id, contact_id, catalog_item_id, title, description, amount, frequency, interval_days, day_of_month, next_scheduled_date, status, send_reminder, reminder_days_before, auto_confirm_if_no_reply, created_at')
+    .select('id, contact_id, catalog_item_id, title, description, amount, frequency, interval_days, day_of_month, next_scheduled_date, scheduled_time, status, send_reminder, reminder_days_before, auto_confirm_if_no_reply, created_at')
     .eq('contact_id', contactId)
     .order('created_at', { ascending: false })
   return (data ?? []) as RecurringJob[]
@@ -169,7 +174,7 @@ export async function getRecurringOrderByToken(token: string) {
   const { data } = await db
     .from('orders')
     .select(`
-      id, tenant_id, customer_id, total_amount, payment_status, scheduled_date,
+      id, tenant_id, customer_id, total_amount, payment_status, scheduled_date, scheduled_time,
       confirm_token_expires_at, customer_response, reschedule_to_date,
       recurring_jobs(title, description),
       contacts(first_name, last_name, email),
@@ -184,18 +189,21 @@ export async function getRecurringOrderByToken(token: string) {
 export async function respondToRecurringOrder(
   token: string,
   action: 'approve' | 'skip' | 'reschedule',
-  opts?: { rescheduleToDate?: string },
+  opts?: { rescheduleToDate?: string; rescheduleToTime?: string },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const db = admin()
 
   const { data: order } = await db
     .from('orders')
-    .select('id, tenant_id, customer_id, scheduled_date, customer_response, confirm_token_expires_at, recurring_jobs(title), contacts(first_name, last_name)')
+    .select('id, tenant_id, customer_id, payment_status, scheduled_date, customer_response, confirm_token_expires_at, recurring_jobs(title), contacts(first_name, last_name)')
     .eq('confirm_token', token)
     .not('recurring_job_id', 'is', null)
     .maybeSingle()
   if (!order) return { ok: false, error: 'This link is not valid.' }
-  if (order.customer_response) return { ok: false, error: 'You already responded to this appointment.' }
+  // Customers can change their mind (approve -> reschedule -> skip -> approve,
+  // etc) right up until it's actually paid or the link expires — no
+  // "already responded" lockout.
+  if (order.payment_status === 'paid') return { ok: false, error: 'This has already been paid — contact the business to make changes.' }
   if (order.confirm_token_expires_at && new Date(order.confirm_token_expires_at).getTime() < Date.now()) {
     return { ok: false, error: 'This link has expired.' }
   }
@@ -212,9 +220,12 @@ export async function respondToRecurringOrder(
   }
 
   if (action === 'skip') {
-    // Nothing was rendered — no invoice should exist. The series continues
-    // on its own schedule regardless (recurring_jobs is untouched).
-    const { error } = await db.from('orders').delete().eq('id', order.id)
+    // Just marked skipped, not deleted — the customer can still change
+    // their mind (approve/reschedule) via the same link until it expires.
+    const { error } = await db.from('orders').update({
+      customer_response: 'skip',
+      customer_response_at: now,
+    }).eq('id', order.id)
     if (error) return { ok: false, error: error.message }
     return { ok: true }
   }
@@ -227,8 +238,11 @@ export async function respondToRecurringOrder(
   const diffDays = Math.abs((picked.getTime() - original.getTime()) / (24 * 60 * 60 * 1000))
   if (diffDays > 14) return { ok: false, error: 'Please pick a date within 14 days of the original appointment.' }
 
+  const newTime = opts?.rescheduleToTime || null
+
   const { error } = await db.from('orders').update({
     scheduled_date: newDate,
+    scheduled_time: newTime,
     reschedule_to_date: newDate,
     customer_response: 'reschedule_requested',
     customer_response_at: now,
@@ -242,6 +256,8 @@ export async function respondToRecurringOrder(
   const contact = order.contacts as unknown as { first_name: string; last_name: string | null } | null
   const jobTitle = (order.recurring_jobs as unknown as { title: string } | null)?.title ?? 'Appointment'
   const customerName = contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : 'A customer'
+  const newDateLabel = new Date(`${newDate}T00:00:00.000Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+  const newTimeLabel = newTime ? ` at ${formatTimeLabel(newTime)}` : ''
 
   const businessName = tenant?.name ?? 'your business'
   for (const owner of owners) {
@@ -252,7 +268,7 @@ export async function respondToRecurringOrder(
         senderName: businessName,
         bodyHtml: `
           <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#1a202c;">Appointment rescheduled</p>
-          <p style="margin:16px 0 0;"><strong>${customerName}</strong> moved their appointment for <strong>${jobTitle}</strong> to <strong>${new Date(newDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>.</p>
+          <p style="margin:16px 0 0;"><strong>${customerName}</strong> moved their appointment for <strong>${jobTitle}</strong> to <strong>${newDateLabel}${newTimeLabel}</strong>.</p>
         `,
       }),
     })

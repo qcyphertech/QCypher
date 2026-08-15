@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const { data: jobs } = await admin
     .from('recurring_jobs')
-    .select('id, tenant_id, contact_id, catalog_item_id, title, description, amount, frequency, interval_days, day_of_month, next_scheduled_date, reminder_days_before')
+    .select('id, tenant_id, contact_id, catalog_item_id, title, description, amount, frequency, interval_days, day_of_month, next_scheduled_date, scheduled_time, reminder_days_before')
     .eq('status', 'active')
 
   if (!jobs?.length) return NextResponse.json({ ok: true, created: [] })
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     id: string; tenant_id: string; contact_id: string; catalog_item_id: string | null
     title: string; description: string | null; amount: number
     frequency: RecurrenceFrequency; interval_days: number | null; day_of_month: number | null
-    next_scheduled_date: string | null; reminder_days_before: number
+    next_scheduled_date: string | null; scheduled_time: string | null; reminder_days_before: number
   }>) {
     if (!job.next_scheduled_date) continue
 
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
         customer_id: job.contact_id,
         recurring_job_id: job.id,
         scheduled_date: job.next_scheduled_date,
+        scheduled_time: job.scheduled_time,
         payment_status: 'pending',
         notes: job.description,
       })

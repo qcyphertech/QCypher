@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { initHelcimCheckout, validateAndRecordPayment } from '@/lib/actions/portal'
 import { markPaymentRequestPaid } from '@/lib/actions/payment-requests'
+import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
 
 declare global {
   interface Window {
@@ -101,19 +102,24 @@ export function PayRequestCard({ request }: { request: Req }) {
 
   const card: React.CSSProperties = {
     maxWidth: '440px', width: '100%',
-    borderRadius: '20px', background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)',
-    boxShadow: '0 8px 32px rgba(15,23,42,0.10)', overflow: 'hidden',
+    borderRadius: '20px', background: '#ffffff', border: '1px solid rgba(26,48,112,0.08)',
+    boxShadow: '0 8px 32px rgba(26,48,112,0.10)', overflow: 'hidden',
   }
+  const shell: React.CSSProperties = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#f8f9fc' }
 
   if (state === 'paid') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#f7f7f8' }}>
-        <div style={{ ...card, padding: '40px 32px', textAlign: 'center' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <CheckCircle2 style={{ width: '32px', height: '32px', color: '#10b981' }} />
+      <div style={shell}>
+        <div style={card}>
+          <div style={BRAND_GRADIENT_BAR} />
+          <div style={{ padding: '40px 32px', textAlign: 'center' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <CheckCircle2 style={{ width: '32px', height: '32px', color: '#10b981' }} />
+            </div>
+            <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#171a2b', marginBottom: '6px' }}>Payment received!</h1>
+            <p style={{ fontSize: '15px', color: '#5b6072' }}>Thank you — {request.businessName} has been notified.</p>
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#1a202c', marginBottom: '6px' }}>Payment received!</h1>
-          <p style={{ fontSize: '15px', color: '#718096' }}>Thank you — {request.businessName} has been notified.</p>
+          <PoweredByFooter />
         </div>
       </div>
     )
@@ -121,22 +127,27 @@ export function PayRequestCard({ request }: { request: Req }) {
 
   if (state === 'invalid') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#f7f7f8' }}>
-        <div style={{ ...card, padding: '40px 32px', textAlign: 'center' }}>
-          <XCircle style={{ width: '40px', height: '40px', color: '#dc2626', margin: '0 auto 12px' }} />
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#1a202c' }}>Payment link no longer valid</h1>
-          <p style={{ fontSize: '14px', color: '#718096', marginTop: '6px' }}>Contact {request.businessName} for a new link.</p>
+      <div style={shell}>
+        <div style={card}>
+          <div style={BRAND_GRADIENT_BAR} />
+          <div style={{ padding: '40px 32px', textAlign: 'center' }}>
+            <XCircle style={{ width: '40px', height: '40px', color: '#dc2626', margin: '0 auto 12px' }} />
+            <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#171a2b' }}>Payment link no longer valid</h1>
+            <p style={{ fontSize: '14px', color: '#5b6072', marginTop: '6px' }}>Contact {request.businessName} for a new link.</p>
+          </div>
+          <PoweredByFooter />
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#f7f7f8' }}>
+    <div style={shell}>
       <div style={card}>
-        <div style={{ padding: '28px 32px 20px', textAlign: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#718096' }}>{request.businessName}</p>
-          <p style={{ fontSize: '34px', fontWeight: 900, color: '#1a202c', marginTop: '6px' }}>${request.amount.toFixed(2)}</p>
+        <div style={BRAND_GRADIENT_BAR} />
+        <div style={{ padding: '28px 32px 20px', textAlign: 'center', borderBottom: '1px solid rgba(26,48,112,0.08)' }}>
+          <p style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#5b6072' }}>{request.businessName}</p>
+          <p style={{ fontSize: '34px', fontWeight: 900, color: '#171a2b', marginTop: '6px' }}>${request.amount.toFixed(2)}</p>
         </div>
 
         <div style={{ padding: '28px 32px' }}>
@@ -146,7 +157,7 @@ export function PayRequestCard({ request }: { request: Req }) {
             disabled={state === 'loading'}
             style={{
               width: '100%', fontSize: '16px', fontWeight: 700, color: '#fff',
-              background: '#2d3748',
+              background: 'linear-gradient(135deg,#2a52a0,#4a9db5)',
               padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
               opacity: state === 'loading' ? 0.6 : 1,
             }}
@@ -155,6 +166,8 @@ export function PayRequestCard({ request }: { request: Req }) {
           </button>
           <p style={{ fontSize: '12px', color: '#9aa0ae', textAlign: 'center', marginTop: '14px' }}>Secured by Helcim</p>
         </div>
+
+        <PoweredByFooter />
       </div>
     </div>
   )

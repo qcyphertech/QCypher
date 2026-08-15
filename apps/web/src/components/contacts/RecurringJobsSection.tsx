@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Repeat, Pause, Play, X } from 'lucide-react'
 import { pauseRecurringJob, resumeRecurringJob, cancelRecurringJob, type RecurringJob } from '@/lib/actions/recurring-jobs'
 import { CreateRecurringJobModal } from '@/components/contacts/CreateRecurringJobModal'
+import { formatTimeLabel } from '@/lib/recurrence'
 
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
 
@@ -83,7 +84,7 @@ export function RecurringJobsSection({
               <div className="min-w-0">
                 <p className="text-[15px] font-medium">{job.title}</p>
                 <p className="text-[13px] text-[hsl(var(--muted-foreground))]">
-                  {FREQUENCY_LABEL[job.frequency]} · ${Number(job.amount).toFixed(2)} · Next: {fmtDate(job.next_scheduled_date)}
+                  {FREQUENCY_LABEL[job.frequency]} · ${Number(job.amount).toFixed(2)} · Next: {fmtDate(job.next_scheduled_date)}{job.scheduled_time ? ` at ${formatTimeLabel(job.scheduled_time)}` : ''}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
