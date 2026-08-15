@@ -51,7 +51,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/q/') ||
     pathname.startsWith('/portal/') ||
     pathname.startsWith('/invoice/') ||
-    pathname.startsWith('/pay/')
+    pathname.startsWith('/pay/') ||
+    pathname.startsWith('/recurring/')
   ) {
     return supabaseResponse
   }

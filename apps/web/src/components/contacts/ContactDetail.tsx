@@ -11,6 +11,8 @@ import { QuickSendButton } from '@/components/templates/QuickSendButton'
 import { SendPortalLinkButton } from '@/components/portal/SendPortalLinkButton'
 import { PaymentRequestSection } from '@/components/contacts/PaymentRequestSection'
 import { AutomationSection } from '@/components/contacts/AutomationSection'
+import { RecurringJobsSection } from '@/components/contacts/RecurringJobsSection'
+import type { RecurringJob } from '@/lib/actions/recurring-jobs'
 import { useUserRole } from '@/lib/hooks/useUserRole'
 import type { Tables } from '@/types/database'
 import { cn } from '@/lib/utils'
@@ -29,13 +31,17 @@ function initials(c: Contact) {
   return `${c.first_name[0]}${c.last_name?.[0] ?? ''}`.toUpperCase()
 }
 
-export function ContactDetail({ contact, interactions, orders = [], tenantId, tenantSlug, businessName }: {
+type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
+
+export function ContactDetail({ contact, interactions, orders = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [] }: {
   contact: Contact
   interactions: Interaction[]
   orders?: Order[]
   tenantId: string
   tenantSlug: string
   businessName: string
+  catalogItems?: CatalogItem[]
+  recurringJobs?: RecurringJob[]
 }) {
   const router = useRouter()
   const supabase = createClient()
@@ -128,6 +134,15 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
 
       {/* Payment requests — per-order, tenant-admin only */}
       <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} />
+
+      {/* Recurring jobs — tenant-admin only */}
+      <RecurringJobsSection
+        contactId={contact.id}
+        tenantId={tenantId}
+        businessName={businessName}
+        catalogItems={catalogItems}
+        jobs={recurringJobs}
+      />
 
       {/* Per-customer automation opt-out — tenant-admin only */}
       {isAdmin && <AutomationSection contactId={contact.id} />}

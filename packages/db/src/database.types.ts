@@ -1079,18 +1079,50 @@ export type Database = {
           },
         ]
       }
+      order_number_counters: {
+        Row: {
+          next_number: number
+          tenant_id: string
+        }
+        Insert: {
+          next_number?: number
+          tenant_id: string
+        }
+        Update: {
+          next_number?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_number_counters_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           change_request_message: string | null
           change_requested_at: string | null
+          confirm_token: string | null
+          confirm_token_expires_at: string | null
           created_at: string
           customer_id: string | null
+          customer_response: string | null
+          customer_response_at: string | null
           helcim_transaction_id: string | null
           id: string
           job_status: Database["public"]["Enums"]["job_status"] | null
           notes: string | null
+          order_number: number | null
           paid_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          recurring_job_id: string | null
+          reminder_sent_at: string | null
+          reschedule_to_date: string | null
+          scheduled_date: string | null
           signed_at: string | null
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -1101,14 +1133,23 @@ export type Database = {
         Insert: {
           change_request_message?: string | null
           change_requested_at?: string | null
+          confirm_token?: string | null
+          confirm_token_expires_at?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_response?: string | null
+          customer_response_at?: string | null
           helcim_transaction_id?: string | null
           id?: string
           job_status?: Database["public"]["Enums"]["job_status"] | null
           notes?: string | null
+          order_number?: number | null
           paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          recurring_job_id?: string | null
+          reminder_sent_at?: string | null
+          reschedule_to_date?: string | null
+          scheduled_date?: string | null
           signed_at?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -1119,14 +1160,23 @@ export type Database = {
         Update: {
           change_request_message?: string | null
           change_requested_at?: string | null
+          confirm_token?: string | null
+          confirm_token_expires_at?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_response?: string | null
+          customer_response_at?: string | null
           helcim_transaction_id?: string | null
           id?: string
           job_status?: Database["public"]["Enums"]["job_status"] | null
           notes?: string | null
+          order_number?: number | null
           paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          recurring_job_id?: string | null
+          reminder_sent_at?: string | null
+          reschedule_to_date?: string | null
+          scheduled_date?: string | null
           signed_at?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -1140,6 +1190,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_recurring_job_id_fkey"
+            columns: ["recurring_job_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_jobs"
             referencedColumns: ["id"]
           },
           {
@@ -1553,6 +1610,97 @@ export type Database = {
           ip?: string
         }
         Relationships: []
+      }
+      recurring_jobs: {
+        Row: {
+          amount: number
+          auto_confirm_if_no_reply: boolean
+          cancelled_at: string | null
+          catalog_item_id: string | null
+          contact_id: string
+          created_at: string
+          created_by: string
+          day_of_month: number | null
+          description: string | null
+          frequency: string
+          id: string
+          interval_days: number | null
+          next_scheduled_date: string | null
+          paused_at: string | null
+          reminder_days_before: number
+          send_reminder: boolean
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          auto_confirm_if_no_reply?: boolean
+          cancelled_at?: string | null
+          catalog_item_id?: string | null
+          contact_id: string
+          created_at?: string
+          created_by: string
+          day_of_month?: number | null
+          description?: string | null
+          frequency: string
+          id?: string
+          interval_days?: number | null
+          next_scheduled_date?: string | null
+          paused_at?: string | null
+          reminder_days_before?: number
+          send_reminder?: boolean
+          status?: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          auto_confirm_if_no_reply?: boolean
+          cancelled_at?: string | null
+          catalog_item_id?: string | null
+          contact_id?: string
+          created_at?: string
+          created_by?: string
+          day_of_month?: number | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          interval_days?: number | null
+          next_scheduled_date?: string | null
+          paused_at?: string | null
+          reminder_days_before?: number
+          send_reminder?: boolean
+          status?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_jobs_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_jobs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_jobs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       renewal_reminders_sent: {
         Row: {
