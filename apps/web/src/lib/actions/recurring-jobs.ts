@@ -148,11 +148,18 @@ async function notifyAffectedOccurrences(
     .select('id, confirm_token, scheduled_date, customer_response, contacts(first_name, email)')
     .eq('recurring_job_id', recurringJobId)
     .neq('payment_status', 'paid')
+    .order('scheduled_date', { ascending: true })
   if (!orders?.length) return
 
   const { data: tenant } = await admin.from('tenants').select('name').eq('id', tenantId).single()
   const businessName = tenant?.name ?? 'your service provider'
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
+
+  // A contact can have several upcoming occurrences of the same series (this
+  // test tenant does) — patch every one of them, but only ever email the
+  // customer once per edit. Sorted by scheduled_date above, so the email
+  // links to their soonest occurrence.
+  const emailedContacts = new Set<string>()
 
   for (const order of orders as unknown as Array<{
     id: string; confirm_token: string; scheduled_date: string; customer_response: string | null
@@ -174,7 +181,8 @@ async function notifyAffectedOccurrences(
     }
 
     const contact = order.contacts
-    if (!contact?.email) continue
+    if (!contact?.email || emailedContacts.has(contact.email)) continue
+    emailedContacts.add(contact.email)
 
     const dateLabel = new Date(`${order.scheduled_date}T00:00:00.000Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
     const link = `${appUrl}/recurring/${order.confirm_token}`
