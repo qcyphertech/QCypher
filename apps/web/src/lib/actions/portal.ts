@@ -6,6 +6,7 @@ import { sendPaymentConfirmationEmails } from '@/lib/email/payment-notify'
 import { verifyHelcimTransaction } from '@/lib/helcim-verify'
 import { resolveHelcimApiKey } from '@/lib/helcim-connect'
 import { resolveStripeAccount } from '@/lib/stripe-connect'
+import { renderNeutralEmail } from '@/lib/email/neutral'
 
 function admin() {
   return createClient(
@@ -47,7 +48,7 @@ export async function sendPortalMagicLink(input: {
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
   const link = `${appUrl}/portal/${input.tenantSlug}/auth?token=${token}`
 
-  const body = [
+  const text = [
     `Hi ${contact.first_name ?? 'there'},`,
     '',
     `${input.businessName} has invited you to their client portal where you can view your quotes, approve work, and pay invoices online.`,
@@ -60,6 +61,17 @@ export async function sendPortalMagicLink(input: {
     `— ${input.businessName}`,
   ].join('\n')
 
+  const html = renderNeutralEmail({
+    senderName: input.businessName,
+    bodyHtml: `
+      <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#1a202c;">You're invited to the client portal</p>
+      <p style="margin:16px 0 0;">Hi ${contact.first_name ?? 'there'},</p>
+      <p style="margin:16px 0 0;">${input.businessName} has invited you to their client portal, where you can view your quotes, approve work, and pay invoices online.</p>
+      <p style="margin:16px 0 0;font-size:13px;color:#718096;">This link is valid for 24 hours.</p>
+    `,
+    cta: { label: 'Sign in to portal', href: link },
+  })
+
   const mailRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -70,7 +82,8 @@ export async function sendPortalMagicLink(input: {
       from: `${input.businessName} <${process.env.RESEND_FROM_EMAIL ?? 'hello@qcyphertech.com'}>`,
       to: [contact.email],
       subject: `${input.businessName} — view your quotes & invoices`,
-      text: body,
+      html,
+      text,
     }),
   })
   if (!mailRes.ok) {
