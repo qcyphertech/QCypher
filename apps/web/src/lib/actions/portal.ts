@@ -195,7 +195,7 @@ export async function getPortalOrders(tenantId: string, contactId: string) {
   const db = admin()
   const { data } = await db
     .from('orders')
-    .select('id, payment_status, total_amount, created_at, signed_at, paid_at, notes')
+    .select('id, payment_status, total_amount, created_at, signed_at, paid_at, notes, job_status')
     .eq('tenant_id', tenantId)
     .eq('customer_id', contactId)
     .order('created_at', { ascending: false })

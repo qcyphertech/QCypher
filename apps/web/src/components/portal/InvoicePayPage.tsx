@@ -29,6 +29,55 @@ type Order = {
   paid_at: string | null
   helcim_transaction_id: string | null
   notes: string | null
+  job_status: 'en_route' | 'in_progress' | 'completed' | null
+}
+
+const JOB_STEPS = [
+  { key: 'scheduled', label: 'Scheduled' },
+  { key: 'en_route', label: 'En route' },
+  { key: 'in_progress', label: 'In progress' },
+  { key: 'completed', label: 'Completed' },
+] as const
+
+function JobStatusTimeline({ jobStatus }: { jobStatus: Order['job_status'] }) {
+  const currentIndex = JOB_STEPS.findIndex(s => s.key === (jobStatus ?? 'scheduled'))
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-6 py-5">
+      <h2 className="text-[15px] font-semibold text-gray-900 mb-4">Job status</h2>
+      <div className="flex items-start">
+        {JOB_STEPS.map((step, i) => {
+          const done = i < currentIndex
+          const active = i === currentIndex
+          return (
+            <div key={step.key} className="flex-1 flex flex-col items-center relative">
+              {i > 0 && (
+                <div
+                  className="absolute top-3 right-1/2 w-full h-0.5"
+                  style={{ background: i <= currentIndex ? '#059669' : '#e5e7eb' }}
+                />
+              )}
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center z-10 text-[11px] font-bold"
+                style={{
+                  background: done || active ? '#059669' : '#e5e7eb',
+                  color: done || active ? '#fff' : '#9ca3af',
+                }}
+              >
+                {done ? '✓' : i + 1}
+              </div>
+              <p
+                className="text-[11px] font-medium text-center mt-2 px-1"
+                style={{ color: active ? '#059669' : done ? '#374151' : '#9ca3af' }}
+              >
+                {step.label}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 declare global {
@@ -181,23 +230,26 @@ export function InvoicePayPage({
 
   if (state === 'paid' || alreadyPaid) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h1 className="text-xl font-bold text-gray-900">Payment received!</h1>
-          <p className="text-[15px] text-gray-600">
-            Thank you — {session.businessName} has been notified.
-          </p>
-          {order.helcim_transaction_id && (
-            <p className="text-[12px] text-gray-400">
-              Transaction ID: {order.helcim_transaction_id}
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-sm w-full space-y-6">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">Payment received!</h1>
+            <p className="text-[15px] text-gray-600">
+              Thank you — {session.businessName} has been notified.
             </p>
-          )}
+            {order.helcim_transaction_id && (
+              <p className="text-[12px] text-gray-400">
+                Transaction ID: {order.helcim_transaction_id}
+              </p>
+            )}
+          </div>
+          <JobStatusTimeline jobStatus={order.job_status} />
           <Link
             href={backHref}
-            className="block w-full py-3 rounded-xl text-[15px] font-bold text-white"
+            className="block w-full py-3 rounded-xl text-[15px] font-bold text-white text-center"
             style={{ background: 'linear-gradient(135deg, #1a3070, #2a52a0)' }}
           >
             Back to portal
@@ -224,6 +276,9 @@ export function InvoicePayPage({
             {new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
+
+        {/* Job status */}
+        <JobStatusTimeline jobStatus={order.job_status} />
 
         {/* Line items */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">

@@ -11,11 +11,18 @@ type Order = {
   signed_at: string | null
   paid_at: string | null
   notes: string | null
+  job_status: 'en_route' | 'in_progress' | 'completed' | null
 }
 
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`
 const fmtDate = (s: string) =>
   new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+const JOB_STATUS_LABEL: Record<string, string> = {
+  en_route: '🚗 En route',
+  in_progress: '🔧 In progress',
+  completed: '✅ Completed',
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -53,6 +60,11 @@ function OrderCard({
             >
               {badge}
             </span>
+            {order.job_status && (
+              <span className="text-[11px] font-medium text-gray-500">
+                {JOB_STATUS_LABEL[order.job_status]}
+              </span>
+            )}
           </div>
           <p className="text-[15px] font-semibold text-gray-900">{fmt(order.total_amount)}</p>
           <p className="text-[13px] text-gray-400 mt-0.5">{fmtDate(order.created_at)}</p>
