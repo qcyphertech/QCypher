@@ -142,7 +142,7 @@ export async function validatePortalSession(
   const { data: tenant } = await db
     .from('tenants')
     .select('id, name, slug')
-    .eq('slug', tenantSlug)
+    .eq('slug', decodeURIComponent(tenantSlug))
     .maybeSingle()
   if (!tenant) return null
 

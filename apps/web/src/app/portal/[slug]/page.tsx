@@ -29,7 +29,7 @@ export default async function PortalLoginPage({
   const { data: tenant } = await db
     .from('tenants')
     .select('name, slug')
-    .eq('slug', params.slug)
+    .eq('slug', decodeURIComponent(params.slug))
     .maybeSingle()
 
   if (!tenant) notFound()
