@@ -122,8 +122,7 @@ Questions? Reply to this email.
   const html = renderNeutralEmail({
     senderName: input.businessName,
     bodyHtml: `
-      <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#1a202c;">You have a quote to review</p>
-      <p style="margin:0 0 20px;color:#718096;">From ${input.businessName}</p>
+      <p style="margin:0 0 20px;font-size:20px;font-weight:800;color:#1a202c;">You have a quote to review</p>
       <p style="margin:0 0 16px;">Hi ${input.recipientName},</p>
       <p style="margin:0 0 20px;">${input.businessName} has sent you a quote to review and approve.</p>
       <div style="background:#f7f7f8;border-radius:12px;padding:20px 24px;margin:0 0 20px;border:1px solid rgba(15,23,42,0.06);text-align:center;">

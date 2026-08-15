@@ -56,8 +56,7 @@ export async function POST(req: NextRequest) {
   const html = renderNeutralEmail({
     senderName: tenant.name,
     bodyHtml: `
-      <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#1a202c;">Your sign-in link</p>
-      <p style="margin:0 0 20px;color:#718096;">For ${tenant.name}'s client portal</p>
+      <p style="margin:0 0 20px;font-size:20px;font-weight:800;color:#1a202c;">Your client portal sign-in link</p>
       <p style="margin:0 0 16px;">Hi ${contact.first_name ?? 'there'},</p>
       <p style="margin:0;">Click below to sign in. This link expires in 24 hours and can only be used once.</p>
     `,
