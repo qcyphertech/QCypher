@@ -46,6 +46,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/portal/') ||
     pathname === '/paymentcallback' ||
     pathname === '/api/webhooks/helcim-connected-account' ||
+    pathname === '/api/webhooks/stripe-connect' ||
     pathname.startsWith('/api/contact') ||
     pathname.startsWith('/q/') ||
     pathname.startsWith('/portal/') ||

@@ -443,15 +443,46 @@ export async function initStripeCheckout(input: {
   return { ok: true, url: session.url }
 }
 
+// Shared by confirmStripePayment (customer's return-URL re-check) and the
+// Stripe Connect webhook (belt-and-suspenders for tabs closed mid-redirect).
+// Both paths land here once they have a Stripe-verified, payment_status
+// === 'paid' Checkout Session — this just does the DB write + emails, once.
+async function markOrderPaidFromStripeSession(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: ReturnType<typeof admin>,
+  order: { id: string; order_number: number | null; total_amount: number; contacts: unknown },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  session: any,
+  tenantId: string,
+) {
+  const now = new Date().toISOString()
+  await db.from('orders').update({
+    payment_status: 'paid',
+    paid_at: now,
+    stripe_checkout_session_id: session.id,
+    stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+  }).eq('id', order.id)
+
+  const contact = order.contacts as unknown as { first_name: string; last_name: string | null; email: string | null } | null
+  await sendPaymentConfirmationEmails({
+    admin: db,
+    tenantId,
+    orderNumber: order.order_number,
+    amount: Number(order.total_amount),
+    transactionId: session.id,
+    customerEmail: contact?.email ?? null,
+    customerName: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null,
+  })
+}
+
 // ─── Stripe: re-verify a Checkout Session server-side and mark paid ──────────
-// No webhook — the customer returns to this exact URL after Stripe
-// redirects them, and we re-fetch the session directly from Stripe's API
-// (never trust the redirect alone) before marking the order paid. This
-// mirrors validateAndRecordPayment's Helcim re-verification pattern. The
-// tradeoff: if a customer pays but closes the tab before the redirect
-// completes, the order won't auto-mark paid — a real webhook would close
-// that gap, but needs a Stripe Dashboard webhook + secret configured per
-// deploy, which this intentionally avoids for now.
+// The customer returns to this exact URL after Stripe redirects them, and
+// we re-fetch the session directly from Stripe's API (never trust the
+// redirect alone) before marking the order paid. This mirrors
+// validateAndRecordPayment's Helcim re-verification pattern. Belt-and-
+// suspenders alongside this: the Stripe Connect webhook at
+// /api/webhooks/stripe-connect catches the case where the customer pays
+// but closes the tab before this redirect completes.
 export async function confirmStripePayment(input: {
   orderId: string
   tenantId: string
@@ -483,24 +514,35 @@ export async function confirmStripePayment(input: {
   // Session belongs to this order (defense in depth, alongside the tenant-scoped API key used to fetch it)
   if (session.metadata?.order_id !== input.orderId) return { ok: false, error: 'Payment does not match this invoice' }
 
-  const now = new Date().toISOString()
-  await db.from('orders').update({
-    payment_status: 'paid',
-    paid_at: now,
-    stripe_checkout_session_id: session.id,
-    stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
-  }).eq('id', input.orderId)
+  await markOrderPaidFromStripeSession(db, order, session, input.tenantId)
+  return { ok: true }
+}
 
-  const contact = order.contacts as unknown as { first_name: string; last_name: string | null; email: string | null } | null
-  await sendPaymentConfirmationEmails({
-    admin: db,
-    tenantId: input.tenantId,
-    orderNumber: order.order_number,
-    amount: Number(order.total_amount),
-    transactionId: session.id,
-    customerEmail: contact?.email ?? null,
-    customerName: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : null,
-  })
+// ─── Stripe Connect webhook entry point ───────────────────────────────────
+// Called by /api/webhooks/stripe-connect after signature verification. The
+// event's Checkout Session already carries payment_status + metadata, so
+// unlike confirmStripePayment there's no need to call back to Stripe or
+// resolve the tenant's access token — the platform-level webhook secret is
+// itself the proof this came from Stripe.
+export async function handleStripeCheckoutCompleted(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  session: any,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const orderId = session.metadata?.order_id
+  const tenantId = session.metadata?.tenant_id
+  if (!orderId || !tenantId) return { ok: false, error: 'Missing order/tenant metadata' }
+  if (session.payment_status !== 'paid') return { ok: true } // nothing to do yet
 
+  const db = admin()
+  const { data: order } = await db
+    .from('orders')
+    .select('id, order_number, total_amount, payment_status, contacts(first_name, last_name, email)')
+    .eq('id', orderId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!order) return { ok: false, error: 'Order not found' }
+  if (order.payment_status === 'paid') return { ok: true } // idempotent — return-URL path may have already handled it
+
+  await markOrderPaidFromStripeSession(db, order, session, tenantId)
   return { ok: true }
 }
