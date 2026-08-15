@@ -9,7 +9,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { revalidatePath } from 'next/cache'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 const SERVICE_NAMES = ['reviews', 'scheduler', 'missed_call', 'backup'] as const
@@ -21,13 +20,6 @@ export type ServiceStat = {
   value: string        // human-readable metric
   status: 'active' | 'needs_attention'
   detail: string | null
-}
-
-export type ChecklistRow = {
-  id: string
-  service_name: ServiceName
-  completed: boolean
-  completed_at: string | null
 }
 
 function adminClient() {
@@ -142,50 +134,6 @@ export async function getServiceStats(tenantId: string): Promise<ServiceStat[]> 
   ]
 }
 
-// ── 14B: Ops checklist ────────────────────────────────────────────────────────
-
-function currentMonth() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
-export async function getChecklist(tenantId: string): Promise<ChecklistRow[]> {
-  await assertAdmin()
-  const admin = adminClient()
-  const month = currentMonth()
-
-  // Upsert default rows for this month so the checklist always has all 4 services
-  await admin.from('service_checklist').upsert(
-    SERVICE_NAMES.map(s => ({ tenant_id: tenantId, month, service_name: s, completed: false })),
-    { onConflict: 'tenant_id,month,service_name', ignoreDuplicates: true },
-  )
-
-  const { data } = await admin
-    .from('service_checklist')
-    .select('id, service_name, completed, completed_at')
-    .eq('tenant_id', tenantId)
-    .eq('month', month)
-    .order('service_name')
-
-  return (data ?? []) as ChecklistRow[]
-}
-
-export async function toggleChecklist(
-  rowId: string,
-  tenantId: string,
-  completed: boolean,
-): Promise<void> {
-  const user = await assertAdmin()
-  const admin = adminClient()
-
-  await admin.from('service_checklist').update({
-    completed,
-    completed_at: completed ? new Date().toISOString() : null,
-    completed_by: completed ? user.id : null,
-  }).eq('id', rowId)
-
-  revalidatePath(`/admin/tenants/${tenantId}`)
-}
 
 // ── 14C: Monthly report data assembly ────────────────────────────────────────
 

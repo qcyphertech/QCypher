@@ -1,22 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, CheckCircle2, Circle, AlertTriangle, RefreshCw, Send, Loader2, ClipboardList, FileBarChart, Users2, Sparkles } from 'lucide-react'
-import { toggleChecklist } from '@/lib/actions/admin'
+import { ChevronLeft, CheckCircle2, Circle, AlertTriangle, RefreshCw, Send, Loader2, FileBarChart, Users2, Sparkles } from 'lucide-react'
 import { TenantModulesPanel } from '@/components/admin/TenantModulesPanel'
 import { TenantPricingPanel } from '@/components/admin/TenantPricingPanel'
 import { RenewalReminderPanel } from '@/components/admin/RenewalReminderPanel'
 import { TeamPanel } from '@/components/settings/TeamPanel'
-import type { ServiceStat, ChecklistRow, ServiceName } from '@/lib/actions/admin'
+import type { ServiceStat, ServiceName } from '@/lib/actions/admin'
 import type { TeamMember, PendingInvite } from '@/lib/actions/team'
-
-const SERVICE_LABELS: Record<ServiceName, string> = {
-  reviews:     'Review Requests',
-  scheduler:   'Online Scheduler',
-  missed_call: 'Missed-Call Text-Back',
-  backup:      'Security & Backup',
-}
 
 // Zero activity isn't a problem for a brand-new or quiet account — only an
 // actual unconfigured integration (the scheduler) is worth flagging in
@@ -32,7 +24,6 @@ type Tenant = {
 type Props = {
   tenant: Tenant
   stats: ServiceStat[]
-  checklist: ChecklistRow[]
   members: TeamMember[]
   pendingInvites: PendingInvite[]
   currentUserId: string
@@ -67,24 +58,11 @@ function SectionHeader({ icon: Icon, color, title, hint, right }: {
   )
 }
 
-export function TenantDetail({ tenant, stats, checklist: initialChecklist, members, pendingInvites, currentUserId }: Props) {
+export function TenantDetail({ tenant, stats, members, pendingInvites, currentUserId }: Props) {
   const router = useRouter()
-  const [checklist, setChecklist] = useState(initialChecklist)
-  const [isPending, startTransition] = useTransition()
   const [reportEmail, setReportEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [reportResult, setReportResult] = useState<{ ok: boolean; message: string } | null>(null)
-
-  function handleToggle(row: ChecklistRow) {
-    const next = !row.completed
-    setChecklist(prev => prev.map(r => r.id === row.id
-      ? { ...r, completed: next, completed_at: next ? new Date().toISOString() : null }
-      : r
-    ))
-    startTransition(async () => {
-      await toggleChecklist(row.id, tenant.id, next)
-    })
-  }
 
   async function sendReport(e: React.FormEvent) {
     e.preventDefault()
@@ -112,7 +90,6 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
     }
   }
 
-  const completedCount = checklist.filter(r => r.completed).length
   const isActive = tenant.status === 'active'
 
   return (
@@ -164,7 +141,7 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
 
       {/* Services this account is actually using */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-        <SectionHeader icon={Sparkles} color="#f59e0b" title="What's Running" hint={`This billing cycle, at a glance`} />
+        <SectionHeader icon={Sparkles} color="#f59e0b" title="What's Running" hint="Live status for this billing cycle — updates on its own, nothing to check off" />
         <div className="divide-y divide-[hsl(var(--border))]">
           {stats.map(stat => {
             const name = stat.name as ServiceName
@@ -218,48 +195,6 @@ export function TenantDetail({ tenant, stats, checklist: initialChecklist, membe
 
       {/* Modules — per-tenant feature access, gated by super admin */}
       <TenantModulesPanel tenantId={tenant.id} />
-
-      {/* Ops checklist */}
-      <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-        <SectionHeader
-          icon={ClipboardList} color="#10b981" title="Monthly Ops Checklist"
-          hint={`${completedCount} of ${checklist.length} done this month`}
-          right={
-            <div className="flex gap-1">
-              {checklist.map(r => (
-                <div key={r.id} className={`w-2 h-2 rounded-full ${r.completed ? 'bg-emerald-500' : 'bg-[hsl(var(--border))]'}`} />
-              ))}
-            </div>
-          }
-        />
-        <div className="divide-y divide-[hsl(var(--border))]">
-          {checklist.map(row => (
-            <label
-              key={row.id}
-              className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-[hsl(var(--muted))]/40 transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={row.completed}
-                disabled={isPending}
-                onChange={() => handleToggle(row)}
-                className="w-4 h-4 rounded accent-emerald-500 cursor-pointer"
-              />
-              <div className="flex-1">
-                <p className={`text-[15px] font-medium ${row.completed ? 'line-through text-[hsl(var(--muted-foreground))]' : ''}`}>
-                  {SERVICE_LABELS[row.service_name as ServiceName] ?? row.service_name}
-                </p>
-                {row.completed && row.completed_at && (
-                  <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
-                    Checked {new Date(row.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                  </p>
-                )}
-              </div>
-              {row.completed && <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
-            </label>
-          ))}
-        </div>
-      </div>
 
       {/* Monthly report */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
