@@ -50,6 +50,14 @@ const SECURITY_HEADERS = [
   // allow-popups (not the stricter same-origin) since nothing here has
   // been verified popup-free beyond what this pass audited — safer default.
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+  // Vercel's CDN adds "Access-Control-Allow-Origin: *" by default on
+  // statically-served pages/assets (confirmed via curl — present on cached
+  // pages and static CSS, absent on dynamic API routes). Nothing in this
+  // app sets it. None of these responses carry auth/session data, so it
+  // wasn't exploitable, but there's no reason another origin's JS should
+  // be able to read this site's markup either — overriding it here is
+  // free hardening, not a fix for a real breach.
+  { key: 'Access-Control-Allow-Origin', value: 'https://www.qcyphertech.com' },
 ]
 
 /** @type {import('next').NextConfig} */
