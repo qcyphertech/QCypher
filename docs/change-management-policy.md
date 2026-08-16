@@ -19,10 +19,19 @@ consistency against what's written down.
   TypeScript check has pre-existing errors unrelated to any single change
   (fixing them is out of scope for a quick toggle), so making it blocking
   today would immediately red-X every future push.
-- **Deploys are manual**: `pnpm exec next build` locally, then
-  `vercel --prod --yes`. No staging environment exists — every deploy
-  goes straight to production (see `docs/` and prior phase notes; this
-  was a deliberate scope decision, not an omission).
+- **Deploys are automatic on push to `main`**, via Vercel's GitHub
+  integration — confirmed 2026-08-16 by cross-checking `vercel ls`
+  against git push history (dozens of production deploys, one per
+  push, no separate manual `vercel --prod` step involved). This
+  corrects an earlier version of this doc, which assumed a manual
+  build-then-`vercel --prod` step — that assumption was wrong, and it's
+  *why* `deployment_log` had zero rows despite real deploys happening:
+  the logging script was written to pair with a manual step that
+  doesn't actually exist in the real workflow. No staging environment
+  exists — every deploy goes straight to production (a deliberate scope
+  decision, not an omission).
+- **Deployment logging is now automatic**, not manual — see "What
+  every deployment should record" below.
 - **Database migrations** are written as `.sql` files, pasted into the
   Supabase SQL Editor by a human, then `supabase migration repair` marks
   them applied and types are regenerated. This is a manual gate by
@@ -52,21 +61,28 @@ don't block anything.
 | Gap | Why it's not fixed yet | Remediation |
 |---|---|---|
 | No required PR review | 2-person team; mandatory review would block solo iteration, which is how this app has shipped every phase to date | Accept as a documented residual risk for now. If the team grows past 2 engineers, revisit. |
-| CI checks don't block merges | TypeScript check has pre-existing debt; RLS isolation tests need live Supabase secrets and currently only run post-merge on `main`, not pre-merge on PRs | Pay down the TypeScript debt, then flip `typecheck` to blocking. Move `rls-isolation` to also run on `pull_request` events (secrets are already available to same-repo PRs) and make it blocking — this is the single highest-value gate for a multi-tenant app, since it directly tests cross-tenant isolation. |
+| `security-audit` and `typecheck` CI jobs don't block | `typecheck` has 135 pre-existing errors (see `docs/typescript-debt-assessment.md`) — flipping it to blocking today would red-X every future push regardless of what changed. `security-audit`'s dependency-audit step also surfaces pre-existing findings that need triage before it can block. | Pay down the TypeScript debt (tracked, root cause suspected), triage `security-audit` findings, then flip both to blocking. `rls-isolation` — the highest-value gate for a multi-tenant app — is **already fixed**: it runs on both `push` to `main` and `pull_request`, and is genuinely blocking (2026-08-16). |
+| Deployment logging relied on a human remembering a manual step | The logging script (`scripts/log-deployment.sh`) was written assuming a manual `vercel --prod` step that turned out not to exist — deploys are actually automatic on push via Vercel's GitHub integration, so there was never a natural moment to trigger the script. Result: zero rows in `deployment_log` despite dozens of real deploys, confirmed 2026-08-16. | **Fixed 2026-08-16.** `.github/workflows/log-deployment.yml` logs every push to `main` automatically — no human step to forget. `scripts/log-deployment.sh` remains available for migrations or notes that need attaching by hand. |
 | No staging environment | Deliberate scope decision made early in the project — see prior phase notes | Not planned; accepted trade-off for a 2-person team's velocity. |
 
-## What every deployment should record
+## What every deployment records
 
-Going forward, use this as the standard for what "log a deployment"
-means, even without an automated table (see the SOC 2 evidence repo,
-`evidence/change-management/`, for where to keep this):
+`.github/workflows/log-deployment.yml` runs on every push to `main`
+and inserts a `deployment_log` row automatically — no human step to
+remember:
 
-- Timestamp
-- Who deployed (developer or "AI assistant on behalf of [name]")
-- Git commit hash
-- What changed (one line, matches the commit message)
-- Any migration applied alongside it
-- Deploy outcome (success / rolled back)
+- Timestamp (`deployed_at`, set by the database default)
+- Who pushed (`deployed_by`, from the commit author)
+- Git commit hash and message
+- A link back to the GitHub Actions run that logged it
+
+**What it doesn't capture automatically**: which migration (if any)
+shipped alongside a given deploy, and free-form notes. For those, run
+`scripts/log-deployment.sh ["migration_file"] ["notes"]` by hand
+after a deploy that includes a migration — it inserts a second, more
+detailed row rather than trying to edit the automated one. See the SOC
+2 evidence repo, `evidence/change-management/`, for periodic exports of
+this table as evidence.
 
 ## Emergency changes (security patches)
 

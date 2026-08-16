@@ -2,10 +2,12 @@
 -- policy (docs/change-management-policy.md). Platform-wide data, no
 -- tenant_id, RLS is super-admin-only, same pattern as vulnerability_scans.
 --
--- Deploys in this app are manual (pnpm exec next build, then
--- `vercel --prod --yes`), not triggered by CI on push — so this table is
--- populated by a wrapper script (scripts/log-deployment.sh) run alongside
--- each deploy, not by a GitHub Actions job.
+-- Populated automatically by .github/workflows/log-deployment.yml on
+-- every push to main (deploys here are auto-triggered by Vercel's
+-- GitHub integration, confirmed 2026-08-16 — not a manual `vercel
+-- --prod` step, which is what this comment originally assumed).
+-- scripts/log-deployment.sh remains available for attaching a
+-- migration filename or notes by hand after a deploy that needs them.
 
 create table if not exists deployment_log (
   id                 uuid primary key default gen_random_uuid(),

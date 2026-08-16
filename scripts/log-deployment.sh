@@ -4,9 +4,15 @@
 #
 # Records a row in deployment_log for every production deploy — the
 # evidence trail behind docs/change-management-policy.md's "what every
-# deployment should record" section. Deploys here are manual
-# (pnpm exec next build, then `vercel --prod --yes`), not triggered by
-# CI, so this is a wrapper you run alongside that, not a GitHub Action.
+# deployment records" section.
+#
+# Most pushes to main are now logged automatically by
+# .github/workflows/log-deployment.yml (deploys here are auto-triggered
+# by Vercel's GitHub integration, not a manual `vercel --prod` step).
+# Run this script by hand only when you need to attach something the
+# automated row can't capture — a migration filename or free-form notes
+# — which inserts a second, more detailed row alongside the automatic
+# one rather than editing it.
 #
 # Usage:
 #   bash scripts/log-deployment.sh ["migration_file"] ["notes"]
