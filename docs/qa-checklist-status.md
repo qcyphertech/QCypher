@@ -29,9 +29,6 @@ marked done, even where the supporting infrastructure is ready.
       DR item above; both creation and restore verified.
 - [x] **Data classification policy written** —
       `docs/data-classification-policy.md`.
-
-## Done, verified
-
 - [x] **All 9 Common Criteria (CC1-9) addressed** —
       `docs/common-criteria-mapping.md`, each CC mapped to real,
       cited controls. Honestly graded per category (CC8 change
@@ -60,12 +57,16 @@ marked done, even where the supporting infrastructure is ready.
       action" below.
 - [ ] **Incident response plan formalized + tested** — formalized:
       yes (`docs/INCIDENT_RESPONSE_PLAYBOOK.md`, with real automated
-      detection for 2 of 4 originally-planned triggers). **Tested: no**
-      — there is no record of a tabletop exercise or simulated incident
-      walkthrough. The automated detection code runs for real
-      (bulk-deletion, self-role-escalation), but "tested" in an audit
-      sense usually means a deliberate drill with a written outcome,
-      which hasn't happened.
+      detection for 2 of 4 originally-planned triggers). **Tested:
+      prepared, not yet run.** `docs/incident-response-tabletop-drill.md`
+      is a full drill script and recording template — a real scenario
+      (manually-reported cross-tenant exposure, chosen specifically
+      because it's the playbook's least-tested path, not the easy
+      cron-detected case), step-by-step walkthrough questions tied to
+      each playbook phase, and an outcome template to fill in. This is
+      genuinely as far as this can go without you and Felix — running
+      a tabletop drill is, by definition, two people actually talking
+      it through. See "Requires your action" below.
 
 ## Requires your action — cannot be done autonomously
 
@@ -94,9 +95,11 @@ marked done, even where the supporting infrastructure is ready.
       Cal.com, Google, and Helcim's trust/security teams and requesting
       their reports (most publish them via a self-serve trust portal
       once you sign an NDA — Vercel and Supabase both do this).
-- [ ] **Incident response drill** — needs you and Felix to actually
-      block time for a tabletop walkthrough (even a 30-minute one) and
-      record the outcome in `evidence/monitoring/`.
+- [ ] **Incident response drill** — the script is written
+      (`docs/incident-response-tabletop-drill.md`); you and Felix need
+      to actually block ~30-45 minutes, run through it together, and
+      fill in the "Outcome" section, then save a copy into
+      `evidence/monitoring/` with the real date.
 
 ## What changed this session beyond the checklist itself
 

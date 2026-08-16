@@ -17,6 +17,7 @@ was last verified against the actual code.
 | [common-criteria-mapping.md](common-criteria-mapping.md) | Every SOC 2 Common Criteria (CC1-9) mapped to the real control that satisfies it, with honest per-category grading — weakest areas (change management, control environment) stated directly, not padded. |
 | [qa-checklist-status.md](qa-checklist-status.md) | Item-by-item status against the pre-audit QA checklist: what's done, what's honestly partial, and what requires Thomas/Felix's own action (can't be automated). |
 | [typescript-debt-assessment.md](typescript-debt-assessment.md) | 135 silent `tsc --noEmit` errors, assessed and documented rather than blind-fixed, with a suspected root cause and a scoped remediation path. |
+| [incident-response-tabletop-drill.md](incident-response-tabletop-drill.md) | A prepared drill script (scenario, step-by-step questions, outcome template) for Thomas + Felix to actually run — testing the playbook's least-covered path, not the easy case. |
 
 ## SOC 2 context
 
