@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { ShieldAlert, ShieldCheck, ChevronDown } from 'lucide-react'
 import { listVulnerabilityScans, getScanFindings, listFindingGroups, resolveFindingGroup, type VulnerabilityScan, type VulnerabilityFinding, type VulnerabilityFindingGroup } from '@/lib/actions/security-scans'
 import { SectionHeader, EmptyState, PanelSkeleton } from '@/components/admin/AdminPanelUI'
+import { MfaDevicesPanel } from '@/components/admin/MfaDevicesPanel'
 
 const SEVERITY_STYLE: Record<string, string> = {
   Critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
@@ -197,6 +198,8 @@ export function SecurityPanel() {
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <MfaDevicesPanel />
+
       <SectionHeader icon={ShieldAlert} label="Vulnerability Scans" count={scans.length} accent />
 
       {latest && (

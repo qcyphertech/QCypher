@@ -50,6 +50,10 @@ export function MfaSetupForm() {
   const [loading, setLoading]   = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
   const [verifyError, setVerifyError] = useState<string | null>(null)
+  // Whether this account already has at least one verified factor —
+  // distinguishes first-time mandatory setup from voluntarily adding a
+  // second device, which changes the copy shown below.
+  const [addingAnotherDevice, setAddingAnotherDevice] = useState(false)
   const supabase = createClient()
   const router   = useRouter()
   const searchParams = useSearchParams()
@@ -64,8 +68,14 @@ export function MfaSetupForm() {
       if (stale) {
         await supabase.auth.mfa.unenroll({ factorId: stale.id })
       }
+      setAddingAnotherDevice((factors?.totp.filter(f => f.status === 'verified').length ?? 0) > 0)
 
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' })
+      // A friendly name makes multiple devices distinguishable on the
+      // challenge-page picker (MfaChallengeForm) — without it, Supabase
+      // defaults to a generic label and a second device is impossible to
+      // tell apart from the first when choosing which one to verify with.
+      const friendlyName = `Device added ${new Date().toISOString().slice(0, 10)}`
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName })
       if (error || !data) {
         setInitError(error?.message ?? 'Could not start MFA setup.')
         return
@@ -117,9 +127,11 @@ export function MfaSetupForm() {
   return (
     <div style={CARD_STYLE}>
       <p style={{ fontSize: '14px', color: 'rgba(148,180,220,0.75)', marginBottom: '18px', textAlign: 'center' }}>
-        Your account has access to every tenant&apos;s data, so two-factor
-        authentication is required. Scan this code with Google Authenticator,
-        Authy, or any TOTP app.
+        {addingAnotherDevice
+          ? 'Scan this code with a new device or authenticator app to add it as an additional way to verify — your existing device keeps working too.'
+          : <>Your account has access to every tenant&apos;s data, so two-factor
+          authentication is required. Scan this code with Google Authenticator,
+          Authy, or any TOTP app.</>}
       </p>
 
       {qrCode ? (
