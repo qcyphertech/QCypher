@@ -98,9 +98,14 @@ marked done, even where the supporting infrastructure is ready.
       backup workflow and deployment logging). Confirmed working via a
       real run. The actual months of evidence still have to happen —
       nothing accelerates that.
-- [ ] **No audit findings from Type I (if pursuing it)** — depends on
-      whether you're pursuing a Type I first. Not decided in this
-      session; a decision only you can make.
+- [ ] **No audit findings from Type I (if pursuing it)** — whether to
+      pursue one is analyzed in full in
+      `docs/type1-vs-type2-decision.md`: what each report actually
+      certifies, the real trade-off table (time/cost/deal-closing
+      value), and why QCypher's situation narrows it to one real
+      question — is there a deal or prospect waiting on a report in
+      the next 1-3 months? If yes, Type I first; if no, skip straight
+      to Type II. Still a business call only you and Felix can make.
 - [ ] **Auditor selected + engagement letter signed** —
       `docs/auditor-selection.md` researches this: realistic cost/
       timeline for a 2-person company ($12K-$40K depending on Type I
