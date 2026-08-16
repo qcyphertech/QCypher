@@ -37,7 +37,7 @@ async function tenantClient(email: string, password: string) {
   return client
 }
 
-describe.skipIf(skip)('Auth-path RLS isolation (Phase 2.5)', () => {
+;(skip ? describe.skip : describe)('Auth-path RLS isolation (Phase 2.5)', () => {
   let tenantAId: string
   let tenantBId: string
   let contactBId: string

@@ -41,7 +41,15 @@ jobs:
     name: RLS isolation tests
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'   # only on main — requires live Supabase
-    continue-on-error: true   # surface issues without blocking; fix separately
+    # NOT continue-on-error: unlike the other CI jobs, this one now has real
+    # signal. Found and fixed 2026-08-16: this suite had never once run
+    # successfully — missing all 7 required secrets, a Vitest-only API
+    # (describe.skipIf) used under Jest, 4 files importing directly from
+    # 'vitest', and a missing-semicolon ASI bug that made every describe
+    # block throw "afterAll(...) is not a function". 4 of 8 test files
+    # (42 tests) are now self-contained and run for real against the live
+    # DB; the other 4 need pre-provisioned TEST_TENANT_A/B fixtures that
+    # don't exist yet, so they skip cleanly rather than fail.
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

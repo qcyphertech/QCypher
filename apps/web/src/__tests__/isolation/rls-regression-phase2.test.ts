@@ -53,7 +53,7 @@ async function authedFetch(email: string, password: string, path: string, init?:
   })
 }
 
-describe.skipIf(skip)('Phase 2 RLS regression', () => {
+;(skip ? describe.skip : describe)('Phase 2 RLS regression', () => {
   let tenantAId: string
   let tenantBId: string
   let contactBId: string

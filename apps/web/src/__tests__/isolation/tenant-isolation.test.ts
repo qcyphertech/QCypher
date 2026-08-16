@@ -43,7 +43,7 @@ async function tenantClient(email: string, password: string) {
   return client
 }
 
-describe.skipIf(skip)('Tenant RLS isolation', () => {
+;(skip ? describe.skip : describe)('Tenant RLS isolation', () => {
   let tenantAId: string
   let tenantBId: string
   let contactBId: string

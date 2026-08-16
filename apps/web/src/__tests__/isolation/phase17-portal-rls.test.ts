@@ -6,17 +6,16 @@
  *
  * Run: set -a && source .env.local && set +a && npx vitest run src/__tests__/isolation/phase17-portal-rls.test.ts
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 import { randomBytes } from 'crypto'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const ANON_KEY     = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY!
-if (!SUPABASE_URL || !ANON_KEY || !SERVICE_KEY) throw new Error('Missing env vars')
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const ANON_KEY     = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+const skip = !SUPABASE_URL || !ANON_KEY || !SERVICE_KEY
 
-const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
-const anon  = createClient(SUPABASE_URL, ANON_KEY,    { auth: { persistSession: false } })
+const admin = skip ? null! : createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
+const anon  = skip ? null! : createClient(SUPABASE_URL, ANON_KEY,    { auth: { persistSession: false } })
 
 const TS = Date.now()
 const EMAIL_STAFF_A = `p17-staffA-${TS}@test.invalid`
@@ -31,6 +30,7 @@ let sessionA1Token: string, sessionA2Token: string, sessionB1Token: string
 let magicLinkToken: string
 
 beforeAll(async () => {
+  if (skip) return
   // Create two tenants
   const [{ data: tA }, { data: tB }] = await Promise.all([
     admin.from('tenants').insert({ name: 'P17-TenantA', slug: `p17a-${TS}` }).select('id').single(),
@@ -94,6 +94,7 @@ beforeAll(async () => {
 }, 30000)
 
 afterAll(async () => {
+  if (skip) return
   await admin.from('portal_sessions').delete().in('tenant_id', [tenantAId, tenantBId])
   await admin.from('portal_magic_links').delete().in('tenant_id', [tenantAId, tenantBId])
   await admin.from('orders').delete().in('tenant_id', [tenantAId, tenantBId])
@@ -108,7 +109,7 @@ afterAll(async () => {
 
 // ─── Dimension 1: Cross-tenant isolation ─────────────────────────────────────
 
-describe('Tenant isolation — Tenant B cannot see Tenant A portal data', () => {
+;(skip ? describe.skip : describe)('Tenant isolation — Tenant B cannot see Tenant A portal data', () => {
   it('Anon cannot read Tenant A portal_sessions', async () => {
     const { data } = await anon.from('portal_sessions').select('*').eq('tenant_id', tenantAId)
     expect(data?.length ?? 0).toBe(0)
@@ -154,7 +155,7 @@ describe('Tenant isolation — Tenant B cannot see Tenant A portal data', () => 
 
 // ─── Dimension 2: Cross-contact isolation within the same tenant ──────────────
 
-describe('Contact isolation — Customer A1 cannot see Customer A2 orders (same tenant)', () => {
+;(skip ? describe.skip : describe)('Contact isolation — Customer A1 cannot see Customer A2 orders (same tenant)', () => {
   it('getPortalOrders with A1 session only returns A1 orders', async () => {
     // Simulate what the server action does: service-role scoped to tenant + contact
     const { data } = await admin
@@ -205,7 +206,7 @@ describe('Contact isolation — Customer A1 cannot see Customer A2 orders (same 
 
 // ─── Dimension 3: Magic-link token security ───────────────────────────────────
 
-describe('Magic-link token security', () => {
+;(skip ? describe.skip : describe)('Magic-link token security', () => {
   it('Unknown token returns null from lookup', async () => {
     const { data } = await admin
       .from('portal_magic_links')

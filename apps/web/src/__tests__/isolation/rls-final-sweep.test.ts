@@ -56,7 +56,7 @@ async function bearerFetch(email: string, pass: string, path: string, init?: Req
 let tenantAId: string, tenantBId: string
 let cBId: string, iBId: string, evBId: string, tBId: string, slBId: string
 
-describe.skipIf(skip)('Phase 4 — RLS final sweep', () => {
+;(skip ? describe.skip : describe)('Phase 4 — RLS final sweep', () => {
   beforeAll(async () => {
     const adm = admin()
     const { data: uA } = await adm.auth.admin.getUserByEmail(A_EMAIL)
