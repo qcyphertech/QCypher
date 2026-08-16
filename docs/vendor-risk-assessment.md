@@ -20,12 +20,15 @@ or breach for QCypher.
   QCypher is responsible for RLS policies, access control, and key
   management. QCypher's side: RLS on 30 tenant tables (see
   `docs/risk-register.md` Risk #1), RBAC (Risk #3).
-- **Contingency:** Supabase's own backup/restore is unverified platform
-  config. An independent nightly `pg_dump` backup to Cloudflare R2 exists
-  and was confirmed working 2026-08-16 (was silently broken since it was
-  built — see Risk #2) — but **restoring from it has never actually been
-  tested**. Backup creation is now a verified control; restore capability
-  is not.
+- **Contingency:** Supabase's own backup/restore remains unverified
+  platform config. An independent nightly `pg_dump` backup to Cloudflare
+  R2 exists and was confirmed working 2026-08-16 (was silently broken
+  since it was built — see Risk #2). **Update, same day:** the restore
+  path is now also tested — every nightly run restores into a disposable
+  Postgres 17 container and spot-checks 6 core tables, confirmed via a
+  real successful run
+  (`evidence/availability/2026-08-16-backup-restore-verified.md`). Both
+  backup creation and restore are now verified controls.
 
 ## Vercel — Hosting, Edge/Serverless, Cron
 **Integration:** All deploys, `apps/web/vercel.json` for scheduled cron

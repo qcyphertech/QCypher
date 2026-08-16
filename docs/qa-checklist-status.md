@@ -1,0 +1,117 @@
+# Phase 35 QA Checklist — Status
+
+Run against the exact checklist provided 2026-08-16, item by item,
+verified against real code/CI/evidence state — not assumed. Two
+categories: things this session could fix and did, and things that
+genuinely require a human (Thomas/Felix) to act — those are **not**
+marked done, even where the supporting infrastructure is ready.
+
+## Done, verified
+
+- [x] **MFA enabled for all staff (documented)** — TOTP required for
+      all super-admins, enforced in `middleware.ts` via session AAL.
+      `docs/staff-training.md`, `docs/risk-register.md` Risk #3.
+- [x] **Risk register created (quarterly reviews scheduled)** —
+      `docs/risk-register.md`, 5 scored risks, next review Nov 2026.
+- [x] **System description & architecture diagram completed** —
+      `docs/system-description.md`.
+- [x] **Disaster recovery procedure documented + tested** —
+      `nightly-backup.yml` restores every backup into a disposable DB
+      and verifies row counts. `evidence/availability/2026-08-16-backup-restore-verified.md`.
+- [x] **Evidence repository created (organized by control)** —
+      `/evidence`, structure in `evidence/README.md`.
+- [x] **Audit log retention configured (90+ days)** — `audit_logs` +
+      daily `purge_old_audit_logs()` cron.
+- [x] **Access reviews scheduled (monthly)** —
+      `scripts/review-super-admins.py`, first run recorded in
+      `evidence/access-control/2026-08-16-super-admin-review.md`.
+- [x] **Backup verification procedure documented + tested** — same as
+      DR item above; both creation and restore verified.
+- [x] **Data classification policy written** —
+      `docs/data-classification-policy.md`.
+
+## Partially done — real gap, honestly stated
+
+- [ ] **All 9 Common Criteria (CC1-9) addressed** — the underlying
+      controls exist (access control, change tracking, monitoring,
+      risk assessment, etc.) but there is **no document that explicitly
+      maps each control to its CC number**. Auditors expect that
+      mapping as its own artifact, not something they have to infer.
+      **Not built this session** — a real, scoped piece of work, not a
+      quick fix; flagging rather than guessing at a mapping I'm not
+      confident is complete.
+- [ ] **Change management process enforced in GitHub** — deliberately
+      **not** enforced. `docs/change-management-policy.md` documents
+      the real informal process (build-locally-then-deploy,
+      `scripts/log-deployment.sh`) and states explicitly that branch
+      protection was evaluated and rejected because it would block the
+      2-person team's direct-push workflow. This is an honest
+      documentation of a real gap, not a false "enforced" claim — worth
+      knowing the checklist wording ("enforced") doesn't match reality
+      here, and that's a deliberate trade-off, not an oversight.
+- [ ] **Vendor assessments completed (SOC 2 reports collected)** —
+      `docs/vendor-risk-assessment.md` documents 9 vendors and what
+      each *publicly claims* about their own compliance, but **no
+      actual SOC 2 report has been requested from or provided by any
+      vendor**. Collecting those requires contacting each vendor
+      (Supabase, Vercel, Stripe, etc.) directly — see "Requires your
+      action" below.
+- [ ] **Incident response plan formalized + tested** — formalized:
+      yes (`docs/INCIDENT_RESPONSE_PLAYBOOK.md`, with real automated
+      detection for 2 of 4 originally-planned triggers). **Tested: no**
+      — there is no record of a tabletop exercise or simulated incident
+      walkthrough. The automated detection code runs for real
+      (bulk-deletion, self-role-escalation), but "tested" in an audit
+      sense usually means a deliberate drill with a written outcome,
+      which hasn't happened.
+
+## Requires your action — cannot be done autonomously
+
+- [ ] **Formal policies signed by executives (Thomas + Felix)** — the
+      5 policy docs in `/docs` are written and accurate, but nothing
+      is "signed." This needs an actual decision from both of you on
+      how you want to formalize sign-off (a signed PDF, a dated commit
+      with both names, a Google Doc with signatures — your call), then
+      doing it.
+- [ ] **6-month evidence collection started (no gaps)** — collection
+      *started* today (2026-08-16); a 6-month gapless window is a
+      calendar fact that can't be accelerated. The evidence repo
+      structure and first entries per category exist now specifically
+      so the clock can start.
+- [ ] **No audit findings from Type I (if pursuing it)** — depends on
+      whether you're pursuing a Type I first. Not decided in this
+      session; a decision only you can make.
+- [ ] **Auditor selected + engagement letter signed** — requires
+      choosing and contracting with a real auditing firm. Nothing to
+      automate here.
+- [ ] **Timeline agreed (6-9 month observation period)** — depends on
+      the auditor engagement above; also gated on when evidence
+      collection genuinely started (today).
+- [ ] **CC1-9 mapping document** — listed above as partial, but
+      finishing it properly benefits from knowing which framework
+      variant your auditor wants (some want a literal CC-by-CC table,
+      others accept a narrative mapping) — worth confirming with
+      whoever you engage before finalizing the format.
+- [ ] **SOC 2 reports collected from vendors** — requires actually
+      emailing/contacting Supabase, Vercel, Stripe, Resend, Telnyx,
+      Cal.com, Google, and Helcim's trust/security teams and requesting
+      their reports (most publish them via a self-serve trust portal
+      once you sign an NDA — Vercel and Supabase both do this).
+- [ ] **Incident response drill** — needs you and Felix to actually
+      block time for a tabletop walkthrough (even a 30-minute one) and
+      record the outcome in `evidence/monitoring/`.
+
+## What changed this session beyond the checklist itself
+
+A few things were fixed along the way that the checklist doesn't call
+out by name but materially affect its accuracy:
+- `docs/vendor-risk-assessment.md`'s Supabase entry had a stale claim
+  ("restore has never been tested") — corrected once the restore test
+  actually started passing, same session.
+- `.github/workflows/ci.yml`'s `rls-isolation` job now runs on PRs, not
+  just post-merge to `main` — confirmed via a real throwaway PR
+  (opened, watched pass, closed — not merged).
+- `tsc --noEmit` has 135 real, currently-silent errors — assessed and
+  documented (`docs/typescript-debt-assessment.md`), not blind-fixed;
+  root cause suspected to be a `@supabase/ssr` version 7 minors behind
+  latest, recommended as a scoped follow-up with its own test pass.
