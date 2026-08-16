@@ -19,12 +19,22 @@ jobs:
       # 17.6) — pg_dump refuses to run against a newer server than itself.
       # Install from the official PGDG apt repo instead, pinned to 17, so
       # the client always matches or exceeds Supabase's major version.
+      # Confirmed by testing: even after installing postgresql-client-17,
+      # the plain `pg_dump` on PATH still resolved to a pre-existing 16.14
+      # that ships baked into the ubuntu-24.04 runner image ahead of the
+      # apt-installed one — update-alternatives doesn't manage it.
+      # Prepending the versioned binary dir to $GITHUB_PATH forces every
+      # later step in this job to see 17's pg_dump first.
       - name: Install pg_dump (PostgreSQL 17, matches Supabase)
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Verify pg_dump version
+        run: pg_dump --version
 
       - name: Install AWS CLI (for R2)
         run: |
