@@ -93,9 +93,16 @@ marked done, even where the supporting infrastructure is ready.
 - [ ] **No audit findings from Type I (if pursuing it)** — depends on
       whether you're pursuing a Type I first. Not decided in this
       session; a decision only you can make.
-- [ ] **Auditor selected + engagement letter signed** — requires
-      choosing and contracting with a real auditing firm. Nothing to
-      automate here.
+- [ ] **Auditor selected + engagement letter signed** —
+      `docs/auditor-selection.md` researches this: realistic cost/
+      timeline for a 2-person company ($12K-$40K depending on Type I
+      vs II), a shortlist of boutique/startup-oriented firms with
+      sourced pricing, a GRC-platform (Vanta/Drata/Secureframe)
+      buy-vs-skip analysis (recommends skipping — the manual evidence
+      trail already built this session covers most of what those
+      platforms automate), and the questions to ask before signing.
+      Still requires choosing and contracting with a real firm —
+      nothing to automate there.
 - [ ] **Timeline agreed (6-9 month observation period)** — depends on
       the auditor engagement above; also gated on when evidence
       collection genuinely started (today).

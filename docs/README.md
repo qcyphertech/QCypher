@@ -20,6 +20,7 @@ was last verified against the actual code.
 | [incident-response-tabletop-drill.md](incident-response-tabletop-drill.md) | A prepared drill script (scenario, step-by-step questions, outcome template) for Thomas + Felix to actually run — testing the playbook's least-covered path, not the easy case. |
 | [vendor-soc2-report-tracker.md](vendor-soc2-report-tracker.md) | Real, sourced request path for every vendor's SOC 2 report (self-serve portal URL or contact email) — researched so requesting them is minutes of work, not an afternoon. |
 | [policy-sign-off.md](policy-sign-off.md) | Prepared executive sign-off process for Thomas + Felix: why it matters for the audit, three concrete formalization options with a recommendation, and a blank record to fill in once actually reviewed. |
+| [auditor-selection.md](auditor-selection.md) | Researched auditor shortlist with real sourced pricing, Type I vs. Type II framing, a GRC-platform buy-vs-skip analysis, and questions to ask before signing — decision and engagement still Thomas/Felix's to make. |
 
 ## SOC 2 context
 
