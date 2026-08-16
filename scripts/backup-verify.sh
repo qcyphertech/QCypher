@@ -46,12 +46,22 @@ pg_dump \
 DUMP_SIZE=$(du -sh "$DUMP_FILE" | cut -f1)
 log "Dump complete: $DUMP_FILE ($DUMP_SIZE)"
 
-# Sanity: dump must contain our core tables
+# Sanity: dump must contain our core tables. Decompress once into a temp
+# file rather than piping zcat into grep per table — with `pipefail` on,
+# `zcat f | grep -q pattern` reports failure even when grep *finds* the
+# pattern, because grep -q exits the instant it matches and closes the
+# pipe, so zcat gets SIGPIPE and pipefail surfaces that as the pipeline's
+# exit status instead of grep's success. Confirmed this was producing a
+# false "missing table" on a verifiably complete dump.
+DUMP_SQL="/tmp/qcypher-dump-check-${TIMESTAMP}.sql"
+zcat "$DUMP_FILE" > "$DUMP_SQL"
 for table in tenants contacts interactions events templates send_log; do
-  if ! zcat "$DUMP_FILE" | grep -q "CREATE TABLE public.${table}"; then
+  if ! grep -q "CREATE TABLE public.${table}" "$DUMP_SQL"; then
+    rm -f "$DUMP_SQL"
     die "Dump missing table: $table"
   fi
 done
+rm -f "$DUMP_SQL"
 log "Table presence check: PASS"
 
 # ── 2. Upload to R2 ──────────────────────────────────────────────────────
