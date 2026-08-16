@@ -107,12 +107,34 @@ export async function getUpsellSuggestion(tenantId: string, orderId: string, con
     if (!triggerMatches) continue
 
     if (rule.show_every_x_bookings > 1) {
-      const { count } = await db
-        .from('upsell_analytics')
-        .select('id', { count: 'exact', head: true })
-        .eq('upsell_rule_id', rule.id)
-        .eq('contact_id', contactId)
-      if ((count ?? 0) % rule.show_every_x_bookings !== 0) continue
+      // Count how many of this contact's orders have ever matched this
+      // rule's trigger (not how many times it was *shown* — that count
+      // stops growing the moment a booking gets skipped, which would
+      // permanently lock the rule out after its first suppression).
+      const { data: contactOrders } = await db.from('orders').select('id').eq('tenant_id', tenantId).eq('customer_id', contactId)
+      const orderIds = (contactOrders ?? []).map(o => o.id)
+      let occurrenceCount = 0
+      if (orderIds.length) {
+        const { data: allLines } = await db
+          .from('order_line_items')
+          .select('order_id, catalog_item_id, item_name_snapshot, description_snapshot')
+          .in('order_id', orderIds)
+        const byOrder = new Map<string, typeof allLines>()
+        for (const line of allLines ?? []) {
+          if (!byOrder.has(line.order_id)) byOrder.set(line.order_id, [])
+          byOrder.get(line.order_id)!.push(line)
+        }
+        for (const orderLines of byOrder.values()) {
+          const text = orderLines!.map(l => `${l.item_name_snapshot} ${l.description_snapshot ?? ''}`.toLowerCase()).join(' ')
+          const ids = new Set(orderLines!.map(l => l.catalog_item_id).filter(Boolean))
+          const matches =
+            (rule.trigger_catalog_item_id && ids.has(rule.trigger_catalog_item_id)) ||
+            (rule.trigger_keywords?.length && rule.trigger_keywords.some(kw => text.includes(kw.toLowerCase())))
+          if (matches) occurrenceCount++
+        }
+      }
+      // Show on the 1st matching occurrence, then every Nth after that.
+      if ((occurrenceCount - 1) % rule.show_every_x_bookings !== 0) continue
     }
 
     const { data: item } = await db.from('catalog_items').select('name, base_price').eq('id', rule.suggested_catalog_item_id).maybeSingle()
