@@ -31,6 +31,15 @@ assembled right before the audit.
   action types, timestamps — not real tenant customer PII. Redact before
   saving here.
 
+## Automated gap checking
+
+`.github/workflows/evidence-gap-check.yml` runs monthly
+(`scripts/check-evidence-gaps.py`), compares each category above
+against its cadence, and opens a GitHub issue automatically if
+anything's gone stale — so a missed month doesn't go unnoticed until
+someone happens to check. Run it manually any time with
+`python3 scripts/check-evidence-gaps.py`.
+
 ## Status
 
 This repository was scaffolded 2026-08-16 as part of Phase 35 SOC 2 prep.

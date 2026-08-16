@@ -87,9 +87,17 @@ marked done, even where the supporting infrastructure is ready.
       the outcome — that can't be done for you.
 - [ ] **6-month evidence collection started (no gaps)** — collection
       *started* today (2026-08-16); a 6-month gapless window is a
-      calendar fact that can't be accelerated. The evidence repo
-      structure and first entries per category exist now specifically
-      so the clock can start.
+      calendar fact that can't be accelerated. What's automatable
+      about "no gaps" specifically **is now done**:
+      `.github/workflows/evidence-gap-check.yml` runs monthly, compares
+      each `evidence/` category's most recent file against its
+      documented cadence, and opens a GitHub issue automatically if
+      anything goes stale — so a missed month gets caught instead of
+      silently becoming a gap discovered at audit time (the same
+      failure mode already found twice this session for the nightly
+      backup workflow and deployment logging). Confirmed working via a
+      real run. The actual months of evidence still have to happen —
+      nothing accelerates that.
 - [ ] **No audit findings from Type I (if pursuing it)** — depends on
       whether you're pursuing a Type I first. Not decided in this
       session; a decision only you can make.
