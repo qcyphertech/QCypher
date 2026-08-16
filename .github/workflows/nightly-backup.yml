@@ -14,10 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install pg_dump
+      # Ubuntu's default postgresql-client package trails Supabase's actual
+      # Postgres version (confirmed: Ubuntu noble ships v16, Supabase runs
+      # 17.6) — pg_dump refuses to run against a newer server than itself.
+      # Install from the official PGDG apt repo instead, pinned to 17, so
+      # the client always matches or exceeds Supabase's major version.
+      - name: Install pg_dump (PostgreSQL 17, matches Supabase)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-17
 
       - name: Install AWS CLI (for R2)
         run: |
