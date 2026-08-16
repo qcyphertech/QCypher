@@ -39,15 +39,20 @@ marked done, even where the supporting infrastructure is ready.
 
 ## Partially done — real gap, honestly stated
 
-- [ ] **Change management process enforced in GitHub** — deliberately
-      **not** enforced. `docs/change-management-policy.md` documents
-      the real informal process (build-locally-then-deploy,
-      `scripts/log-deployment.sh`) and states explicitly that branch
-      protection was evaluated and rejected because it would block the
-      2-person team's direct-push workflow. This is an honest
-      documentation of a real gap, not a false "enforced" claim — worth
-      knowing the checklist wording ("enforced") doesn't match reality
-      here, and that's a deliberate trade-off, not an oversight.
+- [ ] **Change management process enforced in GitHub** — mixed
+      progress, still genuinely partial. **Fixed 2026-08-16:**
+      deployment logging was completely unused (`deployment_log` had
+      zero rows against dozens of real deploys — the manual script was
+      paired with a `vercel --prod` step that doesn't actually exist)
+      — now automatic via `.github/workflows/log-deployment.yml`,
+      confirmed working. **Still deliberately not enforced:** no
+      required PR review (branch protection was evaluated and rejected
+      because it would block the 2-person team's direct-push
+      workflow — that decision wasn't revisited, since it wasn't part
+      of what was broken), and `security-audit`/`typecheck` CI jobs
+      remain non-blocking pending TypeScript debt paydown. The
+      checklist's word "enforced" still overstates reality here, and
+      that's a stated, deliberate trade-off — not an oversight.
 - [ ] **Vendor assessments completed (SOC 2 reports collected)** —
       `docs/vendor-risk-assessment.md` documents 9 vendors and what
       each *publicly claims* about their own compliance, but **no

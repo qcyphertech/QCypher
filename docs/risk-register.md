@@ -216,11 +216,18 @@ commit) and the fact most changes are additive, not destructive.
 
 **Mitigation:** See `docs/change-management-policy.md` — build must pass
 locally before deploy; CI runs (non-blocking) on every push; git history
-is the audit trail.
+is the audit trail. **Improved 2026-08-16:** deployment logging is now
+automatic (`.github/workflows/log-deployment.yml`) rather than a manual
+step that turned out to have never actually fired — every push to
+`main` now creates a real `deployment_log` row with commit hash,
+message, and author, no human step to forget. See
+`evidence/change-management/2026-08-16-deployment-logging-fixed.md`.
 
-**Residual risk:** Medium. Accepted trade-off for a 2-person team's
-velocity — see the change-management policy for the explicit reasoning
-and remediation options if the team grows.
+**Residual risk:** Medium (audit trail is now more reliable, but the
+core gap — no independent review before a change ships — is unchanged).
+Accepted trade-off for a 2-person team's velocity — see the
+change-management policy for the explicit reasoning and remediation
+options if the team grows.
 
 ---
 
