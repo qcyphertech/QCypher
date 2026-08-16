@@ -15,7 +15,7 @@ corrected.
 | Incident response plan | ✅ Confirmed, more detailed than expected | `docs/INCIDENT_RESPONSE_PLAYBOOK.md` — real automated detection (`/api/cron/check-incidents`) + email/SMS alerting. Note: the playbook itself documents that only 2 of 4 originally-spec'd detection triggers are implemented (bulk deletion, self-role-escalation) — RLS-rejection and failed-login detection are explicitly out of scope, not silently missing. |
 | Data retention/deletion policy | ✅ Confirmed | `/privacy` page has real content; account deletion cron (`/api/cron/purge-deleted-accounts`) runs daily with a 30-day grace period. Caveat: auth user records aren't deleted, only tenant data — a documented scope reduction. |
 | Vulnerability scanning (weekly) | ✅ Confirmed | `.github/workflows/zap-baseline-scan.yml`, `cron: '0 2 * * 1'` — genuinely weekly, and genuinely produces reports (Phase 34/34b work, verified via multiple real scan runs). |
-| Backups (Supabase standard) | ⚪ **Cannot verify from code** | This is a Supabase project dashboard setting, not represented anywhere in the codebase. Flagged in `docs/risk-register.md` Risk #2 — and more importantly, **restore has never actually been tested**, which matters more than the backup schedule itself. |
+| Backups (Supabase standard) | ✅ **Independent backup now verified working** (was ⚪, escalated to 🔴 mid-review, then fixed) | Supabase's own managed backups remain unverified platform config. But the separate nightly `pg_dump` → R2 pipeline (`nightly-backup.yml`) had **never once succeeded since it was built** — missing all 5 secrets, silently failing every night. Fixed same day: created the R2 bucket/token, reset the DB password, fixed a pg_dump/server version mismatch, fixed a `pipefail` bug, made pruning non-fatal. Confirmed via a real successful run. Restore is still untested — see `docs/risk-register.md` Risk #2. |
 
 ## Control gaps requiring action
 
@@ -25,7 +25,8 @@ found, not the original estimate:
 | Gap | Priority | Status |
 |---|---|---|
 | No MFA for staff | 🔴 Critical | **Still open.** Single largest gap — see `docs/risk-register.md` Risk #3. Supabase Auth supports this natively; enabling it is configuration work, not development. |
-| Disaster recovery never tested | 🔴 Critical | **Still open.** Backup restore procedure exists per Supabase's platform docs but has never been exercised by this team. See Risk #2. |
+| Backup pipeline was silently broken | 🔴 Critical | **Fixed 2026-08-16.** Discovered mid-review that the nightly backup workflow had never succeeded (missing secrets); fixed and confirmed working the same session. See Risk #2. |
+| Disaster recovery restore never tested | 🟠 High (downgraded from Critical now that backup creation is verified) | **Still open.** A verified backup now genuinely exists in R2, but restoring from it has never been exercised. `RESTORE_DB_URL` is supported by the script but intentionally left unset for now. See Risk #2. |
 | Formal change management | 🟠 High | **Documented honestly, not "fixed."** `docs/change-management-policy.md` describes the real (informal) process and why it hasn't been formalized yet, rather than claiming a PR-review gate that doesn't exist. Branch protection was evaluated and deliberately not enabled — it would block the team's actual direct-push workflow. |
 | No risk register | 🟠 High | ✅ Done — `docs/risk-register.md`, 5 scored risks with real mitigations. |
 | No third-party risk management | 🟠 High | ✅ Done — `docs/vendor-risk-assessment.md`, 9 actual integrations (verified against wired-up code, not `.env.example`). |

@@ -56,16 +56,36 @@ no self-hosted fallback.
 **Risk score:** 8 (MEDIUM)
 
 **Mitigation:**
-- Supabase handles managed backups (rolling window — see "needs manual
-  verification" note below, this is a platform setting not app code).
+- Supabase handles managed backups (rolling window — platform setting,
+  not app code, not independently verified by QCypher).
+- **Independent nightly backup pipeline, fixed and verified working
+  2026-08-16** (`.github/workflows/nightly-backup.yml` +
+  `scripts/backup-verify.sh`): `pg_dump` → gzip → upload to a dedicated
+  Cloudflare R2 bucket (`qcypher-backups`) → upload-integrity check
+  (byte-size match) → 30-day-old backup pruning. This workflow existed
+  since before this review but **had never once succeeded** — it was
+  missing all 5 required secrets, so it silently failed every night with
+  no one noticing (GitHub Actions has no alerting wired to workflow
+  failure beyond the Actions UI itself). Fixed same day: created the R2
+  bucket + scoped API token, reset the Supabase DB password to get a
+  usable connection string, fixed a `pg_dump`/server major-version
+  mismatch (runner ships v16, Supabase runs 17.6), fixed a `pipefail`
+  false-negative in the table-presence check, and made the prune step
+  best-effort so cleanup issues can't fail an otherwise-successful
+  backup. Confirmed via a real run: dump complete, all 6 core tables
+  present, uploaded, integrity-verified.
 - No staging environment and no multi-region failover configured — this
   is a deliberate scope trade-off for a 2-person team, not an oversight.
 
-**Residual risk:** Medium-High. This is the least-mitigated risk in this
-register. **A real disaster-recovery restore has never been tested** —
-see `docs/system-description.md` gap notes / Phase 35 task list.
-Backup *existence* is inferred from Supabase's platform defaults, not
-verified.
+**Residual risk:** Medium (down from Medium-High). Backup *creation* is
+now genuinely verified working, not just assumed — a real gap this
+review found and closed, not just documented. What's still open:
+**restore has never been tested** (`RESTORE_DB_URL` intentionally left
+unset for now — the dump-and-upload path was the priority; restore
+verification is optional in the script and should be enabled next by
+pointing it at a scratch Supabase project). Until then, the tested
+guarantee is "a recent backup exists and is byte-verified in R2," not
+"we know we can recover from it."
 
 ---
 
