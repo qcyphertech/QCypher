@@ -34,7 +34,7 @@ found, not the original estimate:
 | No data classification policy | (not in original gap table, added) | ✅ Done — `docs/data-classification-policy.md`. |
 | No evidence repository | 🟡 Medium | ✅ Scaffolded — `/evidence`, structure + collection cadence documented. Still empty pending the DR test; MFA is now live and could have its first evidence entry (enrollment confirmation) added. |
 | No staff training docs | 🟠 High | **Not started.** Out of scope for this pass. |
-| No system description / architecture diagram | 🟠 High | **Not started.** Out of scope for this pass. |
+| No system description / architecture diagram | ✅ **Fixed 2026-08-16.** | `docs/system-description.md` — tech stack, Mermaid architecture diagram, data flow, security boundaries, all verified against code (storage buckets, cron jobs, GitHub workflows, middleware auth flow). Also surfaced that `packages/db/migrations/` is stale and no longer used — noted as follow-up debt, not fixed in this pass. |
 | No physical access controls | 🟡 Medium | N/A — remote-only team, confirmed still accurate. |
 
 ## What changed from the original plan's assumptions

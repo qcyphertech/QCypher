@@ -12,6 +12,7 @@ was last verified against the actual code.
 | [risk-register.md](risk-register.md) | Scored risks (tenant data exposure, vendor outage, staff account compromise, doc drift, unreviewed changes) with real mitigations and honest residual risk. |
 | [data-classification-policy.md](data-classification-policy.md) | What data exists, who can access it, retention periods (with actual enforced numbers, not aspirational ones), encryption. |
 | [vendor-risk-assessment.md](vendor-risk-assessment.md) | Every third-party service actually wired into the app, what data/access each has, contingency notes. |
+| [system-description.md](system-description.md) | What QCypher is, the monorepo layout, tech stack, an architecture diagram, data flow, and security boundaries — grounded in verified code, not an aspirational diagram. |
 
 ## SOC 2 context
 
