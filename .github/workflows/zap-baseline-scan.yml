@@ -22,9 +22,19 @@ jobs:
       # Never sends attack payloads, so it's safe to run against production.
       # -I: don't fail the job on findings — ingestion + email alerting
       # (below) is how findings actually get surfaced, not a red X here.
+      # The zaproxy image needs write access both to the mounted volume
+      # (owned by whichever uid runs `docker run`) AND to its own internal
+      # home directory (owned by the image's built-in `zap` user) for a
+      # scratch automation-framework yaml file. Those two can't both be
+      # satisfied by overriding -u, since that fixes the mount but breaks
+      # the image-internal write. Instead: keep the container's default
+      # user, and mount a dedicated world-writable subdirectory rather
+      # than the whole checkout (avoids permission fights either way).
       - name: Run ZAP baseline scan
         run: |
-          docker run --rm -u $(id -u):$(id -g) -v $(pwd):/zap/wrk:rw ghcr.io/zaproxy/zaproxy:stable \
+          mkdir -p zap-work
+          chmod 777 zap-work
+          docker run --rm -v "$(pwd)/zap-work:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
               -t "${{ env.TARGET_URL }}" \
               -J zap-report.json \
@@ -35,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zap-report
-          path: zap-report.json
+          path: zap-work/zap-report.json
           retention-days: 90
 
       - name: Parse and ingest results
@@ -43,6 +53,7 @@ jobs:
         env:
           ZAP_INGEST_SECRET: ${{ secrets.ZAP_INGEST_SECRET }}
         run: |
+          cd zap-work
           if [ ! -f zap-report.json ]; then
             echo "::error::zap-report.json missing — scan likely failed to run"
             curl -sf -X POST "${{ env.TARGET_URL }}/api/security/ingest-scan" \
