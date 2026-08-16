@@ -85,7 +85,7 @@ export async function toggleUpsellRule(id: string, isActive: boolean): Promise<{
 
 // ─── Suggestion matching ───────────────────────────────────────────────────
 
-export async function getUpsellSuggestion(tenantId: string, orderId: string, contactId: string): Promise<UpsellSuggestion | null> {
+export async function getUpsellSuggestion(tenantId: string, orderId: string, contactId: string, shownIn: 'order_edit' | 'portal_checkout' = 'order_edit'): Promise<UpsellSuggestion | null> {
   const db = admin()
 
   const [{ data: rules }, { data: lines }] = await Promise.all([
@@ -152,7 +152,7 @@ export async function getUpsellSuggestion(tenantId: string, orderId: string, con
       upsell_rule_id: rule.id,
       contact_id: contactId,
       order_id: orderId,
-      shown_in: 'order_edit',
+      shown_in: shownIn,
       base_service_amount: basePrice,
       upsell_amount: bundlePrice,
     }).select('id').single()

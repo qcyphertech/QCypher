@@ -134,7 +134,7 @@ export function InvoicePayPage({
 
   useEffect(() => {
     if (alreadyPaid) return
-    getUpsellSuggestion(session.tenantId, order.id, session.contactId).then(setUpsell)
+    getUpsellSuggestion(session.tenantId, order.id, session.contactId, 'portal_checkout').then(setUpsell)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
