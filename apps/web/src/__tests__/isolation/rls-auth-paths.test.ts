@@ -12,6 +12,7 @@
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@qcypher/db'
+import { getUserByEmail } from './_helpers'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
@@ -45,8 +46,8 @@ async function tenantClient(email: string, password: string) {
   beforeAll(async () => {
     const admin = adminClient()
 
-    const { data: userA } = await admin.auth.admin.getUserByEmail(TENANT_A_EMAIL)
-    const { data: userB } = await admin.auth.admin.getUserByEmail(TENANT_B_EMAIL)
+    const { data: userA } = await getUserByEmail(admin, TENANT_A_EMAIL)
+    const { data: userB } = await getUserByEmail(admin, TENANT_B_EMAIL)
 
     tenantAId = userA?.user?.app_metadata?.tenant_id
     tenantBId = userB?.user?.app_metadata?.tenant_id
