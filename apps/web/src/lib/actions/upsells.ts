@@ -313,3 +313,25 @@ export async function getUpsellAnalyticsByRule(tenantId: string): Promise<{
     return { ruleId: rule.id, ruleName: rule.rule_name, shown, accepted, acceptanceRate: shown ? Math.round((accepted / shown) * 100) : 0, revenueLift, lastShown }
   })
 }
+
+export async function getUpsellDrilldown(tenantId: string, ruleId: string): Promise<{
+  contactName: string
+  shownAt: string
+  accepted: boolean
+  shownIn: string
+}[]> {
+  const db = admin()
+  const { data: rows } = await db
+    .from('upsell_analytics')
+    .select('accepted, shown_in, created_at, contacts(first_name, last_name)')
+    .eq('tenant_id', tenantId)
+    .eq('upsell_rule_id', ruleId)
+    .order('created_at', { ascending: false })
+
+  return ((rows ?? []) as any[]).map(r => ({
+    contactName: `${r.contacts?.first_name ?? 'Unknown'} ${r.contacts?.last_name ?? ''}`.trim(),
+    shownAt: r.created_at,
+    accepted: r.accepted,
+    shownIn: r.shown_in,
+  }))
+}

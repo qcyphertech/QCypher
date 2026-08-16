@@ -1,4 +1,5 @@
 import { getUpsellAnalyticsSummary, getUpsellAnalyticsByRule } from '@/lib/actions/upsells'
+import { UpsellRuleTable } from './UpsellRuleTable'
 
 const card: React.CSSProperties = { borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', overflow: 'hidden' }
 
@@ -9,11 +10,6 @@ function StatTile({ label, value }: { label: string; value: string }) {
       <p className="text-[19px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>{value}</p>
     </div>
   )
-}
-
-function fmtDate(iso: string | null) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export async function UpsellAnalyticsPanel({ tenantId }: { tenantId: string }) {
@@ -36,29 +32,10 @@ export async function UpsellAnalyticsPanel({ tenantId }: { tenantId: string }) {
           No data yet.
         </div>
       ) : (
-        <div style={card} className="overflow-x-auto">
-          <table className="w-full text-[14px]">
-            <thead>
-              <tr className="border-b border-[hsl(var(--border))]">
-                {['Rule', 'Shown', 'Accepted', 'Acceptance %', 'Revenue Lift', 'Last Shown'].map(h => (
-                  <th key={h} className="text-left px-4 py-2.5 font-bold text-[12px] uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {byRule.map(r => (
-                <tr key={r.ruleId} className="border-b border-[hsl(var(--border))] last:border-0">
-                  <td className="px-4 py-2.5 font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{r.ruleName}</td>
-                  <td className="px-4 py-2.5" style={{ color: 'hsl(var(--foreground))' }}>{r.shown}</td>
-                  <td className="px-4 py-2.5" style={{ color: 'hsl(var(--foreground))' }}>{r.accepted}</td>
-                  <td className="px-4 py-2.5" style={{ color: 'hsl(var(--foreground))' }}>{r.acceptanceRate}%</td>
-                  <td className="px-4 py-2.5" style={{ color: 'hsl(var(--foreground))' }}>${r.revenueLift.toFixed(2)}</td>
-                  <td className="px-4 py-2.5" style={{ color: 'hsl(var(--muted-foreground))' }}>{fmtDate(r.lastShown)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <p className="text-[12px] mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>Click a rule to see individual customer history.</p>
+          <UpsellRuleTable tenantId={tenantId} rules={byRule} />
+        </>
       )}
     </div>
   )
