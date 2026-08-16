@@ -82,18 +82,28 @@ export function MfaSetupForm() {
     if (!factorId) return
     setLoading(true); setVerifyError(null)
 
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId })
-    if (challengeError || !challenge) { setVerifyError(challengeError?.message ?? 'Could not start verification.'); setLoading(false); return }
+    // See the matching comment in MfaChallengeForm.tsx — an uncaught
+    // rejection anywhere below previously left the button stuck on
+    // "Verifying…" forever with no visible error. Confirmed happening in
+    // practice.
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId })
+      if (challengeError || !challenge) { setVerifyError(challengeError?.message ?? 'Could not start verification.'); setLoading(false); return }
 
-    const { error: verifyErr } = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId: challenge.id,
-      code,
-    })
-    if (verifyErr) { setVerifyError('Invalid code. Try again.'); setLoading(false); return }
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challenge.id,
+        code,
+      })
+      if (verifyErr) { setVerifyError('Invalid code. Try again.'); setLoading(false); return }
 
-    router.push(next)
-    router.refresh()
+      router.push(next)
+      router.refresh()
+      // No setLoading(false) here — about to unmount on navigation.
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : 'Something went wrong. Try again.')
+      setLoading(false)
+    }
   }
 
   if (initError) {

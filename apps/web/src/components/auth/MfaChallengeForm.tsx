@@ -53,23 +53,38 @@ export function MfaChallengeForm() {
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError(null)
 
-    const { data: factors, error: listError } = await supabase.auth.mfa.listFactors()
-    if (listError || !factors) { setError('Could not load your MFA factor. Try signing in again.'); setLoading(false); return }
-    const factor = factors.totp.find(f => f.status === 'verified')
-    if (!factor) { setError('No verified MFA factor found. Contact an admin.'); setLoading(false); return }
+    // Every early-return below resets loading — but a thrown/rejected
+    // promise anywhere in this chain (network blip, an unexpected
+    // Supabase client error) previously skipped all of them, leaving the
+    // button stuck on "Verifying…" forever with no visible error.
+    // Confirmed happening in practice, not just theoretical: wrap the
+    // whole thing so any failure surfaces as a real error instead of a
+    // silent hang.
+    try {
+      const { data: factors, error: listError } = await supabase.auth.mfa.listFactors()
+      if (listError || !factors) { setError('Could not load your MFA factor. Try signing in again.'); setLoading(false); return }
+      const factor = factors.totp.find(f => f.status === 'verified')
+      if (!factor) { setError('No verified MFA factor found. Contact an admin.'); setLoading(false); return }
 
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factor.id })
-    if (challengeError || !challenge) { setError(challengeError?.message ?? 'Could not start verification.'); setLoading(false); return }
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factor.id })
+      if (challengeError || !challenge) { setError(challengeError?.message ?? 'Could not start verification.'); setLoading(false); return }
 
-    const { error: verifyError } = await supabase.auth.mfa.verify({
-      factorId: factor.id,
-      challengeId: challenge.id,
-      code,
-    })
-    if (verifyError) { setError('Invalid code. Try again.'); setLoading(false); return }
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: factor.id,
+        challengeId: challenge.id,
+        code,
+      })
+      if (verifyError) { setError('Invalid code. Try again.'); setLoading(false); return }
 
-    router.push(next)
-    router.refresh()
+      router.push(next)
+      router.refresh()
+      // Deliberately no setLoading(false) here — this component is about
+      // to unmount on navigation, and leaving the button showing
+      // "Verifying…" through that transition is correct, not a bug.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Try again.')
+      setLoading(false)
+    }
   }
 
   return (
