@@ -43,28 +43,14 @@ jobs:
               -r zap-report.html \
               -I
 
-      - name: Upload report artifacts
+      - name: Parse results
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: zap-report
-          path: |
-            zap-work/zap-report.json
-            zap-work/zap-report.html
-          retention-days: 90
-
-      - name: Parse and ingest results
-        if: always()
-        env:
-          ZAP_INGEST_SECRET: ${{ secrets.ZAP_INGEST_SECRET }}
         run: |
           cd zap-work
           if [ ! -f zap-report.json ]; then
             echo "::error::zap-report.json missing — scan likely failed to run"
-            curl -sf -X POST "${{ env.TARGET_URL }}/api/security/ingest-scan" \
-              -H "Authorization: Bearer $ZAP_INGEST_SECRET" \
-              -H "Content-Type: application/json" \
-              -d '{"counts":{"critical":0,"high":0,"medium":0,"low":0,"info":0},"findings":[],"status":"failed","errorMessage":"zap-report.json not produced","reportUrl":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
+            echo '{"critical":0,"high":0,"medium":0,"low":0,"info":0}' > counts.json
+            echo '[]' > findings.json
             exit 0
           fi
 
@@ -96,7 +82,48 @@ jobs:
             }]
           ' zap-report.json > findings.json
 
+      # Renders our own modern HTML report (donut + bar chart, brand colors)
+      # from the same counts/findings data, instead of relying on
+      # zap-baseline.py's bundled Jinja2 template — gives full design
+      # control without touching ZAP's internals. Runs even on a failed
+      # scan (empty-state report) so the artifact is consistent every run.
+      - name: Render styled security report
+        if: always()
+        run: |
+          node scripts/render-security-report.mjs \
+            zap-work/counts.json \
+            zap-work/findings.json \
+            zap-work/security-report.html \
+            "${{ env.TARGET_URL }}" \
+            "$(date -u +%Y-%m-%d)" \
+            "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Upload report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: |
+            zap-work/zap-report.json
+            zap-work/zap-report.html
+            zap-work/security-report.html
+          retention-days: 90
+
+      - name: Ingest results
+        if: always()
+        env:
+          ZAP_INGEST_SECRET: ${{ secrets.ZAP_INGEST_SECRET }}
+        run: |
+          cd zap-work
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ ! -f zap-report.json ]; then
+            curl -sf -X POST "${{ env.TARGET_URL }}/api/security/ingest-scan" \
+              -H "Authorization: Bearer $ZAP_INGEST_SECRET" \
+              -H "Content-Type: application/json" \
+              -d "{\"counts\":{\"critical\":0,\"high\":0,\"medium\":0,\"low\":0,\"info\":0},\"findings\":[],\"status\":\"failed\",\"errorMessage\":\"zap-report.json not produced\",\"reportUrl\":\"$RUN_URL\"}"
+            exit 0
+          fi
 
           jq -n --slurpfile counts counts.json --slurpfile findings findings.json --arg reportUrl "$RUN_URL" \
             '{counts: $counts[0], findings: $findings[0], status: "completed", reportUrl: $reportUrl}' > payload.json
