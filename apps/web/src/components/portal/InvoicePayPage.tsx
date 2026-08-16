@@ -7,6 +7,7 @@ import { CheckCircle2 } from 'lucide-react'
 import type { PortalSession } from '@/lib/actions/portal'
 import { initHelcimCheckout, validateAndRecordPayment, initStripeCheckout, confirmStripePayment } from '@/lib/actions/portal'
 import { getLoyaltyCheckoutInfo, redeemLoyaltyAtCheckout } from '@/lib/actions/loyalty'
+import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
 
 const UNIT_LABELS: Record<string, string> = {
   flat: '', hourly: '/hr', daily: '/day', weekly: '/wk', monthly: '/mo',
@@ -250,30 +251,36 @@ export function InvoicePayPage({
 
   if (state === 'paid' || alreadyPaid) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="max-w-sm w-full space-y-6">
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-            </div>
-            <h1 className="text-xl font-bold text-gray-900">Payment received!</h1>
-            <p className="text-[15px] text-gray-600">
-              Thank you — {session.businessName} has been notified.
-            </p>
-            {order.helcim_transaction_id && (
-              <p className="text-[12px] text-gray-400">
-                Transaction ID: {order.helcim_transaction_id}
+      <div className="min-h-screen bg-gray-50">
+        <div style={BRAND_GRADIENT_BAR} />
+        <div className="flex items-center justify-center p-6">
+          <div className="max-w-sm w-full space-y-6">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">Payment received!</h1>
+              <p className="text-[15px] text-gray-600">
+                Thank you — {session.businessName} has been notified.
               </p>
-            )}
+              {order.helcim_transaction_id && (
+                <p className="text-[12px] text-gray-400">
+                  Transaction ID: {order.helcim_transaction_id}
+                </p>
+              )}
+            </div>
+            <JobStatusTimeline jobStatus={order.job_status} />
+            <Link
+              href={backHref}
+              className="block w-full py-3 rounded-xl text-[15px] font-bold text-white text-center"
+              style={{ background: 'linear-gradient(135deg, #1a3070, #2a52a0)' }}
+            >
+              Back to portal
+            </Link>
+            <div className="rounded-2xl overflow-hidden border border-gray-200">
+              <PoweredByFooter />
+            </div>
           </div>
-          <JobStatusTimeline jobStatus={order.job_status} />
-          <Link
-            href={backHref}
-            className="block w-full py-3 rounded-xl text-[15px] font-bold text-white text-center"
-            style={{ background: 'linear-gradient(135deg, #1a3070, #2a52a0)' }}
-          >
-            Back to portal
-          </Link>
         </div>
       </div>
     )
@@ -281,6 +288,7 @@ export function InvoicePayPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div style={BRAND_GRADIENT_BAR} />
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
 
         {/* Back */}
@@ -389,6 +397,10 @@ export function InvoicePayPage({
             Invoice #{String(order.order_number ?? 0).padStart(4, '0')} · Secured by {paymentProvider === 'stripe' ? 'Stripe' : 'Helcim'}
           </p>
         )}
+
+        <div className="rounded-2xl overflow-hidden border border-gray-200">
+          <PoweredByFooter />
+        </div>
       </div>
     </div>
   )

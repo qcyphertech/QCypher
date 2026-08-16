@@ -261,7 +261,7 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
               )}
               <p className="text-[11px] text-gray-400">Quote #{String(order.order_number ?? 0).padStart(4, '0')} · {order.business_name}</p>
             </div>
-            {!backHref && <PoweredByFooter />}
+            <PoweredByFooter />
           </div>
         </div>
       </div>
@@ -293,7 +293,7 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
               )}
               <p className="text-[11px] text-gray-400">Quote #{String(order.order_number ?? 0).padStart(4, '0')} · {order.business_name}</p>
             </div>
-            {!backHref && <PoweredByFooter />}
+            <PoweredByFooter />
           </div>
         </div>
       </div>
@@ -517,11 +517,9 @@ export function QuoteSignaturePage({ token, order, lines, ip, backHref }: {
           )}
         </div>
 
-        {!backHref && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <PoweredByFooter />
-          </div>
-        )}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <PoweredByFooter />
+        </div>
 
       </div>
     </div>

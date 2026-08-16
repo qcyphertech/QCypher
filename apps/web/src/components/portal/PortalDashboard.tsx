@@ -2,6 +2,7 @@
 
 import type { PortalSession } from '@/lib/actions/portal'
 import Link from 'next/link'
+import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
 
 type Order = {
   id: string
@@ -176,6 +177,7 @@ export function PortalDashboard({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div style={BRAND_GRADIENT_BAR} />
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
@@ -252,6 +254,10 @@ export function PortalDashboard({
             ))}
           </Section>
         )}
+      </div>
+
+      <div className="max-w-lg mx-auto">
+        <PoweredByFooter />
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { PortalLoginForm } from '@/components/portal/PortalLoginForm'
+import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
 
 export const metadata: Metadata = { title: 'Client Portal' }
 
@@ -40,23 +41,29 @@ export default async function PortalLoginPage({
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <div className="max-w-sm w-full space-y-6">
-        <div className="text-center space-y-1">
-          <p className="text-[13px] font-semibold uppercase tracking-widest text-gray-400">Client Portal</p>
-          <h1 className="text-2xl font-bold text-gray-900">{tenant.name}</h1>
-          <p className="text-[15px] text-gray-500">
-            Enter your email to receive a sign-in link.
+      <div className="max-w-sm w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white">
+        <div style={BRAND_GRADIENT_BAR} />
+        <div className="px-6 pt-8 pb-6 space-y-6">
+          <div className="text-center space-y-1">
+            <p className="text-[13px] font-semibold uppercase tracking-widest text-gray-400">Client Portal</p>
+            <h1 className="text-2xl font-bold text-gray-900">{tenant.name}</h1>
+            <p className="text-[15px] text-gray-500">
+              Enter your email to receive a sign-in link.
+            </p>
+          </div>
+          {authError && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-[14px] text-amber-800">{authError}</p>
+            </div>
+          )}
+          <div className="[&>form]:border-0 [&>form]:shadow-none [&>form]:px-0 [&>form]:py-0 [&>div]:border-0 [&>div]:shadow-none [&>div]:px-0 [&>div]:py-0">
+            <PortalLoginForm tenantSlug={params.slug} businessName={tenant.name} />
+          </div>
+          <p className="text-[12px] text-gray-400 text-center">
+            No account needed — we&apos;ll email you a secure link.
           </p>
         </div>
-        {authError && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-[14px] text-amber-800">{authError}</p>
-          </div>
-        )}
-        <PortalLoginForm tenantSlug={params.slug} businessName={tenant.name} />
-        <p className="text-[12px] text-gray-400 text-center">
-          No account needed — we&apos;ll email you a secure link.
-        </p>
+        <PoweredByFooter />
       </div>
     </div>
   )
