@@ -23,8 +23,9 @@ export type AuditAction =
   | 'renewal_reminder_sent'
   | 'quote_approved' | 'quote_change_requested'
   | 'upsell_accepted'
+  | 'location_created' | 'location_updated' | 'location_paused' | 'location_activated'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location'
 
 export type AuditLog = {
   id: string

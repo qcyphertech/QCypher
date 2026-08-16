@@ -24,9 +24,12 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   automation_settings_updated: 'Automation settings updated',
   renewal_reminder_sent: 'Renewal reminder sent',
   quote_approved: 'Quote approved', quote_change_requested: 'Customer requested quote changes',
+  upsell_accepted: 'Upsell accepted',
+  location_created: 'Location created', location_updated: 'Location updated',
+  location_paused: 'Location paused', location_activated: 'Location activated',
 }
 
-const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment', 'order', 'automation']
+const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment', 'order', 'automation', 'location']
 
 const PAGE_SIZE = 25
 
