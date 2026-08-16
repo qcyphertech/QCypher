@@ -2766,6 +2766,113 @@ export type Database = {
           },
         ]
       }
+      vulnerability_findings: {
+        Row: {
+          affected_parameter: string | null
+          affected_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_resolved: boolean
+          owasp_category: string | null
+          remediation_advice: string | null
+          resolved_at: string | null
+          scan_id: string
+          severity: string
+          vulnerability_type: string | null
+        }
+        Insert: {
+          affected_parameter?: string | null
+          affected_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_resolved?: boolean
+          owasp_category?: string | null
+          remediation_advice?: string | null
+          resolved_at?: string | null
+          scan_id: string
+          severity: string
+          vulnerability_type?: string | null
+        }
+        Update: {
+          affected_parameter?: string | null
+          affected_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_resolved?: boolean
+          owasp_category?: string | null
+          remediation_advice?: string | null
+          resolved_at?: string | null
+          scan_id?: string
+          severity?: string
+          vulnerability_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vulnerability_findings_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "vulnerability_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vulnerability_scans: {
+        Row: {
+          alert_recipients: string[] | null
+          alert_sent_at: string | null
+          created_at: string
+          critical_count: number
+          environment: string
+          error_message: string | null
+          high_count: number
+          id: string
+          info_count: number
+          low_count: number
+          medium_count: number
+          report_url: string | null
+          scan_date: string
+          scan_type: string
+          status: string
+        }
+        Insert: {
+          alert_recipients?: string[] | null
+          alert_sent_at?: string | null
+          created_at?: string
+          critical_count?: number
+          environment?: string
+          error_message?: string | null
+          high_count?: number
+          id?: string
+          info_count?: number
+          low_count?: number
+          medium_count?: number
+          report_url?: string | null
+          scan_date?: string
+          scan_type?: string
+          status?: string
+        }
+        Update: {
+          alert_recipients?: string[] | null
+          alert_sent_at?: string | null
+          created_at?: string
+          critical_count?: number
+          environment?: string
+          error_message?: string | null
+          high_count?: number
+          id?: string
+          info_count?: number
+          low_count?: number
+          medium_count?: number
+          report_url?: string | null
+          scan_date?: string
+          scan_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
       workflow_settings: {
         Row: {
           created_at: string

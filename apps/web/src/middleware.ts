@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/terms' ||
     pathname === '/faq' ||
     pathname.startsWith('/api/cron/') ||
+    pathname.startsWith('/api/security/') ||
     pathname.startsWith('/api/telnyx/') ||
     pathname.startsWith('/api/portal/') ||
     pathname === '/paymentcallback' ||

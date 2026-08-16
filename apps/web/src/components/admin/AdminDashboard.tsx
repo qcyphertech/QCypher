@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
 import { IncidentsPanel } from '@/components/admin/IncidentsPanel'
+import { SecurityPanel } from '@/components/admin/SecurityPanel'
 import { PlatformModulesPanel } from '@/components/admin/PlatformModulesPanel'
 import { InvoicesPanel } from '@/components/admin/InvoicesPanel'
 import { ClientsPanel } from '@/components/admin/ClientsPanel'
@@ -22,6 +23,7 @@ const TABS = [
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck },
   { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
+  { id: 'security', label: 'Security', icon: ShieldAlert },
   { id: 'invoices', label: 'Invoices', icon: Receipt },
   { id: 'referrals', label: 'Referrals', icon: Gift },
   { id: 'modules', label: 'Modules', icon: LayoutGrid },
@@ -120,6 +122,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
 
       {tab === 'approvals' && isSuperAdmin && <ApprovalRequestsPanel />}
       {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={allTenants} />}
+      {tab === 'security' && isSuperAdmin && <SecurityPanel />}
       {tab === 'invoices' && isSuperAdmin && <InvoicesPanel tenants={allTenants} />}
       {tab === 'referrals' && isSuperAdmin && <ReferralProgramPanel />}
       {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}

@@ -1,0 +1,91 @@
+name: Weekly security scan (OWASP ZAP baseline)
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'   # Monday 02:00 UTC
+  workflow_dispatch:         # allow manual trigger
+
+env:
+  TARGET_URL: 'https://www.qcyphertech.com'
+
+jobs:
+  zap-scan:
+    name: ZAP passive baseline scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Passive scan only — spiders the site and inspects traffic (missing
+      # headers, exposed info, insecure cookies, reflected-XSS signatures).
+      # Never sends attack payloads, so it's safe to run against production.
+      # -I: don't fail the job on findings — ingestion + email alerting
+      # (below) is how findings actually get surfaced, not a red X here.
+      - name: Run ZAP baseline scan
+        run: |
+          docker run --rm -v $(pwd):/zap/wrk:rw ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+              -t "${{ env.TARGET_URL }}" \
+              -J /zap/wrk/zap-report.json \
+              -I
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-report.json
+          retention-days: 90
+
+      - name: Parse and ingest results
+        if: always()
+        env:
+          ZAP_INGEST_SECRET: ${{ secrets.ZAP_INGEST_SECRET }}
+        run: |
+          if [ ! -f zap-report.json ]; then
+            echo "::error::zap-report.json missing — scan likely failed to run"
+            curl -sf -X POST "${{ env.TARGET_URL }}/api/security/ingest-scan" \
+              -H "Authorization: Bearer $ZAP_INGEST_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"counts":{"critical":0,"high":0,"medium":0,"low":0,"info":0},"findings":[],"status":"failed","errorMessage":"zap-report.json not produced","reportUrl":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
+            exit 0
+          fi
+
+          # ZAP risk codes: 3=High, 2=Medium, 1=Low, 0=Informational.
+          # zap-baseline.py's passive-only ruleset cannot produce a Critical
+          # finding (that requires active scanning), so risk 3 is mapped to
+          # High here rather than Critical — Critical stays possible in the
+          # schema for a future active-scan workflow, just never populated
+          # by this one.
+          jq -c '
+            {
+              critical: 0,
+              high:   ([.site[0].alerts[]? | select(.riskcode == "3")] | length),
+              medium: ([.site[0].alerts[]? | select(.riskcode == "2")] | length),
+              low:    ([.site[0].alerts[]? | select(.riskcode == "1")] | length),
+              info:   ([.site[0].alerts[]? | select(.riskcode == "0")] | length)
+            }
+          ' zap-report.json > counts.json
+
+          jq -c '
+            [.site[0].alerts[]? | {
+              vulnerabilityType: .name,
+              severity: (if .riskcode == "3" then "High" elif .riskcode == "2" then "Medium" elif .riskcode == "1" then "Low" else "Info" end),
+              affectedUrl: (.instances[0].uri // null),
+              affectedParameter: (.instances[0].param // null),
+              description: .desc,
+              remediationAdvice: .solution,
+              owaspCategory: null
+            }]
+          ' zap-report.json > findings.json
+
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          jq -n --slurpfile counts counts.json --slurpfile findings findings.json --arg reportUrl "$RUN_URL" \
+            '{counts: $counts[0], findings: $findings[0], status: "completed", reportUrl: $reportUrl}' > payload.json
+
+          curl -sf -X POST "${{ env.TARGET_URL }}/api/security/ingest-scan" \
+            -H "Authorization: Bearer $ZAP_INGEST_SECRET" \
+            -H "Content-Type: application/json" \
+            -d @payload.json
