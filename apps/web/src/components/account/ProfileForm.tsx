@@ -412,6 +412,24 @@ export function ProfileForm({ initial, readOnly = false }: Props) {
           <p style={{ fontSize: '14px', color: '#dc2626' }}>{error}</p>
         </div>
       )}
+
+      {saved && (
+        <div style={{ padding: '12px 16px', borderTop: '1px solid hsl(var(--border))' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            borderRadius: '12px', padding: '12px 16px',
+            fontSize: '14px', fontWeight: 600,
+            background: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)',
+          }}>
+            <span style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: '#059669', color: '#fff', fontSize: '12px', fontWeight: 700,
+            }}>✓</span>
+            Profile saved
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -23,6 +23,7 @@ function RuleForm({ initial, catalogItems, onSaved, onCancel }: {
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
   const [form, setForm] = useState(initial ? {
     rule_name: initial.rule_name,
     description: initial.description ?? '',
@@ -61,7 +62,8 @@ function RuleForm({ initial, catalogItems, onSaved, onCancel }: {
       }
       const result = initial ? await updateUpsellRule(initial.id, payload) : await createUpsellRule(payload)
       if (!result.ok) { setError(result.error); return }
-      onSaved()
+      setSaved(true)
+      setTimeout(onSaved, 700)
     })
   }
 
@@ -129,9 +131,16 @@ function RuleForm({ initial, catalogItems, onSaved, onCancel }: {
 
       {error && <p className="text-[14px] text-red-500">{error}</p>}
 
+      {saved && (
+        <div className="flex items-center gap-2.5 rounded-xl px-4 py-3 text-[14px] font-semibold" style={{ background: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)' }}>
+          <span className="flex items-center justify-center w-5 h-5 rounded-full text-white text-[12px] font-bold" style={{ background: '#059669' }}>✓</span>
+          Rule saved
+        </div>
+      )}
+
       <div className="flex gap-2 pt-1">
-        <button onClick={handleSave} disabled={pending} className="px-4 py-2 rounded-xl font-bold text-[14px] text-white disabled:opacity-50" style={{ background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent) / 0.8))' }}>
-          {pending ? 'Saving…' : 'Save Rule'}
+        <button onClick={handleSave} disabled={pending || saved} className="px-4 py-2 rounded-xl font-bold text-[14px] text-white disabled:opacity-50" style={{ background: saved ? '#059669' : 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent) / 0.8))' }}>
+          {pending ? 'Saving…' : saved ? 'Saved ✓' : 'Save Rule'}
         </button>
         <button onClick={onCancel} className="px-4 py-2 rounded-xl font-bold text-[14px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Cancel</button>
       </div>

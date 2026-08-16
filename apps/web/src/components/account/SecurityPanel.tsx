@@ -42,7 +42,7 @@ export function SecurityPanel({ email, hasPassword, hasGoogle, signedInAt, readO
       await changePassword(pw.next)
       setPwMsg({ ok: true, text: 'Password updated successfully' })
       setPw({ next: '', confirm: '' })
-      setPwOpen(false)
+      setTimeout(() => { setPwOpen(false); setPwMsg(null) }, 2000)
     } catch (err: unknown) {
       setPwMsg({ ok: false, text: err instanceof Error ? err.message : 'Error updating password' })
     } finally {
@@ -142,9 +142,23 @@ export function SecurityPanel({ email, hasPassword, hasGoogle, signedInAt, readO
               ))}
 
               {pwMsg && (
-                <p style={{ fontSize: '14px', fontWeight: 600, color: pwMsg.ok ? '#10b981' : '#ef4444' }}>
-                  {pwMsg.text}
-                </p>
+                pwMsg.ok ? (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    borderRadius: '12px', padding: '12px 16px',
+                    fontSize: '14px', fontWeight: 600,
+                    background: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)',
+                  }}>
+                    <span style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      background: '#059669', color: '#fff', fontSize: '12px', fontWeight: 700,
+                    }}>✓</span>
+                    {pwMsg.text}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#ef4444' }}>{pwMsg.text}</p>
+                )
               )}
 
               <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>

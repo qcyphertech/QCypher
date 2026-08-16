@@ -193,6 +193,22 @@ export function AutomationSettingsPanel({ initial }: { initial: WorkflowSettings
         </p>
       )}
 
+      {saved && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          borderRadius: '12px', padding: '12px 16px',
+          fontSize: '14px', fontWeight: 600,
+          background: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)',
+        }}>
+          <span style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '20px', height: '20px', borderRadius: '50%',
+            background: '#059669', color: '#fff', fontSize: '12px', fontWeight: 700,
+          }}>✓</span>
+          Settings saved
+        </div>
+      )}
+
       <button
         onClick={handleSave}
         disabled={saving}
