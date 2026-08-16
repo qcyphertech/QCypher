@@ -131,6 +131,7 @@ AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
     --output text \
 | tr '\t' '\n' \
 | grep -v '^$' \
+| grep -v '^None$' \
 | while read -r key; do
     log "  Deleting old backup: $key"
     AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
