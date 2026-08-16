@@ -33,7 +33,7 @@ found, not the original estimate:
 | No third-party risk management | 🟠 High | ✅ Done — `docs/vendor-risk-assessment.md`, 9 actual integrations (verified against wired-up code, not `.env.example`). |
 | No data classification policy | (not in original gap table, added) | ✅ Done — `docs/data-classification-policy.md`. |
 | No evidence repository | 🟡 Medium | ✅ Scaffolded — `/evidence`, structure + collection cadence documented. Still empty pending the DR test; MFA is now live and could have its first evidence entry (enrollment confirmation) added. |
-| No staff training docs | 🟠 High | **Not started.** Out of scope for this pass. |
+| No staff training docs | ✅ **Fixed 2026-08-16.** | `docs/staff-training.md` — new-team-member checklist, ongoing security practices, MFA-recovery procedure (also closes that separately-tracked gap — see Risk #3), review cadence. Grounded in real controls this repo already has, not generic content. |
 | No system description / architecture diagram | ✅ **Fixed 2026-08-16.** | `docs/system-description.md` — tech stack, Mermaid architecture diagram, data flow, security boundaries, all verified against code (storage buckets, cron jobs, GitHub workflows, middleware auth flow). Also surfaced that `packages/db/migrations/` is stale and no longer used — noted as follow-up debt, not fixed in this pass. |
 | No physical access controls | 🟡 Medium | N/A — remote-only team, confirmed still accurate. |
 

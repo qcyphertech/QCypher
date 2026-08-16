@@ -159,11 +159,13 @@ every tenant's data.
 
 **Residual risk: Low-Medium** (down from High). The core gap — a bare
 password being sufficient for full cross-tenant access — is closed.
-What's still open: MFA reset currently has no self-service or documented
-recovery path if a device is lost (the challenge page just says "contact
-another super admin" — fine for a 2-person team, but not written down
-anywhere formal); and no periodic access review process exists to
-confirm the super-admin list itself stays correct over time.
+MFA reset now has a documented (if still manual, not self-service)
+recovery path — see "Lost your MFA device" in `docs/staff-training.md`,
+added 2026-08-16. What's still open: still no *periodic* access review
+process to confirm the super-admin list itself stays correct over time
+(a one-time checklist item isn't the same as a recurring review); and if
+both super admins lose their MFA device simultaneously, recovery
+requires direct Supabase support, not anything this app can do itself.
 
 ---
 
