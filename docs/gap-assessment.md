@@ -64,3 +64,4 @@ pass covered: gap verification, 4 policy docs, evidence repo scaffold,
 one real RLS fix, and one documentation fix (`.env.example`) — in a
 single session. Remaining: MFA enablement, DR test, staff training docs,
 system description/diagram — still real work, not yet started.
+# CI PR-trigger verification (2026-08-16) — safe to delete
