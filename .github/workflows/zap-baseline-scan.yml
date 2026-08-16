@@ -40,14 +40,17 @@ jobs:
             zap-baseline.py \
               -t "${{ env.TARGET_URL }}" \
               -J zap-report.json \
+              -r zap-report.html \
               -I
 
-      - name: Upload report artifact
+      - name: Upload report artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-report
-          path: zap-work/zap-report.json
+          path: |
+            zap-work/zap-report.json
+            zap-work/zap-report.html
           retention-days: 90
 
       - name: Parse and ingest results
