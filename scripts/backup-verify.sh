@@ -98,7 +98,38 @@ if [ -n "${RESTORE_DB_URL:-}" ]; then
   RESTORE_FILE="/tmp/qcypher-restore-${TIMESTAMP}.sql"
   zcat "$DUMP_FILE" > "$RESTORE_FILE"
 
-  psql "$RESTORE_DB_URL" -f "$RESTORE_FILE" -q
+  # Some columns default to extensions.gen_random_bytes() (pgcrypto,
+  # confirmed by hand: order/invite_tokens/payment_requests confirm
+  # tokens) — Supabase keeps pgcrypto in its `extensions` schema, which
+  # `--schema=public` doesn't dump. Bootstrap it so those CREATE TABLE
+  # statements succeed instead of silently dropping 3 tables (and
+  # everything that references them) on every restore test.
+  psql "$RESTORE_DB_URL" -q -c \
+    'create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions;'
+
+  # Remaining errors are expected on a vanilla Postgres target (not
+  # fatal — confirmed by hand): pg_dump's own boilerplate re-creating a
+  # schema that already exists on any fresh Postgres image, and the
+  # dump's RLS policies referencing Supabase's `auth` schema and
+  # `authenticated`/`anon`/`service_role` roles, which only exist in a
+  # real Supabase project. psql continues past those and the actual
+  # tables + data (what this check exists to prove can be recovered)
+  # restore intact regardless. Captured to a log file and counted rather
+  # than left to print raw, so a genuinely new class of failure is
+  # visible without every routine run being wall-to-wall red text.
+  RESTORE_LOG="/tmp/qcypher-restore-log-${TIMESTAMP}.txt"
+  psql "$RESTORE_DB_URL" -f "$RESTORE_FILE" -q > "$RESTORE_LOG" 2>&1 || true
+  ERROR_COUNT=$(grep -c "^psql:.*ERROR:" "$RESTORE_LOG" || true)
+  UNEXPECTED=$(grep "^psql:.*ERROR:" "$RESTORE_LOG" \
+    | grep -v -E 'schema "auth" does not exist|role "(authenticated|anon|service_role)" does not exist|schema "public" already exists' \
+    || true)
+  log "  Restore SQL applied: $ERROR_COUNT statement error(s) (expected — Supabase-specific RLS/role references and pg_dump's own schema-recreation boilerplate, not present/needed on a scratch Postgres)"
+  if [ -n "$UNEXPECTED" ]; then
+    log "  Unexpected restore errors (not auth-schema/role related):"
+    echo "$UNEXPECTED" | while read -r line; do log "    $line"; done
+    die "Restore produced unexpected errors — see above"
+  fi
+  rm -f "$RESTORE_LOG"
 
   # Spot-check: all 6 core tables exist and are selectable
   for table in tenants contacts interactions events templates send_log; do

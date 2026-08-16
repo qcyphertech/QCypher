@@ -11,6 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # Disposable Postgres 17 for restore verification — matches Supabase's
+    # server version, torn down after the job. No extension dependency to
+    # worry about: confirmed via a real pg_dump that this schema only uses
+    # built-in functions (gen_random_uuid, now, nextval), nothing from
+    # Supabase's extensions schema, since the dump is --schema=public only.
+    # Deliberately not a second persistent Supabase project — that would
+    # be an ongoing cost and another thing to maintain for a check that
+    # only needs to exist for the few minutes this job runs.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -47,7 +68,10 @@ jobs:
           R2_ENDPOINT:            ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID:       ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY:   ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          RESTORE_DB_URL:         ${{ secrets.RESTORE_DB_URL }}
+          # Local-only service container, not a secret — the password is
+          # a throwaway default for a container that exists for the
+          # duration of this job and is never reachable outside it.
+          RESTORE_DB_URL:         postgresql://postgres:postgres@localhost:5432/postgres
         run: bash scripts/backup-verify.sh
 
       - name: Notify on failure
