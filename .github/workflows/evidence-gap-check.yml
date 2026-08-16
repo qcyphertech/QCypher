@@ -1,0 +1,64 @@
+name: Evidence collection gap check
+
+# The 6-month SOC 2 evidence window only means something if collection
+# actually stays gapless (docs/qa-checklist-status.md). This is the
+# unattended check for that: runs monthly, flags any evidence/
+# category that's gone stale against evidence/README.md's documented
+# cadence, and opens/updates a GitHub issue so it can't be silently
+# missed the way the nightly backup workflow and deployment logging
+# were before this session caught them (see docs/risk-register.md).
+
+on:
+  schedule:
+    - cron: '0 8 1 * *'   # 08:00 UTC on the 1st of every month
+  workflow_dispatch:
+
+jobs:
+  check-gaps:
+    name: Check evidence/ for stale categories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run gap check
+        id: check
+        run: |
+          set +e
+          python3 scripts/check-evidence-gaps.py > gap-report.txt 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat gap-report.txt
+      - name: Open or update issue if gaps found
+        if: steps.check.outputs.exit_code != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BODY_FILE=$(mktemp)
+          {
+            echo "Automated evidence gap check found one or more stale categories."
+            echo
+            echo '```'
+            cat gap-report.txt
+            echo '```'
+            echo
+            echo "Add current evidence to the flagged folder(s) under \`/evidence\`,"
+            echo "following the pattern in \`evidence/README.md\`. This issue will"
+            echo "stay open until the next scheduled check finds no gaps — close it"
+            echo "manually once you've caught up if you don't want to wait."
+          } > "$BODY_FILE"
+
+          EXISTING=$(gh issue list --search "Evidence collection gap detected in:title" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file "$BODY_FILE"
+          else
+            gh issue create --title "Evidence collection gap detected" --body-file "$BODY_FILE" --label "compliance"
+          fi
+      - name: Close stale issue if no gaps found
+        if: steps.check.outputs.exit_code == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --search "Evidence collection gap detected in:title" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "No gaps found in this month's check — closing."
+            gh issue close "$EXISTING"
+          fi
