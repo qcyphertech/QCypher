@@ -24,7 +24,7 @@ jobs:
       # (below) is how findings actually get surfaced, not a red X here.
       - name: Run ZAP baseline scan
         run: |
-          docker run --rm -v $(pwd):/zap/wrk:rw ghcr.io/zaproxy/zaproxy:stable \
+          docker run --rm -u $(id -u):$(id -g) -v $(pwd):/zap/wrk:rw ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
               -t "${{ env.TARGET_URL }}" \
               -J zap-report.json \
