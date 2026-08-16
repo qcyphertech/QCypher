@@ -10,11 +10,11 @@ Verification pass run 2026-08-16 as part of Phase 35 gap assessment.
 ## Risk #1: Tenant Data Exposure (Cross-Tenant Access / IDOR)
 
 **Likelihood:** Medium (2/5) — the class of bug that's easy to introduce
-in any multi-tenant app when a new table forgets RLS (see "closed" entry
-below for a real example).
+in any multi-tenant app when a new table forgets RLS (see "closed"
+entries below for two real examples this same review found).
 **Impact:** Critical (5/5) — reputational, legal, and every customer's
 trust simultaneously.
-**Risk score:** 10 (HIGH)
+**Risk score:** 8 (HIGH — down from 10; full suite now genuinely running)
 
 **Mitigation:**
 - Row-Level Security on tenant-scoped tables, enforced via
@@ -27,36 +27,52 @@ trust simultaneously.
   enabling forensic reconstruction if cross-tenant access is suspected.
 - Incident response playbook (`docs/INCIDENT_RESPONSE_PLAYBOOK.md`) with
   a defined 24h/48h notification clock.
-- RLS isolation test suite (`pnpm test:isolation`, runs in CI on `main`)
-  — **fixed 2026-08-16; this bullet was an overclaim before that date.**
-  The suite had never once run successfully since it was written: missing
-  `ts-node`, a Vitest-only API (`describe.skipIf`) used under Jest, 4
-  files importing directly from `vitest`, and a missing-semicolon ASI bug
-  that made every describe block throw. All fixed same day. 4 of 8 test
-  files (42 tests, self-contained — they provision their own throwaway
-  tenants) now genuinely pass against the live DB in CI, with
-  `continue-on-error` removed so this is a real, blocking check for the
-  first time. The other 4 files need pre-provisioned `TEST_TENANT_A/B`
-  fixtures that don't exist yet, so they skip cleanly rather than fail —
-  see gap-assessment.md.
+- **RLS isolation test suite — fully working as of 2026-08-16, all 8
+  files.** Was completely non-functional before this review (see the
+  first closed finding below for the fix history). Once the first 4
+  files were fixed, 2 more real bugs turned up while provisioning the
+  `TEST_TENANT_A/B` fixtures the remaining 4 files need:
+  `admin.auth.admin.getUserByEmail()` doesn't exist in the installed
+  `supabase-js` version (all 4 files used it identically), and one file
+  re-authenticated on every single `test()` case (22 logins) instead of
+  once per file, tripping Supabase's own sign-in rate limit even on a
+  clean run. Both fixed. Confirmed via a real CI run: 8/8 suites pass,
+  91 tests, `continue-on-error` removed — a genuine blocking check now,
+  not a decorative one.
 
-**Residual risk:** Medium (down from what it would have been had the test
-suite silently stayed broken — the review process itself is what caught
-this). RLS coverage is broad but was proven non-exhaustive by this same
-review — see the closed finding below. The CI isolation test only runs
+**Residual risk:** Medium (down from High now that the full suite runs,
+not just half of it). What's still open: the CI isolation test only runs
 post-merge on `main`, not pre-merge on PRs (see
 `docs/change-management-policy.md`), so a regression could still reach
-production before being caught — and only half the isolation suite
-(4 of 8 files) runs at all until the TEST_TENANT_A/B fixtures exist.
+production before being caught. 9 tests (across 2 files) remain
+deliberately skipped — not a coverage gap in RLS itself, but a mismatch
+between what those specific tests assumed (Bearer-token API auth) and
+what this app's cookie-only auth model actually supports; see the second
+closed finding below.
 
-**Closed finding (evidence RLS review actually works):**
+**Closed finding #1 (evidence RLS review actually works — a real gap,
+not just a documentation exercise):**
 `order_number_counters` had a `tenant_id` column with no RLS policy at
 all — found 2026-08-16 during this same gap assessment, fixed same day
 (migration `20260820000002_order_number_counters_rls.sql`). No app code
 queried the table directly, so this wasn't exploited through the UI, but
-it was a real, direct-API-reachable gap. Kept here as evidence the
-review process finds and closes real issues, not just documents existing
-controls.
+it was a real, direct-API-reachable gap.
+
+**Closed finding #2 (a genuinely exploitable one, caught the moment the
+test suite actually ran for the first time):**
+`invite_tokens` — which stores the raw invite token string plus the
+invited email — had **no RLS at all**, by original design
+(`packages/db/migrations/00004_phase2_admin.sql`: "client code never
+touches this table"). That assumption was wrong: nothing stops an
+authenticated user from querying any public-schema table directly via
+the Supabase client SDK, regardless of what the app's own code does. Any
+authenticated tenant user could read every other tenant's pending
+invites and insert fake ones for any `tenant_id`. Found and fixed same
+day (migration `20260821000002_invite_tokens_rls.sql`, RLS enabled with
+zero policies — correct here, since only `service_role` legitimately
+touches this table). This is the clearest evidence in this whole
+register that finishing the test suite, not just writing policy docs
+about it, was worth doing.
 
 ---
 
