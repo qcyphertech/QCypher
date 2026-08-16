@@ -122,8 +122,11 @@ export function InvoicePayPage({
   useEffect(() => {
     if (alreadyPaid) return
     getLoyaltyCheckoutInfo(session.tenantId, session.contactId, Number(order.total_amount)).then(setLoyalty)
+    // Re-run whenever the order total changes (e.g. after accepting an
+    // upsell) — otherwise the discount/savings shown here goes stale
+    // relative to the real total_amount used at payment time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [order.total_amount])
 
   const [upsell, setUpsell] = useState<UpsellSuggestion | null>(null)
   const [upsellDismissed, setUpsellDismissed] = useState(false)
