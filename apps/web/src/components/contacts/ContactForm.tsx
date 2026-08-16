@@ -20,6 +20,7 @@ export function ContactForm({ contact }: { contact?: Contact }) {
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
   const [referralOptions, setReferralOptions] = useState<{ id: string; name: string }[]>([])
+  const [locationOptions, setLocationOptions] = useState<{ id: string; name: string }[]>([])
 
   const [form, setForm] = useState({
     first_name: contact?.first_name ?? '',
@@ -33,6 +34,7 @@ export function ContactForm({ contact }: { contact?: Contact }) {
     source: contact?.source ?? '',
     status: contact?.status ?? 'lead',
     referred_by_contact_id: (contact as unknown as { referred_by_contact_id?: string | null })?.referred_by_contact_id ?? '',
+    location_id: (contact as unknown as { location_id?: string | null })?.location_id ?? '',
   })
 
   useEffect(() => {
@@ -47,6 +49,15 @@ export function ContactForm({ contact }: { contact?: Contact }) {
             .filter(c => c.id !== contact?.id)
             .map(c => ({ id: c.id, name: `${c.first_name} ${c.last_name ?? ''}`.trim() }))
         )
+      })
+    supabase
+      .from('tenant_locations')
+      .select('id, location_name')
+      .eq('is_active', true)
+      .order('location_name')
+      .then(({ data }) => {
+        if (!data) return
+        setLocationOptions(data.map(l => ({ id: l.id, name: l.location_name })))
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -72,6 +83,7 @@ export function ContactForm({ contact }: { contact?: Contact }) {
       source: form.source.trim() || null,
       status: form.status as Contact['status'],
       referred_by_contact_id: form.referred_by_contact_id || null,
+      location_id: form.location_id || null,
     }
 
     startTransition(async () => {
@@ -131,6 +143,12 @@ export function ContactForm({ contact }: { contact?: Contact }) {
         <select value={form.referred_by_contact_id} onChange={set('referred_by_contact_id')} className={input}>
           <option value="">— None —</option>
           {referralOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Location">
+        <select value={form.location_id} onChange={set('location_id')} className={input}>
+          <option value="">— None —</option>
+          {locationOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </Field>
       <Field label="Notes">

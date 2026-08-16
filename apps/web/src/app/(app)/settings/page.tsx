@@ -24,6 +24,8 @@ import { getMyTenantReferrals } from '@/lib/actions/tenant-referrals'
 import { UpsellRulesPanel } from '@/components/settings/UpsellRulesPanel'
 import { UpsellAnalyticsPanel } from '@/components/settings/UpsellAnalyticsPanel'
 import { getUpsellRules } from '@/lib/actions/upsells'
+import { LocationsPanel } from '@/components/settings/LocationsPanel'
+import { getLocations } from '@/lib/actions/locations'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -82,6 +84,7 @@ export default async function SettingsPage() {
     getUpsellRules(tenantId).catch(() => []),
     createAdminClient().from('catalog_items').select('id, name, base_price').eq('tenant_id', tenantId).eq('is_active', true).order('name').then(r => r.data ?? []),
   ]) : [[], []]
+  const locations = isAdmin && tenantId ? await getLocations(tenantId).catch(() => []) : []
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
   const identities  = user.identities ?? []
@@ -158,6 +161,14 @@ export default async function SettingsPage() {
     </div>
   )
 
+  const locationsTab = (
+    <div>
+      <SettingsSection label="Locations" hint="Organize contacts and jobs across multiple business locations.">
+        <LocationsPanel initial={locations} />
+      </SettingsSection>
+    </div>
+  )
+
   const auditTab = (
     <div>
       <SettingsSection label="Audit Trail" hint="Who did what, and when. Logs are kept for 90 days.">
@@ -225,6 +236,7 @@ export default async function SettingsPage() {
         automationContent={automationTab}
         loyaltyContent={loyaltyTab}
         upsellsContent={upsellsTab}
+        locationsContent={locationsTab}
         auditContent={auditTab}
         accountContent={accountTab}
         isAdmin={isAdmin}

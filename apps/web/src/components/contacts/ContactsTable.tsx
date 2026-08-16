@@ -8,6 +8,14 @@ type Contact = {
   id: string; first_name: string; last_name: string | null
   email: string | null; phone: string | null
   tags: string[] | null; status?: string | null; created_at: string
+  location_id?: string | null
+  tenant_locations?: { location_name: string } | { location_name: string }[] | null
+}
+
+function locationName(c: Contact): string | null {
+  const rel = c.tenant_locations
+  if (!rel) return null
+  return Array.isArray(rel) ? rel[0]?.location_name ?? null : rel.location_name
 }
 
 const STATUS_STYLE: Record<string, { color: string; bg: string; dot: string; label: string }> = {
@@ -36,13 +44,16 @@ function initials(c: Contact) {
   return `${c.first_name[0]}${c.last_name?.[0] ?? ''}`.toUpperCase()
 }
 
-export function ContactsTable({ contacts }: { contacts: Contact[] }) {
+export function ContactsTable({ contacts, locations = [] }: { contacts: Contact[]; locations?: { id: string; location_name: string }[] }) {
   const [nameQuery, setNameQuery] = useState('')
   const [emailQuery, setEmailQuery] = useState('')
   const [phoneQuery, setPhoneQuery] = useState('')
   const [status, setStatus] = useState('all')
+  const [location, setLocation] = useState('all')
 
-  const hasFilters = !!(nameQuery || emailQuery || phoneQuery || status !== 'all')
+  const LOCATION_OPTIONS = [{ value: 'all', label: 'All locations' }, ...locations.map(l => ({ value: l.id, label: l.location_name }))]
+
+  const hasFilters = !!(nameQuery || emailQuery || phoneQuery || status !== 'all' || location !== 'all')
 
   const filtered = useMemo(() => {
     const nq = nameQuery.trim().toLowerCase()
@@ -50,13 +61,14 @@ export function ContactsTable({ contacts }: { contacts: Contact[] }) {
     const pq = phoneQuery.trim().toLowerCase()
     return contacts.filter(c => {
       if (status !== 'all' && c.status !== status) return false
+      if (location !== 'all' && c.location_id !== location) return false
       const name = `${c.first_name} ${c.last_name ?? ''}`.toLowerCase()
       if (nq && !name.includes(nq)) return false
       if (eq && !(c.email ?? '').toLowerCase().includes(eq)) return false
       if (pq && !(c.phone ?? '').toLowerCase().includes(pq)) return false
       return true
     })
-  }, [contacts, nameQuery, emailQuery, phoneQuery, status])
+  }, [contacts, nameQuery, emailQuery, phoneQuery, status, location])
 
   const headerLabelCls = 'text-[15px] font-bold uppercase tracking-wide'
   const headerFilterCls = 'mt-1.5 w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] pl-6 pr-2 py-1 text-[13px] font-normal normal-case tracking-normal'
@@ -81,7 +93,7 @@ export function ContactsTable({ contacts }: { contacts: Contact[] }) {
             {filtered.length} of {contacts.length} contact{contacts.length === 1 ? '' : 's'}
           </p>
           <button
-            onClick={() => { setNameQuery(''); setEmailQuery(''); setPhoneQuery(''); setStatus('all') }}
+            onClick={() => { setNameQuery(''); setEmailQuery(''); setPhoneQuery(''); setStatus('all'); setLocation('all') }}
             className="text-[15px] font-semibold px-3 py-1.5 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
             style={{ color: 'hsl(var(--muted-foreground))' }}
           >
@@ -129,13 +141,23 @@ export function ContactsTable({ contacts }: { contacts: Contact[] }) {
                     </select>
                   </div>
                 </th>
+                <th className="px-5 py-3 text-left align-top hidden sm:table-cell" style={{ color: headerColor, minWidth: '150px' }}>
+                  <span className={headerLabelCls}>Location</span>
+                  <div className="relative">
+                    <Filter className={filterIconCls} />
+                    <select value={location} onChange={e => setLocation(e.target.value)}
+                      className={`${headerFilterCls} appearance-none`} style={{ color: 'hsl(var(--foreground))' }}>
+                      {LOCATION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                </th>
                 <th className="px-5 py-3 hidden sm:table-cell" style={{ width: '20px' }} />
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <td colSpan={6} className="px-5 py-10 text-center text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     No contacts match your filters.
                   </td>
                 </tr>
@@ -177,6 +199,9 @@ export function ContactsTable({ contacts }: { contacts: Contact[] }) {
                           {st.label}
                         </span>
                       )}
+                    </td>
+                    <td className="px-5 py-3.5 hidden sm:table-cell text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      {locationName(contact) || <span style={{ opacity: 0.4 }}>—</span>}
                     </td>
                     <td className="px-5 py-3.5 hidden sm:table-cell" />
                   </tr>

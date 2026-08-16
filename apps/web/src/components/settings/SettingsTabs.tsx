@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Blocks, Users, User, ScrollText, Download, Wallet, Zap, Gift, Sparkles } from 'lucide-react'
+import { Blocks, Users, User, ScrollText, Download, Wallet, Zap, Gift, Sparkles, MapPin } from 'lucide-react'
 
 const ALL_TABS = [
   { id: 'account',     label: 'Account',      icon: User,       color: '#10b981' },
@@ -12,6 +12,7 @@ const ALL_TABS = [
   { id: 'automation',  label: 'Automation',   icon: Zap,        color: '#eab308' },
   { id: 'loyalty',     label: 'Loyalty & Rewards', icon: Gift,  color: '#ec4899' },
   { id: 'upsells',     label: 'Upsell & Bundles', icon: Sparkles, color: '#06b6d4' },
+  { id: 'locations',   label: 'Locations',    icon: MapPin,     color: '#14b8a6' },
   { id: 'audit',       label: 'Audit Trail',  icon: ScrollText, color: '#f97316' },
 ] as const
 
@@ -120,6 +121,7 @@ type Props = {
   automationContent: React.ReactNode
   loyaltyContent: React.ReactNode
   upsellsContent: React.ReactNode
+  locationsContent: React.ReactNode
   auditContent: React.ReactNode
   accountContent: React.ReactNode
   // Phase 21 RBAC — only admins (owner role) see Workspace/Team/Payments/Audit;
@@ -127,9 +129,9 @@ type Props = {
   isAdmin?: boolean
 }
 
-export function SettingsTabs({ workspaceContent, teamContent, paymentsContent, automationContent, loyaltyContent, upsellsContent, auditContent, accountContent, isAdmin = true }: Props) {
+export function SettingsTabs({ workspaceContent, teamContent, paymentsContent, automationContent, loyaltyContent, upsellsContent, locationsContent, auditContent, accountContent, isAdmin = true }: Props) {
   const [active, setActive] = useState<TabId>(isAdmin ? 'workspace' : 'account')
-  const content = { workspace: workspaceContent, team: teamContent, payments: paymentsContent, automation: automationContent, loyalty: loyaltyContent, upsells: upsellsContent, audit: auditContent, account: accountContent }
+  const content = { workspace: workspaceContent, team: teamContent, payments: paymentsContent, automation: automationContent, loyalty: loyaltyContent, upsells: upsellsContent, locations: locationsContent, audit: auditContent, account: accountContent }
 
   return (
     <div className="flex flex-col md:flex-row" style={{ gap: '32px', alignItems: 'flex-start' }}>

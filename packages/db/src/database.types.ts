@@ -261,6 +261,7 @@ export type Database = {
           id: string
           is_active: boolean
           item_type: Database["public"]["Enums"]["item_type"]
+          location_id: string | null
           name: string
           requires_deposit: boolean
           taxable: boolean
@@ -276,6 +277,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           item_type: Database["public"]["Enums"]["item_type"]
+          location_id?: string | null
           name: string
           requires_deposit?: boolean
           taxable?: boolean
@@ -291,6 +293,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           item_type?: Database["public"]["Enums"]["item_type"]
+          location_id?: string | null
           name?: string
           requires_deposit?: boolean
           taxable?: boolean
@@ -298,6 +301,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "catalog_items_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "catalog_items_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -316,6 +326,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string | null
+          location_id: string | null
           notes: string | null
           phone: string | null
           referred_by_contact_id: string | null
@@ -333,6 +344,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name?: string | null
+          location_id?: string | null
           notes?: string | null
           phone?: string | null
           referred_by_contact_id?: string | null
@@ -350,6 +362,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string | null
+          location_id?: string | null
           notes?: string | null
           phone?: string | null
           referred_by_contact_id?: string | null
@@ -360,6 +373,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contacts_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contacts_referred_by_contact_id_fkey"
             columns: ["referred_by_contact_id"]
@@ -1300,6 +1320,7 @@ export type Database = {
           helcim_transaction_id: string | null
           id: string
           job_status: Database["public"]["Enums"]["job_status"] | null
+          location_id: string | null
           notes: string | null
           order_number: number | null
           paid_at: string | null
@@ -1328,6 +1349,7 @@ export type Database = {
           helcim_transaction_id?: string | null
           id?: string
           job_status?: Database["public"]["Enums"]["job_status"] | null
+          location_id?: string | null
           notes?: string | null
           order_number?: number | null
           paid_at?: string | null
@@ -1356,6 +1378,7 @@ export type Database = {
           helcim_transaction_id?: string | null
           id?: string
           job_status?: Database["public"]["Enums"]["job_status"] | null
+          location_id?: string | null
           notes?: string | null
           order_number?: number | null
           paid_at?: string | null
@@ -1378,6 +1401,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_locations"
             referencedColumns: ["id"]
           },
           {
@@ -1813,6 +1843,7 @@ export type Database = {
           frequency: string
           id: string
           interval_days: number | null
+          location_id: string | null
           next_scheduled_date: string | null
           paused_at: string | null
           reminder_days_before: number
@@ -1836,6 +1867,7 @@ export type Database = {
           frequency: string
           id?: string
           interval_days?: number | null
+          location_id?: string | null
           next_scheduled_date?: string | null
           paused_at?: string | null
           reminder_days_before?: number
@@ -1859,6 +1891,7 @@ export type Database = {
           frequency?: string
           id?: string
           interval_days?: number | null
+          location_id?: string | null
           next_scheduled_date?: string | null
           paused_at?: string | null
           reminder_days_before?: number
@@ -1882,6 +1915,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_jobs_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_locations"
             referencedColumns: ["id"]
           },
           {
@@ -2217,6 +2257,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tenant_integrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_locations: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          location_code: string
+          location_name: string
+          phone: string | null
+          tenant_id: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location_code: string
+          location_name: string
+          phone?: string | null
+          tenant_id: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location_code?: string
+          location_name?: string
+          phone?: string | null
+          tenant_id?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_locations_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

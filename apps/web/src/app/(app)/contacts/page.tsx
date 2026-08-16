@@ -16,10 +16,13 @@ export default async function ContactsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const isReadOnly = user?.app_metadata?.role === 'read_only'
 
-  const { data: contacts, error } = await supabase
-    .from('contacts')
-    .select('id, first_name, last_name, email, phone, tags, status, created_at')
-    .order('created_at', { ascending: false })
+  const [{ data: contacts, error }, { data: locations }] = await Promise.all([
+    supabase
+      .from('contacts')
+      .select('id, first_name, last_name, email, phone, tags, status, created_at, location_id, tenant_locations(location_name)')
+      .order('created_at', { ascending: false }),
+    supabase.from('tenant_locations').select('id, location_name').eq('is_active', true).order('location_name'),
+  ])
   if (error) throw error
 
   const total = contacts?.length ?? 0
@@ -76,7 +79,7 @@ export default async function ContactsPage() {
 
       {isReadOnly && <ReadOnlyBanner />}
 
-      <ContactsTable contacts={contacts ?? []} />
+      <ContactsTable contacts={(contacts ?? []) as never} locations={locations ?? []} />
     </div>
   )
 }
