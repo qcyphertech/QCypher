@@ -11,6 +11,26 @@ Once you run it, fill in the "Outcome" section at the bottom and save
 this file (or a copy) into `evidence/monitoring/` with the actual date,
 e.g. `evidence/monitoring/2026-09-XX-incident-response-drill.md`.
 
+**Verified against live code 2026-08-16** (not just written from
+memory — confirmed each factual claim the script relies on still
+holds):
+- The "Report incident manually" button exists exactly as described,
+  top-right of the Incidents panel
+  (`apps/web/src/components/admin/IncidentsPanel.tsx`).
+- The Audit Trail panel has a working tenant filter dropdown
+  (`apps/web/src/components/admin/AdminAuditTrailPanel.tsx`).
+- The "known gap" the scenario is built around is real, not
+  hypothetical: `logAudit()` is called from mutating actions
+  (`locations.ts`, `payment-accounts.ts`, `account-deletion.ts`,
+  `upsells.ts`, etc.) but the contacts list/detail pages
+  (`app/(app)/contacts/**`) do a plain `.select()` with no audit call —
+  a cross-tenant *read* genuinely leaves no trace in `audit_logs`
+  today, exactly as Step 2 asks you to discuss.
+
+If any of this changes (a new page added, logging behavior changed),
+re-verify before running the drill — don't assume this note stays
+accurate forever.
+
 ## Why this scenario, specifically
 
 Picked to deliberately exercise the playbook's weakest, least-tested
