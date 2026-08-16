@@ -30,16 +30,18 @@ marked done, even where the supporting infrastructure is ready.
 - [x] **Data classification policy written** —
       `docs/data-classification-policy.md`.
 
+## Done, verified
+
+- [x] **All 9 Common Criteria (CC1-9) addressed** —
+      `docs/common-criteria-mapping.md`, each CC mapped to real,
+      cited controls. Honestly graded per category (CC8 change
+      management and CC1 control environment are marked weakest, not
+      papered over) — see that doc's summary table. Confirm with your
+      auditor whether they want this narrative format or a literal
+      COSO-principle-by-principle table before treating it as final.
+
 ## Partially done — real gap, honestly stated
 
-- [ ] **All 9 Common Criteria (CC1-9) addressed** — the underlying
-      controls exist (access control, change tracking, monitoring,
-      risk assessment, etc.) but there is **no document that explicitly
-      maps each control to its CC number**. Auditors expect that
-      mapping as its own artifact, not something they have to infer.
-      **Not built this session** — a real, scoped piece of work, not a
-      quick fix; flagging rather than guessing at a mapping I'm not
-      confident is complete.
 - [ ] **Change management process enforced in GitHub** — deliberately
       **not** enforced. `docs/change-management-policy.md` documents
       the real informal process (build-locally-then-deploy,
@@ -87,11 +89,6 @@ marked done, even where the supporting infrastructure is ready.
 - [ ] **Timeline agreed (6-9 month observation period)** — depends on
       the auditor engagement above; also gated on when evidence
       collection genuinely started (today).
-- [ ] **CC1-9 mapping document** — listed above as partial, but
-      finishing it properly benefits from knowing which framework
-      variant your auditor wants (some want a literal CC-by-CC table,
-      others accept a narrative mapping) — worth confirming with
-      whoever you engage before finalizing the format.
 - [ ] **SOC 2 reports collected from vendors** — requires actually
       emailing/contacting Supabase, Vercel, Stripe, Resend, Telnyx,
       Cal.com, Google, and Helcim's trust/security teams and requesting

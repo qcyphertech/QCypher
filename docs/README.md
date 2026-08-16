@@ -14,6 +14,9 @@ was last verified against the actual code.
 | [vendor-risk-assessment.md](vendor-risk-assessment.md) | Every third-party service actually wired into the app, what data/access each has, contingency notes. |
 | [system-description.md](system-description.md) | What QCypher is, the monorepo layout, tech stack, an architecture diagram, data flow, and security boundaries — grounded in verified code, not an aspirational diagram. |
 | [staff-training.md](staff-training.md) | New-team-member security checklist, ongoing practices, MFA recovery, review cadence — every item points to a real control, not generic security-awareness content. |
+| [common-criteria-mapping.md](common-criteria-mapping.md) | Every SOC 2 Common Criteria (CC1-9) mapped to the real control that satisfies it, with honest per-category grading — weakest areas (change management, control environment) stated directly, not padded. |
+| [qa-checklist-status.md](qa-checklist-status.md) | Item-by-item status against the pre-audit QA checklist: what's done, what's honestly partial, and what requires Thomas/Felix's own action (can't be automated). |
+| [typescript-debt-assessment.md](typescript-debt-assessment.md) | 135 silent `tsc --noEmit` errors, assessed and documented rather than blind-fixed, with a suspected root cause and a scoped remediation path. |
 
 ## SOC 2 context
 
