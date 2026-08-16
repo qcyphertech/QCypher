@@ -7,6 +7,7 @@ import { CheckCircle2 } from 'lucide-react'
 import type { PortalSession } from '@/lib/actions/portal'
 import { initHelcimCheckout, validateAndRecordPayment, initStripeCheckout, confirmStripePayment } from '@/lib/actions/portal'
 import { getLoyaltyCheckoutInfo, redeemLoyaltyAtCheckout } from '@/lib/actions/loyalty'
+import { getUpsellSuggestion, addPortalUpsellLineItem, type UpsellSuggestion } from '@/lib/actions/upsells'
 import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
 
 const UNIT_LABELS: Record<string, string> = {
@@ -123,6 +124,32 @@ export function InvoicePayPage({
     getLoyaltyCheckoutInfo(session.tenantId, session.contactId, Number(order.total_amount)).then(setLoyalty)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const [upsell, setUpsell] = useState<UpsellSuggestion | null>(null)
+  const [upsellDismissed, setUpsellDismissed] = useState(false)
+  const [upsellPending, setUpsellPending] = useState(false)
+
+  useEffect(() => {
+    if (alreadyPaid) return
+    getUpsellSuggestion(session.tenantId, order.id, session.contactId).then(setUpsell)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleAcceptUpsell() {
+    if (!upsell) return
+    setUpsellPending(true)
+    const result = await addPortalUpsellLineItem({
+      tenantId: session.tenantId,
+      contactId: session.contactId,
+      orderId: order.id,
+      analyticsId: upsell.analyticsId,
+    })
+    if (result.ok) {
+      router.refresh()
+    } else {
+      setUpsellPending(false)
+    }
+  }
 
   const hasLoyaltyBenefit = !!loyalty?.enabled && (loyalty.discountPercent > 0 || loyalty.creditBalance > 0)
   const savings = loyalty ? Number(order.total_amount) - loyalty.discountedAmount : 0
@@ -360,6 +387,41 @@ export function InvoicePayPage({
                   Apply my benefits — save ${savings.toFixed(2)}
                 </span>
               </label>
+            </div>
+          </div>
+        )}
+
+        {upsell && !upsellDismissed && (
+          <div className="bg-white rounded-2xl border border-cyan-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-cyan-100 bg-cyan-50 flex items-center gap-2">
+              <span className="text-[16px]">{upsell.rule.bundle_emoji_icon ?? '💡'}</span>
+              <h2 className="text-[15px] font-semibold text-gray-900">Recommended for you</h2>
+            </div>
+            <div className="px-6 py-4 space-y-3">
+              <div>
+                <p className="text-[15px] font-medium text-gray-900">
+                  {upsell.rule.bundle_description ?? upsell.suggestedItemName}
+                </p>
+                <p className="text-[14px] text-gray-500 mt-0.5">
+                  ${upsell.bundlePrice.toFixed(2)} <span className="line-through text-gray-400">${upsell.basePrice.toFixed(2)}</span>
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAcceptUpsell}
+                  disabled={upsellPending}
+                  className="px-4 py-2 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#0891b2,#06b6d4)' }}
+                >
+                  {upsellPending ? 'Adding…' : 'Add to Order'}
+                </button>
+                <button
+                  onClick={() => setUpsellDismissed(true)}
+                  className="px-4 py-2 rounded-xl text-[14px] font-medium text-gray-500"
+                >
+                  No thanks
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -2363,6 +2363,79 @@ export type Database = {
           },
         ]
       }
+      tenant_upsell_rules: {
+        Row: {
+          bundle_description: string | null
+          bundle_discount_percent: number
+          bundle_emoji_icon: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          rule_name: string
+          show_every_x_bookings: number
+          suggested_catalog_item_id: string
+          tenant_id: string
+          trigger_catalog_item_id: string | null
+          trigger_keywords: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          bundle_description?: string | null
+          bundle_discount_percent?: number
+          bundle_emoji_icon?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          rule_name: string
+          show_every_x_bookings?: number
+          suggested_catalog_item_id: string
+          tenant_id: string
+          trigger_catalog_item_id?: string | null
+          trigger_keywords?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          bundle_description?: string | null
+          bundle_discount_percent?: number
+          bundle_emoji_icon?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          rule_name?: string
+          show_every_x_bookings?: number
+          suggested_catalog_item_id?: string
+          tenant_id?: string
+          trigger_catalog_item_id?: string | null
+          trigger_keywords?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_upsell_rules_suggested_catalog_item_id_fkey"
+            columns: ["suggested_catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_upsell_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_upsell_rules_trigger_catalog_item_id_fkey"
+            columns: ["trigger_catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -2421,6 +2494,83 @@ export type Database = {
             columns: ["referred_by_tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upsell_analytics: {
+        Row: {
+          accepted: boolean
+          accepted_at: string | null
+          base_service_amount: number | null
+          contact_id: string
+          created_at: string
+          discount_given: number | null
+          id: string
+          order_id: string | null
+          revenue_lift: number | null
+          shown_in: string
+          tenant_id: string
+          upsell_amount: number | null
+          upsell_rule_id: string
+        }
+        Insert: {
+          accepted?: boolean
+          accepted_at?: string | null
+          base_service_amount?: number | null
+          contact_id: string
+          created_at?: string
+          discount_given?: number | null
+          id?: string
+          order_id?: string | null
+          revenue_lift?: number | null
+          shown_in: string
+          tenant_id: string
+          upsell_amount?: number | null
+          upsell_rule_id: string
+        }
+        Update: {
+          accepted?: boolean
+          accepted_at?: string | null
+          base_service_amount?: number | null
+          contact_id?: string
+          created_at?: string
+          discount_given?: number | null
+          id?: string
+          order_id?: string | null
+          revenue_lift?: number | null
+          shown_in?: string
+          tenant_id?: string
+          upsell_amount?: number | null
+          upsell_rule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upsell_analytics_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_analytics_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_analytics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upsell_analytics_upsell_rule_id_fkey"
+            columns: ["upsell_rule_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_upsell_rules"
             referencedColumns: ["id"]
           },
         ]

@@ -22,6 +22,7 @@ export type AuditAction =
   | 'automation_settings_updated'
   | 'renewal_reminder_sent'
   | 'quote_approved' | 'quote_change_requested'
+  | 'upsell_accepted'
 
 export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation'
 

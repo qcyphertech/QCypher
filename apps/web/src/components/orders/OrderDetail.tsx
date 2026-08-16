@@ -1,16 +1,50 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet } from 'lucide-react'
 import {
   addLineItem, removeLineItem, updateOrderStatus, updateOrderCustomer, updateJobStatus, returnRental, extendRental,
   type Order, type OrderLineItem,
 } from '@/lib/actions/orders'
+import { getUpsellSuggestion, acceptUpsellSuggestion, type UpsellSuggestion } from '@/lib/actions/upsells'
 import { JobPhotos } from './JobPhotos'
 import type { JobPhoto } from '@/lib/actions/photos'
 import { SendQuoteButton } from './SendQuoteButton'
 import { useRouter } from 'next/navigation'
+
+function UpsellSuggestionCard({ suggestion, onAccept, onDismiss }: {
+  suggestion: UpsellSuggestion
+  onAccept: () => void
+  onDismiss: () => void
+}) {
+  const [pending, setPending] = useState(false)
+  return (
+    <div className="mx-6 mt-4 rounded-xl border border-cyan-200 bg-cyan-50 dark:border-cyan-900 dark:bg-cyan-950/30 px-4 py-3 flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-[14px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+          {suggestion.rule.bundle_emoji_icon ?? '💡'} Suggestion: add {suggestion.suggestedItemName}?
+        </p>
+        <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Bundle price ${suggestion.bundlePrice.toFixed(2)} (save ${suggestion.savings.toFixed(2)})
+        </p>
+      </div>
+      <div className="flex gap-2 shrink-0">
+        <button
+          disabled={pending}
+          onClick={() => { setPending(true); onAccept() }}
+          className="text-[13px] font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg,#0891b2,#06b6d4)' }}
+        >
+          {pending ? 'Adding…' : 'Add to Quote'}
+        </button>
+        <button onClick={onDismiss} className="text-[13px] font-semibold px-3 py-1.5 rounded-lg border border-[hsl(var(--border))]">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
+}
 
 type CatalogItem = { id: string; name: string; base_price: number; billing_unit: string; item_type: string }
 type Contact     = { id: string; first_name: string; last_name: string | null }
@@ -61,6 +95,14 @@ export function OrderDetail({
   const contact = order.contact as { id: string; first_name: string; last_name: string | null; email: string | null; phone?: string | null } | null
   const statusStyle = STATUS_COLORS[order.payment_status] ?? STATUS_COLORS.draft
   const isLocked = !!signedAt
+  const [upsell, setUpsell] = useState<UpsellSuggestion | null>(null)
+  const [upsellDismissed, setUpsellDismissed] = useState(false)
+
+  useEffect(() => {
+    if (isLocked || !order.customer_id) return
+    getUpsellSuggestion(tenantId, order.id, order.customer_id).then(setUpsell)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lines.length])
 
   function handleStatusChange(status: Order['payment_status']) {
     startTransition(() => updateOrderStatus(order.id, status))
@@ -250,6 +292,20 @@ export function OrderDetail({
             </button>
           )}
         </div>
+
+        {upsell && !upsellDismissed && (
+          <UpsellSuggestionCard
+            suggestion={upsell}
+            onAccept={() => {
+              startTransition(async () => {
+                await acceptUpsellSuggestion(upsell.analyticsId, tenantId)
+                setUpsell(null)
+                router.refresh()
+              })
+            }}
+            onDismiss={() => setUpsellDismissed(true)}
+          />
+        )}
 
         {lines.length === 0 ? (
           <p className="text-center py-10 text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>

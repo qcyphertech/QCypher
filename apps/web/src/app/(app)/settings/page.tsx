@@ -21,6 +21,9 @@ import { getPaymentAccountStatus } from '@/lib/actions/payment-accounts'
 import { getWorkflowSettings, type WorkflowSettings } from '@/lib/actions/workflow-settings'
 import { getLoyaltySettings, type LoyaltySettings } from '@/lib/actions/loyalty'
 import { getMyTenantReferrals } from '@/lib/actions/tenant-referrals'
+import { UpsellRulesPanel } from '@/components/settings/UpsellRulesPanel'
+import { UpsellAnalyticsPanel } from '@/components/settings/UpsellAnalyticsPanel'
+import { getUpsellRules } from '@/lib/actions/upsells'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -75,6 +78,10 @@ export default async function SettingsPage() {
   const workflowSettings = isAdmin ? await getWorkflowSettings().catch(() => DEFAULT_WORKFLOW_SETTINGS) : DEFAULT_WORKFLOW_SETTINGS
   const loyaltySettings: LoyaltySettings | null = isAdmin && tenantId ? await getLoyaltySettings(tenantId).catch(() => null) : null
   const myReferrals = isAdmin ? await getMyTenantReferrals().catch(() => []) : []
+  const [upsellRules, catalogItemsForUpsells] = isAdmin && tenantId ? await Promise.all([
+    getUpsellRules(tenantId).catch(() => []),
+    createAdminClient().from('catalog_items').select('id, name, base_price').eq('tenant_id', tenantId).eq('is_active', true).order('name').then(r => r.data ?? []),
+  ]) : [[], []]
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
   const identities  = user.identities ?? []
@@ -135,6 +142,19 @@ export default async function SettingsPage() {
       <SettingsSection label="Refer QCypher" hint="Earn $50 for every service business you refer to QCypher.">
         <ReferQCypherPanel initial={myReferrals} />
       </SettingsSection>
+    </div>
+  )
+
+  const upsellsTab = (
+    <div>
+      <SettingsSection label="Upsell Rules" hint="Suggest add-ons at bundle pricing while building a quote or invoice.">
+        <UpsellRulesPanel initial={upsellRules} catalogItems={catalogItemsForUpsells as { id: string; name: string; base_price: number }[]} />
+      </SettingsSection>
+      {tenantId && (
+        <SettingsSection label="Performance">
+          <UpsellAnalyticsPanel tenantId={tenantId} />
+        </SettingsSection>
+      )}
     </div>
   )
 
@@ -204,6 +224,7 @@ export default async function SettingsPage() {
         paymentsContent={paymentsTab}
         automationContent={automationTab}
         loyaltyContent={loyaltyTab}
+        upsellsContent={upsellsTab}
         auditContent={auditTab}
         accountContent={accountTab}
         isAdmin={isAdmin}
