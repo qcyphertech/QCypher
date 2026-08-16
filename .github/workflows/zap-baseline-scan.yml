@@ -20,8 +20,10 @@ jobs:
       # Passive scan only — spiders the site and inspects traffic (missing
       # headers, exposed info, insecure cookies, reflected-XSS signatures).
       # Never sends attack payloads, so it's safe to run against production.
-      # -I: don't fail the job on findings — ingestion + email alerting
-      # (below) is how findings actually get surfaced, not a red X here.
+      # -I: don't fail zap-baseline.py itself on findings — ingestion +
+      # email alerting is the primary alert path. The job can still fail
+      # via the dedicated "Fail build on critical or high findings" step
+      # below, once counts are known.
       # The zaproxy image needs write access both to the mounted volume
       # (owned by whichever uid runs `docker run`) AND to its own internal
       # home directory (owned by the image's built-in `zap` user) for a
@@ -100,3 +102,21 @@ jobs:
             -H "Authorization: Bearer $ZAP_INGEST_SECRET" \
             -H "Content-Type: application/json" \
             -d @payload.json
+
+      # Ingestion + email already surface findings regardless of this step's
+      # outcome — this only fails the job itself, so critical/high findings
+      # show as a red X in Actions/branch-protection contexts instead of a
+      # silent green pass every week.
+      - name: Fail build on critical or high findings
+        run: |
+          if [ ! -f zap-work/counts.json ]; then
+            echo "No counts.json (scan likely failed to run) — not failing the build on missing data."
+            exit 0
+          fi
+          CRITICAL=$(jq -r '.critical' zap-work/counts.json)
+          HIGH=$(jq -r '.high' zap-work/counts.json)
+          echo "Critical: $CRITICAL, High: $HIGH"
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "::error::Critical or high severity findings detected ($CRITICAL critical, $HIGH high). See the zap-report artifact and Admin Console → Security for details."
+            exit 1
+          fi
