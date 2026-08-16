@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -61,6 +62,21 @@ export async function middleware(request: NextRequest) {
   // Unauthenticated → login
   if (!user) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // Super admins can read every tenant's data, so MFA is mandatory for
+  // this account tier specifically (not tenant users — see
+  // docs/risk-register.md Risk #3). Checked via session AAL, which
+  // covers every sign-in method (password, Google OAuth, magic link)
+  // since it's a property of the session, not the login path taken.
+  if (isSuperAdminUser(user)) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+      return NextResponse.redirect(new URL(`/auth/mfa-challenge?next=${encodeURIComponent(pathname)}`, request.url))
+    }
+    if (aal && aal.nextLevel !== 'aal2') {
+      return NextResponse.redirect(new URL(`/auth/mfa-setup?next=${encodeURIComponent(pathname)}`, request.url))
+    }
   }
 
   return supabaseResponse
