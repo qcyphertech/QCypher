@@ -27,7 +27,7 @@ jobs:
           docker run --rm -v $(pwd):/zap/wrk:rw ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
               -t "${{ env.TARGET_URL }}" \
-              -J /zap/wrk/zap-report.json \
+              -J zap-report.json \
               -I
 
       - name: Upload report artifact
