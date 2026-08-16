@@ -6,6 +6,7 @@ was last verified against the actual code.
 
 | Doc | Covers |
 |---|---|
+| [gap-assessment.md](gap-assessment.md) | What controls actually exist vs. claimed, verified against code and the live database — not the original plan's assumptions. |
 | [INCIDENT_RESPONSE_PLAYBOOK.md](INCIDENT_RESPONSE_PLAYBOOK.md) | What to do during a real security incident — detection, investigation, customer notification, root cause, post-mortem. |
 | [change-management-policy.md](change-management-policy.md) | How code changes actually ship today, honest gaps (no PR review, non-blocking CI), and a remediation plan. |
 | [risk-register.md](risk-register.md) | Scored risks (tenant data exposure, vendor outage, staff account compromise, doc drift, unreviewed changes) with real mitigations and honest residual risk. |
