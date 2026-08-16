@@ -52,9 +52,11 @@ marked done, even where the supporting infrastructure is ready.
       `docs/vendor-risk-assessment.md` documents 9 vendors and what
       each *publicly claims* about their own compliance, but **no
       actual SOC 2 report has been requested from or provided by any
-      vendor**. Collecting those requires contacting each vendor
-      (Supabase, Vercel, Stripe, etc.) directly — see "Requires your
-      action" below.
+      vendor**. `docs/vendor-soc2-report-tracker.md` researches and
+      records the real request path for each one (self-serve portal
+      URL, or who to email, sourced 2026-08-16) so requesting them is
+      minutes of work, not research — but the actual request still
+      needs your login/email. See "Requires your action" below.
 - [ ] **Incident response plan formalized + tested** — formalized:
       yes (`docs/INCIDENT_RESPONSE_PLAYBOOK.md`, with real automated
       detection for 2 of 4 originally-planned triggers). **Tested:
@@ -90,11 +92,13 @@ marked done, even where the supporting infrastructure is ready.
 - [ ] **Timeline agreed (6-9 month observation period)** — depends on
       the auditor engagement above; also gated on when evidence
       collection genuinely started (today).
-- [ ] **SOC 2 reports collected from vendors** — requires actually
-      emailing/contacting Supabase, Vercel, Stripe, Resend, Telnyx,
-      Cal.com, Google, and Helcim's trust/security teams and requesting
-      their reports (most publish them via a self-serve trust portal
-      once you sign an NDA — Vercel and Supabase both do this).
+- [ ] **SOC 2 reports collected from vendors** — every vendor's real
+      request path is now researched and written down
+      (`docs/vendor-soc2-report-tracker.md`): Supabase is a 2-minute
+      self-serve form, Stripe is an email to security@stripe.com,
+      Vercel has a Trust Center "Get access" flow, etc. Highest
+      priority: Supabase and Stripe (CRITICAL risk vendors) — do those
+      two first if time is short.
 - [ ] **Incident response drill** — the script is written
       (`docs/incident-response-tabletop-drill.md`); you and Felix need
       to actually block ~30-45 minutes, run through it together, and
