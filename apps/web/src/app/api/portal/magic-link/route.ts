@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     cta: { label: 'Sign in to portal', href: link },
   })
 
-  await fetch('https://api.resend.com/emails', {
+  const emailRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
@@ -87,6 +87,12 @@ export async function POST(req: NextRequest) {
       ].join('\n'),
     }),
   })
+
+  if (!emailRes.ok) {
+    const body = await emailRes.text().catch(() => '')
+    console.error('portal magic-link: Resend send failed', emailRes.status, body)
+    return NextResponse.json({ ok: false, error: 'Could not send the sign-in email. Please try again.' }, { status: 502 })
+  }
 
   return NextResponse.json({ ok: true })
 }
