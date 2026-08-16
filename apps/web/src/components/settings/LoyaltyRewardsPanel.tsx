@@ -108,11 +108,24 @@ export function LoyaltyRewardsPanel({ initial }: { initial: LoyaltySettings }) {
 
       {error && <p className="text-[14px] text-red-500 mt-3">{error}</p>}
 
+      {saved && (
+        <div
+          className="mt-4 flex items-center gap-2.5 rounded-xl px-4 py-3 text-[14px] font-semibold"
+          style={{ background: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)' }}
+        >
+          <span className="flex items-center justify-center w-5 h-5 rounded-full text-white text-[12px] font-bold" style={{ background: '#059669' }}>✓</span>
+          Settings saved
+        </div>
+      )}
+
       <button
         onClick={handleSave}
         disabled={pending}
-        className="mt-4 px-5 py-2.5 rounded-xl font-bold text-[15px] text-white disabled:opacity-50 transition-transform active:scale-[0.98]"
-        style={{ background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent) / 0.8))' }}
+        className="mt-4 px-5 py-2.5 rounded-xl font-bold text-[15px] text-white disabled:opacity-50 transition-all active:scale-[0.98]"
+        style={saved
+          ? { background: '#059669' }
+          : { background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent) / 0.8))' }
+        }
       >
         {pending ? 'Saving…' : saved ? 'Saved ✓' : 'Save Settings'}
       </button>
