@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { UserPlus, X, Clock, Crown, User, Eye, ChevronDown } from 'lucide-react'
+import { UserPlus, X, Clock, Crown, User, Eye, ChevronDown, MapPin } from 'lucide-react'
 import type { TeamMember, PendingInvite, Role } from '@/lib/actions/team'
 import { revokeInvite, updateMemberRole, removeMember } from '@/lib/actions/team'
+import { setStaffLocationAssignment, removeStaffLocationAssignment, type StaffLocationAssignment } from '@/lib/actions/staff-locations'
+
+type LocationOption = { id: string; location_name: string }
 
 type Props = {
   members: TeamMember[]
@@ -14,6 +17,53 @@ type Props = {
   // actions are scoped to this tenant and the "invite" form (which only
   // makes sense for a tenant's own owner) is hidden.
   tenantId?: string
+  // Only present when the tenant has adopted multi-location (Phase 33b) —
+  // when empty/omitted, the per-member "Locations" control stays hidden so
+  // the panel looks unchanged for tenants that haven't opted in.
+  locations?: LocationOption[]
+  staffAssignments?: StaffLocationAssignment[]
+}
+
+function LocationAssignRow({ member, locations, assignments, tenantId, onChange }: {
+  member: TeamMember
+  locations: LocationOption[]
+  assignments: StaffLocationAssignment[]
+  tenantId?: string
+  onChange: (next: StaffLocationAssignment[]) => void
+}) {
+  const [pending, startTransition] = useTransition()
+  const assignedIds = new Set(assignments.map(a => a.location_id))
+
+  function toggle(locationId: string, checked: boolean) {
+    startTransition(async () => {
+      if (checked) {
+        const result = await setStaffLocationAssignment({ userId: member.id, locationId, tenantId })
+        if (result.ok) onChange([...assignments, { id: `${member.id}-${locationId}`, user_id: member.id, location_id: locationId, role: 'technician', is_primary_location: true, can_schedule_cross_location: false, location_name: locations.find(l => l.id === locationId)?.location_name ?? '' }])
+      } else {
+        const result = await removeStaffLocationAssignment(member.id, locationId, tenantId)
+        if (result.ok) onChange(assignments.filter(a => a.location_id !== locationId))
+      }
+    })
+  }
+
+  return (
+    <div style={{ padding: '10px 16px 12px 52px', borderTop: '1px solid hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+      <p style={{ fontSize: '12px', fontWeight: 700, color: 'hsl(var(--muted-foreground))', marginBottom: '6px' }}>Assigned locations</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {locations.map(loc => (
+          <label key={loc.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'hsl(var(--foreground))', cursor: pending ? 'default' : 'pointer' }}>
+            <input
+              type="checkbox"
+              disabled={pending}
+              checked={assignedIds.has(loc.id)}
+              onChange={e => toggle(loc.id, e.target.checked)}
+            />
+            {loc.location_name}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 const ROLE_LABEL: Record<Role, string> = { owner: 'Admin', member: 'User', read_only: 'Read-only' }
@@ -57,9 +107,11 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function TeamPanel({ members: initialMembers, pending: initialPending, currentUserId, tenantId }: Props) {
+export function TeamPanel({ members: initialMembers, pending: initialPending, currentUserId, tenantId, locations = [], staffAssignments: initialAssignments = [] }: Props) {
   const [members, setMembers] = useState(initialMembers)
   const [pending, setPending] = useState(initialPending)
+  const [assignments, setAssignments] = useState(initialAssignments)
+  const [expandedLocationsFor, setExpandedLocationsFor] = useState<string | null>(null)
   const [showInvite, setShowInvite] = useState(false)
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<Role>('member')
@@ -132,55 +184,82 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
       {/* Members list */}
       <div style={card}>
         {members.map((m, i) => (
-          <div key={m.id} style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '12px 16px',
-            borderBottom: i < members.length - 1 ? '1px solid hsl(var(--border))' : undefined,
-          }}>
-            <Avatar email={m.email} role={m.role} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {m.email}
-              </p>
-              <p style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', marginTop: '1px' }}>
-                Joined {fmt(m.joined_at)}{m.last_seen ? ` · Last seen ${fmt(m.last_seen)}` : ''}
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {m.id === currentUserId ? (
-                <RoleBadge role={m.role} />
-              ) : (
-                <>
-                  {/* Role selector for non-self members */}
-                  <div style={{ position: 'relative' }}>
-                    <select
-                      value={m.role}
-                      disabled={isPending}
-                      onChange={e => handleRoleChange(m.id, e.target.value as Role)}
-                      style={{
-                        appearance: 'none', WebkitAppearance: 'none',
-                        padding: '3px 24px 3px 8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
-                        border: '1px solid hsl(var(--border))',
-                        background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <option value="owner">Admin</option>
-                      <option value="member">User</option>
-                      <option value="read_only">Read-only</option>
-                    </select>
-                    <ChevronDown style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: '12px', height: '12px', pointerEvents: 'none', color: 'hsl(var(--muted-foreground))' }} />
-                  </div>
+          <div key={m.id}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '12px 16px',
+              borderBottom: i < members.length - 1 && expandedLocationsFor !== m.id ? '1px solid hsl(var(--border))' : undefined,
+            }}>
+              <Avatar email={m.email} role={m.role} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {m.email}
+                </p>
+                <p style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', marginTop: '1px' }}>
+                  Joined {fmt(m.joined_at)}{m.last_seen ? ` · Last seen ${fmt(m.last_seen)}` : ''}
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {locations.length > 0 && (
                   <button
-                    onClick={() => handleRemove(m.id)}
-                    disabled={isPending}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+                    onClick={() => setExpandedLocationsFor(prev => prev === m.id ? null : m.id)}
+                    title="Assign locations"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      padding: '3px 8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                      border: '1px solid hsl(var(--border))',
+                      background: expandedLocationsFor === m.id ? 'hsl(var(--muted))' : 'transparent',
+                      color: 'hsl(var(--muted-foreground))', cursor: 'pointer',
+                    }}
                   >
-                    <X style={{ width: '14px', height: '14px', color: 'hsl(var(--muted-foreground))' }} />
+                    <MapPin style={{ width: '12px', height: '12px' }} />
+                    {assignments.filter(a => a.user_id === m.id).length || ''}
                   </button>
-                </>
-              )}
+                )}
+                {m.id === currentUserId ? (
+                  <RoleBadge role={m.role} />
+                ) : (
+                  <>
+                    {/* Role selector for non-self members */}
+                    <div style={{ position: 'relative' }}>
+                      <select
+                        value={m.role}
+                        disabled={isPending}
+                        onChange={e => handleRoleChange(m.id, e.target.value as Role)}
+                        style={{
+                          appearance: 'none', WebkitAppearance: 'none',
+                          padding: '3px 24px 3px 8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                          border: '1px solid hsl(var(--border))',
+                          background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <option value="owner">Admin</option>
+                        <option value="member">User</option>
+                        <option value="read_only">Read-only</option>
+                      </select>
+                      <ChevronDown style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: '12px', height: '12px', pointerEvents: 'none', color: 'hsl(var(--muted-foreground))' }} />
+                    </div>
+                    <button
+                      onClick={() => handleRemove(m.id)}
+                      disabled={isPending}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+                    >
+                      <X style={{ width: '14px', height: '14px', color: 'hsl(var(--muted-foreground))' }} />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
+            {expandedLocationsFor === m.id && (
+              <LocationAssignRow
+                member={m}
+                locations={locations}
+                assignments={assignments.filter(a => a.user_id === m.id)}
+                tenantId={tenantId}
+                onChange={next => setAssignments(prev => [...prev.filter(a => a.user_id !== m.id), ...next])}
+              />
+            )}
           </div>
         ))}
 

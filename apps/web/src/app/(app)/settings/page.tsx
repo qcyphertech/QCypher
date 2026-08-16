@@ -26,6 +26,7 @@ import { UpsellAnalyticsPanel } from '@/components/settings/UpsellAnalyticsPanel
 import { getUpsellRules } from '@/lib/actions/upsells'
 import { LocationsPanel } from '@/components/settings/LocationsPanel'
 import { getLocations } from '@/lib/actions/locations'
+import { getStaffLocationAssignments } from '@/lib/actions/staff-locations'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Sun } from 'lucide-react'
@@ -85,6 +86,7 @@ export default async function SettingsPage() {
     createAdminClient().from('catalog_items').select('id, name, base_price').eq('tenant_id', tenantId).eq('is_active', true).order('name').then(r => r.data ?? []),
   ]) : [[], []]
   const locations = isAdmin && tenantId ? await getLocations(tenantId).catch(() => []) : []
+  const staffAssignments = isAdmin && tenantId && locations.length > 0 ? await getStaffLocationAssignments(tenantId).catch(() => []) : []
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
   const identities  = user.identities ?? []
@@ -117,7 +119,7 @@ export default async function SettingsPage() {
   const teamTab = (
     <div style={{ maxWidth: '640px' }}>
       <SettingsSection label="Team" hint="Invite colleagues to your workspace. They'll see the same contacts, orders, and inventory.">
-        <TeamPanel members={members} pending={pendingInvites} currentUserId={user.id} />
+        <TeamPanel members={members} pending={pendingInvites} currentUserId={user.id} locations={locations.filter(l => l.is_active).map(l => ({ id: l.id, location_name: l.location_name }))} staffAssignments={staffAssignments} />
       </SettingsSection>
       <SettingsSection label="Account & Billing" hint="Plan changes require QCypher's approval.">
         <RequestActionsPanel />

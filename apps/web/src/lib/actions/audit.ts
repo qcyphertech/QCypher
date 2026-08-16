@@ -24,6 +24,7 @@ export type AuditAction =
   | 'quote_approved' | 'quote_change_requested'
   | 'upsell_accepted'
   | 'location_created' | 'location_updated' | 'location_paused' | 'location_activated'
+  | 'staff_location_assigned' | 'staff_location_unassigned'
 
 export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location'
 

@@ -2167,6 +2167,54 @@ export type Database = {
           },
         ]
       }
+      staff_location_assignments: {
+        Row: {
+          assigned_at: string
+          can_schedule_cross_location: boolean
+          id: string
+          is_primary_location: boolean
+          location_id: string
+          role: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          can_schedule_cross_location?: boolean
+          id?: string
+          is_primary_location?: boolean
+          location_id: string
+          role?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          can_schedule_cross_location?: boolean
+          id?: string
+          is_primary_location?: boolean
+          location_id?: string
+          role?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_location_assignments_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_location_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           body: string
@@ -2779,6 +2827,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_location_row: {
+        Args: { row_location_id: string }
+        Returns: boolean
+      }
       get_tenant_id: { Args: never; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
       purge_old_audit_logs: { Args: never; Returns: undefined }

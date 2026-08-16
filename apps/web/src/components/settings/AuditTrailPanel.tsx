@@ -27,6 +27,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   upsell_accepted: 'Upsell accepted',
   location_created: 'Location created', location_updated: 'Location updated',
   location_paused: 'Location paused', location_activated: 'Location activated',
+  staff_location_assigned: 'Staff assigned to location', staff_location_unassigned: 'Staff removed from location',
 }
 
 const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment', 'order', 'automation', 'location']
