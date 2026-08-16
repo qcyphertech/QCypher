@@ -77,12 +77,14 @@ marked done, even where the supporting infrastructure is ready.
 
 ## Requires your action — cannot be done autonomously
 
-- [ ] **Formal policies signed by executives (Thomas + Felix)** — the
-      5 policy docs in `/docs` are written and accurate, but nothing
-      is "signed." This needs an actual decision from both of you on
-      how you want to formalize sign-off (a signed PDF, a dated commit
-      with both names, a Google Doc with signatures — your call), then
-      doing it.
+- [ ] **Formal policies signed by executives (Thomas + Felix)** —
+      `docs/policy-sign-off.md` is prepared: why this matters for the
+      audit (CC1/CC2), three concrete options with a recommendation
+      (a dated commit with both names — matches this project's
+      existing git-native evidence pattern), the 5 policies to review,
+      and a blank sign-off table to fill in. Still needs the actual
+      15-30 minutes of both of you reading each policy and recording
+      the outcome — that can't be done for you.
 - [ ] **6-month evidence collection started (no gaps)** — collection
       *started* today (2026-08-16); a 6-month gapless window is a
       calendar fact that can't be accelerated. The evidence repo

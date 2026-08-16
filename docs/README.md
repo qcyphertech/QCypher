@@ -19,6 +19,7 @@ was last verified against the actual code.
 | [typescript-debt-assessment.md](typescript-debt-assessment.md) | 135 silent `tsc --noEmit` errors, assessed and documented rather than blind-fixed, with a suspected root cause and a scoped remediation path. |
 | [incident-response-tabletop-drill.md](incident-response-tabletop-drill.md) | A prepared drill script (scenario, step-by-step questions, outcome template) for Thomas + Felix to actually run — testing the playbook's least-covered path, not the easy case. |
 | [vendor-soc2-report-tracker.md](vendor-soc2-report-tracker.md) | Real, sourced request path for every vendor's SOC 2 report (self-serve portal URL or contact email) — researched so requesting them is minutes of work, not an afternoon. |
+| [policy-sign-off.md](policy-sign-off.md) | Prepared executive sign-off process for Thomas + Felix: why it matters for the audit, three concrete formalization options with a recommendation, and a blank record to fill in once actually reviewed. |
 
 ## SOC 2 context
 
