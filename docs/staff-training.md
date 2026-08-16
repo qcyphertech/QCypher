@@ -91,10 +91,15 @@ for now given team size; revisit if the team grows.
 
 ## Recurring review
 
+- **Monthly: super-admin access review.** Run
+  `python3 scripts/review-super-admins.py` — it lists every super-admin
+  account with real MFA enrollment status (checked via the Auth admin
+  API, not assumed) and last sign-in. Confirm each account still needs
+  access, then record the outcome in `evidence/access-control/`
+  (filename: `YYYY-MM-DD-super-admin-review.md`). First run: 2026-08-16.
 - **Quarterly**, alongside the risk register review
-  (`docs/risk-register.md`): confirm the super-admin list is still
-  correct (only people who currently need it), and that this checklist
-  still matches reality.
+  (`docs/risk-register.md`): confirm this checklist still matches
+  reality more broadly (not just the super-admin list specifically).
 - **Whenever a new integration, tool, or access tier is added**: update
   this doc in the same change, not as a follow-up that may never
   happen.

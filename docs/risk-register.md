@@ -157,15 +157,20 @@ every tenant's data.
   customers. Verified working end-to-end by the account owner
   (enrolled, scanned, confirmed via a real code).
 
-**Residual risk: Low-Medium** (down from High). The core gap — a bare
-password being sufficient for full cross-tenant access — is closed.
-MFA reset now has a documented (if still manual, not self-service)
-recovery path — see "Lost your MFA device" in `docs/staff-training.md`,
-added 2026-08-16. What's still open: still no *periodic* access review
-process to confirm the super-admin list itself stays correct over time
-(a one-time checklist item isn't the same as a recurring review); and if
-both super admins lose their MFA device simultaneously, recovery
-requires direct Supabase support, not anything this app can do itself.
+**Residual risk: Low** (down from Low-Medium). The core gap — a bare
+password being sufficient for full cross-tenant access — is closed. MFA
+reset now has a documented (if still manual, not self-service) recovery
+path — see "Lost your MFA device" in `docs/staff-training.md`. A real
+periodic access review process now exists too —
+`scripts/review-super-admins.py`, checking both account list correctness
+and actual per-user MFA enrollment status (via the Auth admin API's
+`/factors` endpoint, not just assumed) — first run completed 2026-08-16,
+see `evidence/access-control/2026-08-16-super-admin-review.md`. Monthly
+cadence going forward. What's still open: if both super admins lose
+their MFA device simultaneously, recovery requires direct Supabase
+support, not anything this app can do itself — an accepted residual risk
+for a 2-person team, not something worth building self-service recovery
+infrastructure for.
 
 ---
 
