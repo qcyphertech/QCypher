@@ -28,13 +28,26 @@ trust simultaneously.
 - Incident response playbook (`docs/INCIDENT_RESPONSE_PLAYBOOK.md`) with
   a defined 24h/48h notification clock.
 - RLS isolation test suite (`pnpm test:isolation`, runs in CI on `main`)
-  — two real test tenants, verifies neither can read the other's data.
+  — **fixed 2026-08-16; this bullet was an overclaim before that date.**
+  The suite had never once run successfully since it was written: missing
+  `ts-node`, a Vitest-only API (`describe.skipIf`) used under Jest, 4
+  files importing directly from `vitest`, and a missing-semicolon ASI bug
+  that made every describe block throw. All fixed same day. 4 of 8 test
+  files (42 tests, self-contained — they provision their own throwaway
+  tenants) now genuinely pass against the live DB in CI, with
+  `continue-on-error` removed so this is a real, blocking check for the
+  first time. The other 4 files need pre-provisioned `TEST_TENANT_A/B`
+  fixtures that don't exist yet, so they skip cleanly rather than fail —
+  see gap-assessment.md.
 
-**Residual risk:** Medium. RLS coverage is broad but was proven
-non-exhaustive by this same review — see the closed finding below. The
-CI isolation test only runs post-merge on `main`, not pre-merge on PRs
-(see `docs/change-management-policy.md`), so a regression could still
-reach production before being caught.
+**Residual risk:** Medium (down from what it would have been had the test
+suite silently stayed broken — the review process itself is what caught
+this). RLS coverage is broad but was proven non-exhaustive by this same
+review — see the closed finding below. The CI isolation test only runs
+post-merge on `main`, not pre-merge on PRs (see
+`docs/change-management-policy.md`), so a regression could still reach
+production before being caught — and only half the isolation suite
+(4 of 8 files) runs at all until the TEST_TENANT_A/B fixtures exist.
 
 **Closed finding (evidence RLS review actually works):**
 `order_number_counters` had a `tenant_id` column with no RLS policy at
