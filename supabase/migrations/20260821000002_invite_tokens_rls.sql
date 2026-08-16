@@ -1,0 +1,21 @@
+-- invite_tokens was deliberately built with no RLS (see
+-- packages/db/migrations/00004_phase2_admin.sql's comment: "created
+-- server-side only, read server-side only, client code never touches
+-- this table"). That assumption was wrong — nothing stops an
+-- authenticated user from querying any public-schema table directly via
+-- the Supabase client SDK/PostgREST, regardless of whether the app's own
+-- code ever does. Found 2026-08-16 by the RLS isolation test suite, the
+-- first time it ever actually ran against real fixtures: any
+-- authenticated tenant user could read every other tenant's pending
+-- invite tokens — including the raw token string itself and the invited
+-- email — and could insert fake invite rows for any tenant_id. This is a
+-- real, exploitable cross-tenant vulnerability, not a theoretical one.
+--
+-- Fix: enable RLS with NO policies at all. That's not an oversight —
+-- it's the correct shape here, matching the table's actual (and now
+-- enforced) access model: only service_role (which bypasses RLS
+-- entirely) ever legitimately touches this table, for provisioning and
+-- invite-acceptance. No authenticated client role should be able to
+-- read or write it under any circumstance.
+
+alter table invite_tokens enable row level security;
