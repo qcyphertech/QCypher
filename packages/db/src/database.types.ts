@@ -2766,12 +2766,67 @@ export type Database = {
           },
         ]
       }
+      vulnerability_finding_groups: {
+        Row: {
+          affected_parameter: string | null
+          affected_url: string | null
+          created_at: string
+          description: string | null
+          fingerprint: string
+          first_seen_at: string
+          id: string
+          is_resolved: boolean
+          last_seen_at: string
+          occurrence_count: number
+          owasp_category: string | null
+          remediation_advice: string | null
+          resolved_at: string | null
+          severity: string
+          vulnerability_type: string | null
+        }
+        Insert: {
+          affected_parameter?: string | null
+          affected_url?: string | null
+          created_at?: string
+          description?: string | null
+          fingerprint: string
+          first_seen_at?: string
+          id?: string
+          is_resolved?: boolean
+          last_seen_at?: string
+          occurrence_count?: number
+          owasp_category?: string | null
+          remediation_advice?: string | null
+          resolved_at?: string | null
+          severity: string
+          vulnerability_type?: string | null
+        }
+        Update: {
+          affected_parameter?: string | null
+          affected_url?: string | null
+          created_at?: string
+          description?: string | null
+          fingerprint?: string
+          first_seen_at?: string
+          id?: string
+          is_resolved?: boolean
+          last_seen_at?: string
+          occurrence_count?: number
+          owasp_category?: string | null
+          remediation_advice?: string | null
+          resolved_at?: string | null
+          severity?: string
+          vulnerability_type?: string | null
+        }
+        Relationships: []
+      }
       vulnerability_findings: {
         Row: {
           affected_parameter: string | null
           affected_url: string | null
           created_at: string
           description: string | null
+          group_id: string | null
           id: string
           is_resolved: boolean
           owasp_category: string | null
@@ -2786,6 +2841,7 @@ export type Database = {
           affected_url?: string | null
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           is_resolved?: boolean
           owasp_category?: string | null
@@ -2800,6 +2856,7 @@ export type Database = {
           affected_url?: string | null
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           is_resolved?: boolean
           owasp_category?: string | null
@@ -2810,6 +2867,13 @@ export type Database = {
           vulnerability_type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vulnerability_findings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "vulnerability_finding_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vulnerability_findings_scan_id_fkey"
             columns: ["scan_id"]

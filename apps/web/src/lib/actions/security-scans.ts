@@ -37,6 +37,22 @@ export type VulnerabilityFinding = {
   created_at: string
 }
 
+export type VulnerabilityFindingGroup = {
+  id: string
+  vulnerability_type: string | null
+  severity: 'Critical' | 'High' | 'Medium' | 'Low' | 'Info'
+  affected_url: string | null
+  affected_parameter: string | null
+  description: string | null
+  remediation_advice: string | null
+  owasp_category: string | null
+  first_seen_at: string
+  last_seen_at: string
+  occurrence_count: number
+  is_resolved: boolean
+  resolved_at: string | null
+}
+
 async function requireSuperAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -67,6 +83,32 @@ export async function resolveFinding(findingId: string): Promise<{ ok: true } | 
     is_resolved: true,
     resolved_at: new Date().toISOString(),
   }).eq('id', findingId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+// Deduplicated view — one row per distinct vuln (type+url+parameter) across
+// all scans, with how many scans it's shown up in and when it was first/last
+// seen. This is the primary remediation-tracking surface; resolving a group
+// means "confirmed fixed," and it auto-reopens if the same fingerprint shows
+// up in a later scan.
+export async function listFindingGroups(): Promise<VulnerabilityFindingGroup[]> {
+  const { admin } = await requireSuperAdmin()
+  const { data } = await admin
+    .from('vulnerability_finding_groups')
+    .select('id, vulnerability_type, severity, affected_url, affected_parameter, description, remediation_advice, owasp_category, first_seen_at, last_seen_at, occurrence_count, is_resolved, resolved_at')
+    .order('is_resolved', { ascending: true })
+    .order('last_seen_at', { ascending: false })
+  return (data ?? []) as VulnerabilityFindingGroup[]
+}
+
+export async function resolveFindingGroup(groupId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { admin } = await requireSuperAdmin()
+  const { error } = await admin.from('vulnerability_finding_groups').update({
+    is_resolved: true,
+    resolved_at: new Date().toISOString(),
+  }).eq('id', groupId)
   if (error) return { ok: false, error: error.message }
   revalidatePath('/admin')
   return { ok: true }

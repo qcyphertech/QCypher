@@ -34,6 +34,13 @@ type IngestPayload = {
   errorMessage?: string
 }
 
+// Groups the same vuln across scans. Severity is deliberately excluded —
+// ZAP reclassifying the same underlying issue shouldn't split it into a
+// second group.
+function findingFingerprint(f: Finding): string {
+  return [f.vulnerabilityType ?? '', f.affectedUrl ?? '', f.affectedParameter ?? ''].join('|').toLowerCase()
+}
+
 async function sendCriticalAlert(scan: { id: string; critical_count: number; high_count: number; medium_count: number; low_count: number; scan_date: string; environment: string; reportUrl?: string }) {
   await sendEmail({
     to: ALERT_RECIPIENTS,
@@ -89,9 +96,47 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.findings?.length) {
-    await admin.from('vulnerability_findings').insert(
-      body.findings.map(f => ({
+    for (const f of body.findings) {
+      const fingerprint = findingFingerprint(f)
+      const now = new Date().toISOString()
+
+      const { data: existingGroup } = await admin
+        .from('vulnerability_finding_groups')
+        .select('id, occurrence_count')
+        .eq('fingerprint', fingerprint)
+        .maybeSingle()
+
+      let groupId: string
+      if (existingGroup) {
+        groupId = existingGroup.id
+        await admin.from('vulnerability_finding_groups').update({
+          last_seen_at: now,
+          occurrence_count: existingGroup.occurrence_count + 1,
+          severity: f.severity,
+          description: f.description ?? null,
+          remediation_advice: f.remediationAdvice ?? null,
+          // Reopens automatically if it had been marked resolved — ZAP
+          // flagging the same fingerprint again means it's still present.
+          is_resolved: false,
+          resolved_at: null,
+        }).eq('id', groupId)
+      } else {
+        const { data: newGroup } = await admin.from('vulnerability_finding_groups').insert({
+          fingerprint,
+          vulnerability_type: f.vulnerabilityType ?? null,
+          severity: f.severity,
+          affected_url: f.affectedUrl ?? null,
+          affected_parameter: f.affectedParameter ?? null,
+          description: f.description ?? null,
+          remediation_advice: f.remediationAdvice ?? null,
+          owasp_category: f.owaspCategory ?? null,
+        }).select('id').single()
+        groupId = newGroup!.id
+      }
+
+      await admin.from('vulnerability_findings').insert({
         scan_id: scan.id,
+        group_id: groupId,
         vulnerability_type: f.vulnerabilityType ?? null,
         severity: f.severity,
         affected_url: f.affectedUrl ?? null,
@@ -99,8 +144,8 @@ export async function POST(request: NextRequest) {
         description: f.description ?? null,
         remediation_advice: f.remediationAdvice ?? null,
         owasp_category: f.owaspCategory ?? null,
-      })),
-    )
+      })
+    }
   }
 
   if (scan.critical_count > 0 || scan.high_count > 0) {

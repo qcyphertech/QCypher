@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { ShieldAlert, ShieldCheck, ChevronDown } from 'lucide-react'
-import { listVulnerabilityScans, getScanFindings, resolveFinding, type VulnerabilityScan, type VulnerabilityFinding } from '@/lib/actions/security-scans'
+import { listVulnerabilityScans, getScanFindings, listFindingGroups, resolveFindingGroup, type VulnerabilityScan, type VulnerabilityFinding, type VulnerabilityFindingGroup } from '@/lib/actions/security-scans'
 import { SectionHeader, EmptyState, PanelSkeleton } from '@/components/admin/AdminPanelUI'
 
 const SEVERITY_STYLE: Record<string, string> = {
@@ -26,28 +26,59 @@ function CountBadge({ label, count, color }: { label: string; count: number; col
   )
 }
 
-function FindingRow({ finding, isPending, onResolve }: { finding: VulnerabilityFinding; isPending: boolean; onResolve: () => void }) {
+// Raw per-scan record — read-only historical detail. Remediation tracking
+// lives on the deduplicated group (see TrackedFindings/FindingGroupRow
+// below), so this no longer offers a resolve action.
+function FindingRow({ finding }: { finding: VulnerabilityFinding }) {
+  return (
+    <div className="px-4 py-3 border-b border-[hsl(var(--border))] last:border-0">
+      <div className="flex items-center gap-2 mb-1">
+        <span className={`text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${SEVERITY_STYLE[finding.severity]}`}>
+          {finding.severity}
+        </span>
+        <p className="text-[14px] font-semibold truncate">{finding.vulnerability_type ?? 'Unnamed finding'}</p>
+      </div>
+      {finding.affected_url && (
+        <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">{finding.affected_url}</p>
+      )}
+      {finding.description && (
+        <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-1">{finding.description}</p>
+      )}
+    </div>
+  )
+}
+
+// Deduplicated across scans — this is the primary remediation surface.
+// Resolving here reflects "confirmed fixed"; it auto-reopens if the same
+// vuln (type+url+parameter) is flagged again on a later scan, so a group
+// staying resolved across weeks is a real signal, not a stale checkbox.
+function FindingGroupRow({ group, isPending, onResolve }: { group: VulnerabilityFindingGroup; isPending: boolean; onResolve: () => void }) {
   return (
     <div className="px-4 py-3 flex items-start justify-between gap-3 border-b border-[hsl(var(--border))] last:border-0">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className={`text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${SEVERITY_STYLE[finding.severity]}`}>
-            {finding.severity}
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className={`text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${SEVERITY_STYLE[group.severity]}`}>
+            {group.severity}
           </span>
-          <p className="text-[14px] font-semibold truncate">{finding.vulnerability_type ?? 'Unnamed finding'}</p>
-          {finding.is_resolved && <span className="text-[11px] font-semibold text-emerald-600">Resolved</span>}
+          <p className="text-[14px] font-semibold truncate">{group.vulnerability_type ?? 'Unnamed finding'}</p>
+          {group.is_resolved
+            ? <span className="text-[11px] font-semibold text-emerald-600">Resolved</span>
+            : <span className="text-[11px] font-semibold text-[hsl(var(--muted-foreground))]">Seen in {group.occurrence_count} scan{group.occurrence_count === 1 ? '' : 's'}</span>}
         </div>
-        {finding.affected_url && (
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">{finding.affected_url}</p>
+        {group.affected_url && (
+          <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">{group.affected_url}</p>
         )}
-        {finding.description && (
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-1">{finding.description}</p>
+        <p className="text-[12px] text-[hsl(var(--muted-foreground))] mt-1">
+          First seen {fmtDate(group.first_seen_at)} · Last seen {fmtDate(group.last_seen_at)}
+        </p>
+        {group.description && (
+          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-1">{group.description}</p>
         )}
-        {finding.remediation_advice && (
-          <p className="text-[13px] mt-1"><span className="font-semibold">Remediation:</span> {finding.remediation_advice}</p>
+        {group.remediation_advice && (
+          <p className="text-[13px] mt-1"><span className="font-semibold">Remediation:</span> {group.remediation_advice}</p>
         )}
       </div>
-      {!finding.is_resolved && (
+      {!group.is_resolved && (
         <button
           onClick={onResolve}
           disabled={isPending}
@@ -60,22 +91,60 @@ function FindingRow({ finding, isPending, onResolve }: { finding: VulnerabilityF
   )
 }
 
+function TrackedFindings() {
+  const [groups, setGroups] = useState<VulnerabilityFindingGroup[] | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    listFindingGroups().then(setGroups)
+  }, [])
+
+  function handleResolve(groupId: string) {
+    startTransition(async () => {
+      const result = await resolveFindingGroup(groupId)
+      if (result.ok) {
+        setGroups(prev => prev?.map(g => g.id === groupId ? { ...g, is_resolved: true, resolved_at: new Date().toISOString() } : g) ?? null)
+      }
+    })
+  }
+
+  if (groups === null) return <PanelSkeleton />
+
+  const open = groups.filter(g => !g.is_resolved)
+  const resolved = groups.filter(g => g.is_resolved)
+
+  return (
+    <div className="space-y-3">
+      <SectionHeader icon={ShieldAlert} label="Tracked Findings" count={open.length} accent />
+      {groups.length === 0 ? (
+        <EmptyState icon={ShieldCheck} message="No findings tracked yet — they'll appear here once a scan runs." />
+      ) : (
+        <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
+          {open.length === 0 ? (
+            <div className="px-4 py-3"><EmptyState icon={ShieldCheck} message="No open findings — everything tracked has been resolved." /></div>
+          ) : (
+            open.map(g => <FindingGroupRow key={g.id} group={g} isPending={isPending} onResolve={() => handleResolve(g.id)} />)
+          )}
+          {resolved.length > 0 && open.length > 0 && (
+            <div className="px-4 py-2 bg-[hsl(var(--muted))]/40 border-t border-[hsl(var(--border))]">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Resolved ({resolved.length})</p>
+            </div>
+          )}
+          {resolved.map(g => <FindingGroupRow key={g.id} group={g} isPending={isPending} onResolve={() => handleResolve(g.id)} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ScanRow({ scan, expanded, onToggle }: { scan: VulnerabilityScan; expanded: boolean; onToggle: () => void }) {
   const [findings, setFindings] = useState<VulnerabilityFinding[] | null>(null)
-  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     if (expanded && findings === null) {
       getScanFindings(scan.id).then(setFindings)
     }
   }, [expanded, findings, scan.id])
-
-  function handleResolve(findingId: string) {
-    startTransition(async () => {
-      const result = await resolveFinding(findingId)
-      if (result.ok) setFindings(prev => prev?.map(f => f.id === findingId ? { ...f, is_resolved: true, resolved_at: new Date().toISOString() } : f) ?? null)
-    })
-  }
 
   const totalFindings = scan.critical_count + scan.high_count + scan.medium_count + scan.low_count + scan.info_count
 
@@ -105,7 +174,7 @@ function ScanRow({ scan, expanded, onToggle }: { scan: VulnerabilityScan; expand
           ) : findings.length === 0 ? (
             <div className="px-4 py-3"><EmptyState icon={ShieldCheck} message="No findings on this scan." /></div>
           ) : (
-            findings.map(f => <FindingRow key={f.id} finding={f} isPending={isPending} onResolve={() => handleResolve(f.id)} />)
+            findings.map(f => <FindingRow key={f.id} finding={f} />)
           )}
         </div>
       )}
@@ -154,11 +223,17 @@ export function SecurityPanel() {
       {scans.length === 0 ? (
         <EmptyState icon={ShieldCheck} message="No scans have run yet. The weekly scan is scheduled for Mondays at 2am UTC — you can also trigger it manually from the GitHub Actions tab." />
       ) : (
-        <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
-          {scans.map(scan => (
-            <ScanRow key={scan.id} scan={scan} expanded={expanded === scan.id} onToggle={() => setExpanded(e => e === scan.id ? null : scan.id)} />
-          ))}
-        </div>
+        <>
+          <TrackedFindings />
+          <div className="space-y-3">
+            <SectionHeader icon={ShieldAlert} label="Scan History" count={scans.length} />
+            <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
+              {scans.map(scan => (
+                <ScanRow key={scan.id} scan={scan} expanded={expanded === scan.id} onToggle={() => setExpanded(e => e === scan.id ? null : scan.id)} />
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
