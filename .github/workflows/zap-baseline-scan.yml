@@ -40,7 +40,6 @@ jobs:
             zap-baseline.py \
               -t "${{ env.TARGET_URL }}" \
               -J zap-report.json \
-              -r zap-report.html \
               -I
 
       - name: Parse results
@@ -82,20 +81,19 @@ jobs:
             }]
           ' zap-report.json > findings.json
 
-      # Renders our own modern HTML report (donut + bar chart, brand colors)
-      # from the same counts/findings data, instead of relying on
-      # zap-baseline.py's bundled Jinja2 template — gives full design
-      # control without touching ZAP's internals. Runs even on a failed
-      # scan (empty-state report) so the artifact is consistent every run.
-      - name: Render styled security report
+      # Renders the one, modern HTML report (donut + bar chart, brand
+      # colors, full per-finding detail — CWE/WASC/plugin IDs, all
+      # affected URLs, evidence, references) straight from ZAP's raw JSON.
+      # Replaces zap-baseline.py's bundled Jinja2 -r report entirely —
+      # this is the only report artifact now, not a second one alongside
+      # it. Runs even on a failed scan (empty-state report) so the
+      # artifact is consistent every run.
+      - name: Render security report
         if: always()
         run: |
           node scripts/render-security-report.mjs \
-            zap-work/counts.json \
-            zap-work/findings.json \
+            zap-work/zap-report.json \
             zap-work/security-report.html \
-            "${{ env.TARGET_URL }}" \
-            "$(date -u +%Y-%m-%d)" \
             "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Upload report artifacts
@@ -105,7 +103,6 @@ jobs:
           name: zap-report
           path: |
             zap-work/zap-report.json
-            zap-work/zap-report.html
             zap-work/security-report.html
           retention-days: 90
 
