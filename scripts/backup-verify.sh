@@ -118,17 +118,28 @@ fi
 # ── 5. Cleanup ────────────────────────────────────────────────────────────
 rm -f "$DUMP_FILE"
 
-# Prune backups older than 30 days from R2
+# Prune backups older than 30 days from R2. Best-effort: the backup
+# itself is already dumped, uploaded, and integrity-verified by this
+# point, so a pruning hiccup (transient R2 API issue, unexpected --query
+# output shape, etc.) should not turn a successful backup into a failed
+# CI run. Errors here are logged, not fatal — `set +e`/`set -e` bracket
+# this whole block so nothing inside it can trip the script's overall
+# exit code.
 log "Pruning R2 backups older than 30 days..."
+set +e
 CUTOFF=$(date -u -v-30d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
-AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
-AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
-  aws s3api list-objects-v2 \
-    --bucket "$R2_BUCKET" \
-    --prefix "backups/" \
-    --endpoint-url "$R2_ENDPOINT" \
-    --query "Contents[?LastModified<='${CUTOFF}'].Key" \
-    --output text \
+RAW_LIST=$(
+  AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+  AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+    aws s3api list-objects-v2 \
+      --bucket "$R2_BUCKET" \
+      --prefix "backups/" \
+      --endpoint-url "$R2_ENDPOINT" \
+      --query "Contents[?LastModified<='${CUTOFF}'].Key" \
+      --output text 2>&1
+)
+log "  Prune query raw output: ${RAW_LIST}"
+echo "$RAW_LIST" \
 | tr '\t' '\n' \
 | grep -v '^$' \
 | grep -v '^None$' \
@@ -138,6 +149,7 @@ AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
     AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
       aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT"
   done
+set -e
 
 log "Backup verification complete: OK"
 log "Backup stored at: s3://${R2_BUCKET}/${S3_KEY}"
