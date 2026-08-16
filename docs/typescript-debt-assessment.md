@@ -63,16 +63,36 @@ version bump**, is exactly the case for documenting rather than acting:
   after the likely root cause is ruled in or out, than to hand-patch 30
   files now and have most of the diff be noise if the bump fixes it.
 
+## Update 2026-08-16: theory confirmed, PR open
+
+Tested on `chore/bump-supabase-ssr`
+([PR #2](https://github.com/qcyphertech/QCypher/pull/2)): bumping
+`@supabase/ssr` to `0.12.4` (and `@supabase/supabase-js` to match its
+peer requirement) drops `tsc --noEmit` from **135 to 62 errors** with
+**zero application code changes**. Every `never`-typed table error
+(`orders.ts`, `photos.ts`, `settings.ts`, etc.) and the implicit-`any`
+cookie handler errors in `server.ts`/`middleware.ts` are gone —
+confirming the version-skew theory below. `next build` completes
+cleanly with the same route output.
+
+Opened as a PR rather than pushed directly to `main`: this bumps the
+client library that handles auth cookies on every request via
+`middleware.ts`, and a clean build/typecheck doesn't fully exercise
+live login/MFA/session flows. Recommend a manual click-through
+(login, MFA challenge, a few authenticated pages) before or right
+after merging.
+
+**Remaining 62 errors are a different, unrelated category** — Json vs.
+`Record<string, unknown>` type mismatches and excess-property checks on
+`.update()`/`.insert()` calls — not fixed by this bump, need their own
+file-by-file triage.
+
 ## Recommended next step
 
-1. In an isolated branch: bump `@supabase/ssr` to latest (`0.12.4`),
-   run `tsc --noEmit` again, and see how much of the 135 clears.
-2. Whatever remains after that gets triaged file-by-file for real.
+1. Review and merge [PR #2](https://github.com/qcyphertech/QCypher/pull/2)
+   after the manual auth click-through above.
+2. Triage the remaining 62 errors file-by-file (a different root cause
+   than the version skew — see above).
 3. Once genuinely near zero, remove `continue-on-error: true` from the
    `typecheck` job in `.github/workflows/ci.yml` so this can't silently
    regress again — mirroring what was already done for `rls-isolation`.
-
-Not done automatically in this session because it's a dependency
-upgrade with real (if likely small) regression risk, which is the kind
-of change that should be tested and reviewed, not pushed straight to
-`main` unattended.
