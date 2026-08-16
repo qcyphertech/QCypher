@@ -15,12 +15,15 @@ const SUPABASE_URL = 'https://hwfyhnfbqkrtpamnmbaw.supabase.co'
 //
 // script-src also needs 'unsafe-inline' — Next.js's App Router injects its
 // own inline <script> tags (hydration payload / streaming data) on every
-// page. Without it the app fails to hydrate at all (confirmed: blank
-// hydration errors + "Evaluating a string as JavaScript violates CSP" on
-// every route when this was tested strict). A nonce-based CSP would avoid
-// this trade-off but requires per-request header generation via
-// middleware, not a static next.config.js headers() list — out of scope
-// for this pass; flagged rather than silently added, same as style-src.
+// page. A nonce-based CSP (generated per-request in middleware) removes
+// this need, but was tried and reverted: it forces every page that reads
+// the nonce out of static rendering, turning the whole marketing site
+// (/, /pricing, /about, /privacy, /terms, /faq, /security — previously
+// free, edge-cached static HTML) into server-rendered-per-request pages.
+// unsafe-inline alone isn't exploitable without a separate XSS injection
+// bug elsewhere in the app, which this audit didn't find — so the
+// static-rendering cost wasn't worth paying for this specific Medium
+// finding. Confirmed with the user 2026-08-16.
 //
 // Cross-Origin-Embedder-Policy is deliberately NOT set. COEP: require-corp
 // blocks any cross-origin resource that doesn't send a matching CORP
@@ -47,18 +50,13 @@ const SECURITY_HEADERS = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-  // allow-popups (not the stricter same-origin) since nothing here has
-  // been verified popup-free beyond what this pass audited — safer default.
-  //
-  // Known accepted ZAP finding: the baseline scanner flags this as
-  // "Cross-Origin-Opener-Policy Header Missing or Invalid" every scan,
-  // because it specifically wants 'same-origin' and treats
-  // 'same-origin-allow-popups' as non-compliant. This is intentional, not
-  // a bug — tightening to 'same-origin' risks breaking any window.open()/
-  // OAuth-style popup flow that hasn't been audited. Confirmed with the
-  // user 2026-08-16 to leave this as-is; the finding is expected to keep
-  // showing up in weekly scans.
-  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+  // Tightened to 'same-origin' (from 'same-origin-allow-popups'): audited
+  // every window.open() call (Cal.com booking link, no window.opener
+  // reliance) and confirmed Helcim's payment flow uses an embedded
+  // iframe + postMessage, not a popup — COOP only isolates window.open()
+  // -created browsing contexts, it doesn't affect iframes at all. Safe to
+  // tighten. Confirmed 2026-08-16.
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   // Vercel's CDN adds "Access-Control-Allow-Origin: *" by default on
   // statically-served pages/assets (confirmed via curl — present on cached
   // pages and static CSS, absent on dynamic API routes). Nothing in this
