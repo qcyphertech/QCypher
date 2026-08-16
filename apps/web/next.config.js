@@ -49,6 +49,15 @@ const SECURITY_HEADERS = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
   // allow-popups (not the stricter same-origin) since nothing here has
   // been verified popup-free beyond what this pass audited — safer default.
+  //
+  // Known accepted ZAP finding: the baseline scanner flags this as
+  // "Cross-Origin-Opener-Policy Header Missing or Invalid" every scan,
+  // because it specifically wants 'same-origin' and treats
+  // 'same-origin-allow-popups' as non-compliant. This is intentional, not
+  // a bug — tightening to 'same-origin' risks breaking any window.open()/
+  // OAuth-style popup flow that hasn't been audited. Confirmed with the
+  // user 2026-08-16 to leave this as-is; the finding is expected to keep
+  // showing up in weekly scans.
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
   // Vercel's CDN adds "Access-Control-Allow-Origin: *" by default on
   // statically-served pages/assets (confirmed via curl — present on cached
