@@ -66,39 +66,48 @@ controls.
 SLAs; outages are infrequent industry-wide.
 **Impact:** High (4/5) — the app is fully unusable if either is down;
 no self-hosted fallback.
-**Risk score:** 8 (MEDIUM)
+**Risk score:** 4 (LOW-MEDIUM — down from 8; see mitigation below)
 
 **Mitigation:**
 - Supabase handles managed backups (rolling window — platform setting,
   not app code, not independently verified by QCypher).
-- **Independent nightly backup pipeline, fixed and verified working
-  2026-08-16** (`.github/workflows/nightly-backup.yml` +
+- **Independent nightly backup + restore pipeline, fixed and verified
+  working 2026-08-16** (`.github/workflows/nightly-backup.yml` +
   `scripts/backup-verify.sh`): `pg_dump` → gzip → upload to a dedicated
   Cloudflare R2 bucket (`qcypher-backups`) → upload-integrity check
-  (byte-size match) → 30-day-old backup pruning. This workflow existed
-  since before this review but **had never once succeeded** — it was
-  missing all 5 required secrets, so it silently failed every night with
-  no one noticing (GitHub Actions has no alerting wired to workflow
-  failure beyond the Actions UI itself). Fixed same day: created the R2
-  bucket + scoped API token, reset the Supabase DB password to get a
-  usable connection string, fixed a `pg_dump`/server major-version
-  mismatch (runner ships v16, Supabase runs 17.6), fixed a `pipefail`
-  false-negative in the table-presence check, and made the prune step
-  best-effort so cleanup issues can't fail an otherwise-successful
-  backup. Confirmed via a real run: dump complete, all 6 core tables
-  present, uploaded, integrity-verified.
+  (byte-size match) → **restore into a disposable Postgres 17 service
+  container → spot-check 6 core tables' row counts** → 30-day-old backup
+  pruning. This workflow existed since before this review but **had
+  never once succeeded** — it was missing all 5 required secrets, so it
+  silently failed every night with no one noticing (GitHub Actions has
+  no alerting wired to workflow failure beyond the Actions UI itself).
+  Fixed same day: created the R2 bucket + scoped API token, reset the
+  Supabase DB password to get a usable connection string, fixed a
+  `pg_dump`/server major-version mismatch (runner ships v16, Supabase
+  runs 17.6), fixed a `pipefail` false-negative in the table-presence
+  check, made the prune step best-effort, and — critically — actually
+  enabled and debugged the restore path rather than leaving it optional:
+  found and fixed a real bug where 3 tables (`orders`, `invite_tokens`,
+  `payment_requests`) use `extensions.gen_random_bytes()` in a column
+  default, which was silently failing to restore (along with everything
+  referencing those tables) because `--schema=public` doesn't dump
+  Supabase's `extensions` schema. Confirmed via a real run: full backup,
+  full restore, all 54 tables present with correct row counts.
 - No staging environment and no multi-region failover configured — this
   is a deliberate scope trade-off for a 2-person team, not an oversight.
 
-**Residual risk:** Medium (down from Medium-High). Backup *creation* is
-now genuinely verified working, not just assumed — a real gap this
-review found and closed, not just documented. What's still open:
-**restore has never been tested** (`RESTORE_DB_URL` intentionally left
-unset for now — the dump-and-upload path was the priority; restore
-verification is optional in the script and should be enabled next by
-pointing it at a scratch Supabase project). Until then, the tested
-guarantee is "a recent backup exists and is byte-verified in R2," not
-"we know we can recover from it."
+**Residual risk:** Low-Medium (down from Medium). Both backup *creation*
+and *restore* are now genuinely verified working on every nightly run,
+not just assumed — this is the strongest-evidenced control in this
+entire register. What's still open: the restore target is a disposable
+scratch container, not a full Supabase-equivalent environment (Supabase
+Auth users, storage objects, and `auth`-schema-dependent RLS policies
+aren't part of this test) — a real incident would still involve manual
+work beyond what's automated here. The tested guarantee is now "a
+recent backup exists, is byte-verified in R2, and its schema+data
+demonstrably restores," which is a materially stronger claim than
+before this fix, even though it isn't a full production-equivalent
+disaster-recovery drill.
 
 ---
 
