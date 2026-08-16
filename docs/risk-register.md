@@ -107,7 +107,7 @@ guarantee is "a recent backup exists and is byte-verified in R2," not
 **Likelihood:** Low (2/5) — 2-person team, both technically sophisticated.
 **Impact:** Critical (5/5) — a compromised super-admin account can read
 every tenant's data.
-**Risk score:** 10 (HIGH — impact-driven, not likelihood-driven)
+**Risk score:** 6 (MEDIUM — down from 10; see mitigation below)
 
 **Mitigation:**
 - Role-based access control: 3 tenant-level roles (`owner`, `member`,
@@ -116,13 +116,29 @@ every tenant's data.
   in both JWT claims and RLS policies.
 - `audit_logs` captures all actions taken by any authenticated user,
   including super admins.
+- **MFA (TOTP) required for super admins — closed 2026-08-16.** Was the
+  single largest open gap in this register; a compromised password alone
+  used to be sufficient to reach the super-admin console. Enforced in
+  `middleware.ts` via the session's Authenticator Assurance Level, so it
+  applies uniformly across every sign-in method (password, Google OAuth,
+  magic link) rather than gating one login path — a super admin with no
+  verified factor is redirected to mandatory enrollment
+  (`/auth/mfa-setup`) before reaching any protected route; one with a
+  verified factor but an aal1 session is redirected to
+  `/auth/mfa-challenge`. Uses Supabase Auth's built-in TOTP — no added
+  vendor, no per-verification cost. Deliberately scoped to super admins
+  only, not tenant users — that's the account tier that actually carries
+  cross-tenant risk, and it avoids adding login friction for paying
+  customers. Verified working end-to-end by the account owner
+  (enrolled, scanned, confirmed via a real code).
 
-**Residual risk: High.** **No MFA is currently enabled for staff
-accounts.** This is the single largest open gap in this register — a
-compromised password alone is sufficient to access the super-admin
-console. Supabase Auth supports MFA natively; enabling it is
-configuration, not development. This should be the first Phase 35
-control gap closed.
+**Residual risk: Low-Medium** (down from High). The core gap — a bare
+password being sufficient for full cross-tenant access — is closed.
+What's still open: MFA reset currently has no self-service or documented
+recovery path if a device is lost (the challenge page just says "contact
+another super admin" — fine for a 2-person team, but not written down
+anywhere formal); and no periodic access review process exists to
+confirm the super-admin list itself stays correct over time.
 
 ---
 

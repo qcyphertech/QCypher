@@ -24,14 +24,14 @@ found, not the original estimate:
 
 | Gap | Priority | Status |
 |---|---|---|
-| No MFA for staff | 🔴 Critical | **Still open.** Single largest gap — see `docs/risk-register.md` Risk #3. Supabase Auth supports this natively; enabling it is configuration work, not development. |
+| No MFA for staff | 🔴 Critical | **Fixed 2026-08-16.** TOTP required for all super-admin accounts, enforced in `middleware.ts` via session AAL (covers password/Google/magic-link sign-in uniformly). Supabase Auth built-in, no added cost. Verified end-to-end by the account owner. See `docs/risk-register.md` Risk #3. |
 | Backup pipeline was silently broken | 🔴 Critical | **Fixed 2026-08-16.** Discovered mid-review that the nightly backup workflow had never succeeded (missing secrets); fixed and confirmed working the same session. See Risk #2. |
 | Disaster recovery restore never tested | 🟠 High (downgraded from Critical now that backup creation is verified) | **Still open.** A verified backup now genuinely exists in R2, but restoring from it has never been exercised. `RESTORE_DB_URL` is supported by the script but intentionally left unset for now. See Risk #2. |
 | Formal change management | 🟠 High | **Documented honestly, not "fixed."** `docs/change-management-policy.md` describes the real (informal) process and why it hasn't been formalized yet, rather than claiming a PR-review gate that doesn't exist. Branch protection was evaluated and deliberately not enabled — it would block the team's actual direct-push workflow. |
 | No risk register | 🟠 High | ✅ Done — `docs/risk-register.md`, 5 scored risks with real mitigations. |
 | No third-party risk management | 🟠 High | ✅ Done — `docs/vendor-risk-assessment.md`, 9 actual integrations (verified against wired-up code, not `.env.example`). |
 | No data classification policy | (not in original gap table, added) | ✅ Done — `docs/data-classification-policy.md`. |
-| No evidence repository | 🟡 Medium | ✅ Scaffolded — `/evidence`, structure + collection cadence documented. Empty until the underlying controls (MFA, DR test) actually run and produce evidence to collect. |
+| No evidence repository | 🟡 Medium | ✅ Scaffolded — `/evidence`, structure + collection cadence documented. Still empty pending the DR test; MFA is now live and could have its first evidence entry (enrollment confirmation) added. |
 | No staff training docs | 🟠 High | **Not started.** Out of scope for this pass. |
 | No system description / architecture diagram | 🟠 High | **Not started.** Out of scope for this pass. |
 | No physical access controls | 🟡 Medium | N/A — remote-only team, confirmed still accurate. |
