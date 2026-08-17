@@ -26,8 +26,9 @@ export type AuditAction =
   | 'upsell_accepted'
   | 'location_created' | 'location_updated' | 'location_paused' | 'location_activated'
   | 'staff_location_assigned' | 'staff_location_unassigned'
+  | 'ai_blog_published' | 'ai_crm_bot_query'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location' | 'blog' | 'ai_assistant'
 
 export type AuditLog = {
   id: string

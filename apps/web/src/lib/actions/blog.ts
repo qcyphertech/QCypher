@@ -8,6 +8,7 @@ import type { TablesUpdate } from '@qcypher/db'
 import { callDeepSeek } from '@/lib/deepseek'
 import { stripHtmlTitle } from '@/lib/blog-excerpt'
 import { analyzeAiConfidence } from '@/lib/actions/ai-detection'
+import { logAudit } from '@/lib/actions/audit'
 
 export type BlogArticle = {
   id: string
@@ -258,12 +259,15 @@ export async function generateMyBlogDraft(catalogItemId: string): Promise<{ id: 
 
 export async function publishMyBlogArticle(articleId: string): Promise<void> {
   const { admin, tenantId } = await requireTenantWriter()
-  const { error } = await admin
+  const { data, error } = await admin
     .from('blog_articles')
     .update({ status: 'published', published_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq('id', articleId)
     .eq('tenant_id', tenantId) // belt-and-suspenders: can't touch another tenant's row even if the ID leaked
+    .select('title, disclose_ai_assistance')
+    .single()
   if (error) throw new Error(error.message)
+  await logAudit({ action: 'ai_blog_published', resource_type: 'blog', resource_id: articleId, resource_name: data?.title, details: { model: 'deepseek-v4-flash', badge_shown: data?.disclose_ai_assistance ?? false } })
   revalidatePath('/settings')
 }
 
@@ -362,11 +366,34 @@ export async function listBlogArticles(opts: { isQcypherBlog?: boolean; tenantId
 
 export async function approveAndPublishArticle(articleId: string): Promise<void> {
   const { user, admin } = await requireSuperAdmin()
-  const { error } = await admin
+  const { data, error } = await admin
     .from('blog_articles')
     .update({ status: 'published', published_at: new Date().toISOString(), approved_by: user.id, updated_at: new Date().toISOString() })
     .eq('id', articleId)
+    .select('title, tenant_id, disclose_ai_assistance')
+    .single()
   if (error) throw new Error(error.message)
+
+  // audit_logs is tenant-scoped (tenant_id not null) — only log when this
+  // was a tenant's article. QCypher's own blog (tenant_id null) has no
+  // tenant to attribute the log to, so it's not logged here. The super
+  // admin approving isn't a member of the tenant, so this goes through
+  // the admin client directly rather than logAudit()'s session-derived
+  // tenant resolution, which would resolve to the admin's own tenant
+  // (or nothing at all).
+  if (data?.tenant_id) {
+    await admin.from('audit_logs').insert({
+      tenant_id: data.tenant_id,
+      user_id: user.id,
+      user_email: user.email ?? '',
+      action: 'ai_blog_published',
+      resource_type: 'blog',
+      resource_id: articleId,
+      resource_name: data.title,
+      details: { model: 'deepseek-v4-flash', badge_shown: data.disclose_ai_assistance, approved_by_admin: true },
+    })
+  }
+
   revalidatePath('/admin')
   revalidatePath('/blog')
 }

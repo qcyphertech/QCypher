@@ -5,6 +5,7 @@ import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { callDeepSeekWithTools, type ChatMessage, type ChatTool } from '@/lib/deepseek'
 import { CRM_BOT_SYSTEM_PROMPT } from '@/lib/bot-knowledge'
+import { logAudit } from '@/lib/actions/audit'
 import type { Json } from '@qcypher/db'
 
 export type CrmBotProposedAction = {
@@ -112,6 +113,7 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
     .limit(20)
 
   await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'user', content: trimmed })
+  await logAudit({ action: 'ai_crm_bot_query', resource_type: 'ai_assistant', resource_id: conversationId, details: { label_shown: true } })
 
   const messages: ChatMessage[] = [
     { role: 'system', content: CRM_BOT_SYSTEM_PROMPT },
