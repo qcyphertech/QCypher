@@ -14,6 +14,7 @@ import { PaymentAccountPanel } from '@/components/settings/PaymentAccountPanel'
 import { AutomationSettingsPanel } from '@/components/settings/AutomationSettingsPanel'
 import { LoyaltyRewardsPanel } from '@/components/settings/LoyaltyRewardsPanel'
 import { ReferQCypherPanel } from '@/components/settings/ReferQCypherPanel'
+import { BlogSettingsPanel } from '@/components/settings/BlogSettingsPanel'
 import { getTeamMembers, getPendingInvites } from '@/lib/actions/team'
 import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
 import { getDeletionStatus, type DeletionStatus } from '@/lib/actions/account-deletion'
@@ -131,6 +132,14 @@ export default async function SettingsPage() {
     <PaymentAccountPanel account={paymentAccount} />
   )
 
+  const blogTab = (
+    <div>
+      <SettingsSection label="Blog" hint="Generate an AI-written blog post from one of your services, then publish it to your customer portal.">
+        {tenant?.slug && <BlogSettingsPanel tenantSlug={tenant.slug} />}
+      </SettingsSection>
+    </div>
+  )
+
   const automationTab = (
     <div>
       <SettingsSection label="Automation" hint="Automatic invoice reminders and review requests — sent daily.">
@@ -239,6 +248,7 @@ export default async function SettingsPage() {
         loyaltyContent={loyaltyTab}
         upsellsContent={upsellsTab}
         locationsContent={locationsTab}
+        blogContent={blogTab}
         auditContent={auditTab}
         accountContent={accountTab}
         isAdmin={isAdmin}

@@ -84,7 +84,10 @@ Write the summary now. Use only these exact numbers.`
 
   if (deepseekConfigured()) {
     try {
-      aiSummary = await callDeepSeek(prompt, { maxTokens: 200, temperature: 0.3 })
+      // 200 wasn't enough headroom for this reasoning model's hidden
+      // "thinking" tokens on top of the visible 2-3 sentence answer —
+      // confirmed empty-content truncation directly against the real API.
+      aiSummary = await callDeepSeek(prompt, { maxTokens: 800, temperature: 0.3 })
     } catch {
       aiSummary = ''
     }

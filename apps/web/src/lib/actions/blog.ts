@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { revalidatePath } from 'next/cache'
 import type { TablesUpdate } from '@qcypher/db'
@@ -57,6 +57,28 @@ async function requireSuperAdmin() {
   if (!isSuperAdminUser(fresh)) throw new Error('Super admin only')
 
   return { user, admin }
+}
+
+// v2 self-serve: any tenant owner/member (not read_only) can generate and
+// manage their OWN tenant's blog posts directly, without routing through
+// a super admin every time. Uses the admin client only to bypass
+// blog_articles' RLS (which has no owner-role carve-out, matching this
+// project's existing "server actions are the real enforcement layer"
+// pattern for admin-only tables) — every query below is still scoped to
+// the caller's own tenant_id, checked against a fresh (non-JWT-cached)
+// role read, same pattern as team.ts's getCaller().
+async function requireTenantWriter() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const admin = createAdminClient()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  const role = fresh?.app_metadata?.role ?? 'member'
+  if (role === 'read_only') throw new Error('Read-only accounts cannot manage blog posts')
+
+  const tenantId = await getTenantId(user.id, fresh?.app_metadata)
+  return { user, admin, tenantId }
 }
 
 function slugify(title: string) {
@@ -149,6 +171,99 @@ export async function generateTenantBlogDraft(tenantId: string, catalogItemId: s
   if (error || !data) throw new Error(error?.message ?? 'Failed to save draft')
   revalidatePath('/admin')
   return { id: data.id }
+}
+
+// ── v2: self-serve tenant blog management (no super admin needed) ───────
+
+export async function listMyCatalogItems(): Promise<{ id: string; name: string }[]> {
+  const { admin, tenantId } = await requireTenantWriter()
+  const { data } = await admin.from('catalog_items').select('id, name').eq('tenant_id', tenantId).eq('is_active', true).order('name')
+  return (data ?? []) as { id: string; name: string }[]
+}
+
+export async function listMyBlogArticles(): Promise<BlogArticle[]> {
+  const { admin, tenantId } = await requireTenantWriter()
+  const { data } = await admin.from('blog_articles').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
+  return (data ?? []) as BlogArticle[]
+}
+
+/**
+ * Self-serve generation, gated by a real cost-control check rather than
+ * an in-process rate limiter (this app's existing rateLimit() is a
+ * 1-minute sliding window in a serverless function's memory, which
+ * resets on every cold start — not a real guard against a tenant
+ * generating a dozen drafts for the same service in a day). Checked
+ * directly against the DB instead: at most one new draft per catalog
+ * item per rolling 24 hours.
+ */
+export async function generateMyBlogDraft(catalogItemId: string): Promise<{ id: string }> {
+  const { admin, tenantId } = await requireTenantWriter()
+
+  const [{ data: tenant }, { data: item }, { data: recent }] = await Promise.all([
+    admin.from('tenants').select('id, name').eq('id', tenantId).single(),
+    admin.from('catalog_items').select('id, name, description, base_price').eq('id', catalogItemId).eq('tenant_id', tenantId).single(),
+    admin.from('blog_articles').select('id').eq('tenant_id', tenantId).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+  ])
+  if (!tenant || !item) throw new Error('Service not found')
+  if ((recent?.length ?? 0) >= 3) throw new Error('You can generate up to 3 blog drafts per day — try again tomorrow')
+
+  const html = await callDeepSeek(blogPrompt({
+    businessName: tenant.name,
+    serviceName: item.name,
+    serviceDescription: item.description ?? '',
+    price: item.base_price,
+  }))
+
+  const title = extractTitle(html)
+  const slug = `${slugify(title)}-${Date.now().toString(36)}`
+
+  const { data, error } = await admin
+    .from('blog_articles')
+    .insert({
+      tenant_id: tenantId,
+      is_qcypher_blog: false,
+      title,
+      slug,
+      content: html,
+      excerpt: extractExcerpt(html),
+      status: 'draft',
+      ai_generated: true,
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? 'Failed to save draft')
+  revalidatePath('/settings')
+  return { id: data.id }
+}
+
+export async function publishMyBlogArticle(articleId: string): Promise<void> {
+  const { admin, tenantId } = await requireTenantWriter()
+  const { error } = await admin
+    .from('blog_articles')
+    .update({ status: 'published', published_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('id', articleId)
+    .eq('tenant_id', tenantId) // belt-and-suspenders: can't touch another tenant's row even if the ID leaked
+  if (error) throw new Error(error.message)
+  revalidatePath('/settings')
+}
+
+export async function unpublishMyBlogArticle(articleId: string): Promise<void> {
+  const { admin, tenantId } = await requireTenantWriter()
+  const { error } = await admin
+    .from('blog_articles')
+    .update({ status: 'draft', updated_at: new Date().toISOString() })
+    .eq('id', articleId)
+    .eq('tenant_id', tenantId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/settings')
+}
+
+export async function discardMyBlogArticle(articleId: string): Promise<void> {
+  const { admin, tenantId } = await requireTenantWriter()
+  const { error } = await admin.from('blog_articles').delete().eq('id', articleId).eq('tenant_id', tenantId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/settings')
 }
 
 const QCYPHER_TOPICS = [

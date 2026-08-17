@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js'
 export const metadata: Metadata = {
   title: 'Blog — QCypher Technologies',
   description: 'Field service tips, scheduling best practices, and product updates from QCypher.',
+  alternates: { types: { 'application/rss+xml': '/blog/rss.xml' } },
 }
 
 function excerptOrStrip(html: string, excerpt: string | null) {
