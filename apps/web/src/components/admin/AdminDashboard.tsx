@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift, ShieldAlert } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift, ShieldAlert, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
@@ -12,6 +12,7 @@ import { PlatformModulesPanel } from '@/components/admin/PlatformModulesPanel'
 import { InvoicesPanel } from '@/components/admin/InvoicesPanel'
 import { ClientsPanel } from '@/components/admin/ClientsPanel'
 import { ReferralProgramPanel } from '@/components/admin/ReferralProgramPanel'
+import { DocumentsPanel } from '@/components/admin/DocumentsPanel'
 import { listTenants, type TenantSummary } from '@/lib/actions/admin-console'
 
 type Tenant = {
@@ -28,6 +29,7 @@ const TABS = [
   { id: 'referrals', label: 'Referrals', icon: Gift },
   { id: 'modules', label: 'Modules', icon: LayoutGrid },
   { id: 'audit', label: 'Audit Trail', icon: ScrollText },
+  { id: 'documents', label: 'Documents', icon: FileText },
 ] as const
 type TabId = typeof TABS[number]['id']
 
@@ -127,6 +129,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
       {tab === 'referrals' && isSuperAdmin && <ReferralProgramPanel />}
       {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}
       {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={allTenants} />}
+      {tab === 'documents' && isSuperAdmin && <DocumentsPanel />}
 
       {showInvite && <InviteModal onClose={() => { setShowInvite(false); router.refresh() }} />}
     </div>
