@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift, ShieldAlert, FileText, PenSquare } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift, ShieldAlert, FileText, PenSquare, ScanSearch } from 'lucide-react'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
 import { IncidentsPanel } from '@/components/admin/IncidentsPanel'
@@ -13,6 +13,7 @@ import { ClientsPanel } from '@/components/admin/ClientsPanel'
 import { ReferralProgramPanel } from '@/components/admin/ReferralProgramPanel'
 import { DocumentsPanel } from '@/components/admin/DocumentsPanel'
 import { BlogPanel } from '@/components/admin/BlogPanel'
+import { AiDetectionPanel } from '@/components/admin/AiDetectionPanel'
 import { listTenants, type TenantSummary } from '@/lib/actions/admin-console'
 
 type Tenant = {
@@ -31,6 +32,7 @@ const TABS = [
   { id: 'audit', label: 'Audit Trail', icon: ScrollText, color: '#eab308' },
   { id: 'documents', label: 'Documents', icon: FileText, color: '#10b981' },
   { id: 'blog', label: 'Blog', icon: PenSquare, color: '#6366f1' },
+  { id: 'ai-detection', label: 'AI Detection', icon: ScanSearch, color: '#d946ef' },
 ] as const
 type TabId = typeof TABS[number]['id']
 
@@ -183,6 +185,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
           {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={allTenants} />}
           {tab === 'documents' && isSuperAdmin && <DocumentsPanel />}
           {tab === 'blog' && isSuperAdmin && <BlogPanel tenants={allTenants} />}
+          {tab === 'ai-detection' && isSuperAdmin && <AiDetectionPanel />}
         </div>
       </div>
 
