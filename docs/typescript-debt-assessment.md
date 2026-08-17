@@ -118,12 +118,46 @@ already fixed, since none of the remaining ones map to a similarly
 confirmed broken feature. Next pass: check each remaining error the
 same way — don't assume "just a type" without verifying.
 
+## Update 2026-08-16 (final): 30 → 0, CI now blocking
+
+Finished the triage. Found 2 more real bugs in the same session,
+same root cause (the version bump's stricter checking surfacing a
+pre-existing gap, not something newly broken):
+
+4. **`/api/send/route.ts`** inserted into both `send_log` and
+   `interactions` without `tenant_id` — every quick-reply template
+   send (email or SMS) left zero audit trail. The message itself still
+   sent (neither insert's error was checked), but nothing recorded it
+   happened.
+5. **`MfaSetupForm.tsx`**'s stale-unverified-factor cleanup used
+   `listFactors().totp`, which the SDK types (and behaves) as
+   verified-only — `.all` is what actually includes unverified
+   factors. Anyone who abandoned an MFA enrollment partway and tried
+   again would have hit Supabase's "pending factor" rejection forever,
+   since the cleanup could never find the stale factor.
+
+**Total: 5 real production bugs found and fixed** via this triage,
+none of which were being looked for — all surfaced because the
+dependency bump made TypeScript strict enough to catch what was always
+broken at runtime. See `docs/risk-register.md` Risk #1 and Risk #4.
+
+The remaining ~25 errors were genuinely type-only (event handler
+`EventTarget` typing, a `number[][]` vs `number[]` typo, Json casts,
+a couple of local type definitions missing a field) — fixed with no
+behavior change, verified via a clean `next build` after each batch.
+
+**`tsc --noEmit` now reports 0 errors.** `continue-on-error: true` has
+been removed from the `typecheck` job in `.github/workflows/ci.yml` —
+confirmed via a real CI run that it passes and is genuinely blocking,
+mirroring what was already done for `rls-isolation`. This debt is
+closed, not just reduced — a regression will now fail CI, not go
+silent again.
+
 ## Recommended next step
 
 1. Review and merge [PR #2](https://github.com/qcyphertech/QCypher/pull/2)
-   after the manual auth click-through above.
-2. Triage the remaining 62 errors file-by-file (a different root cause
-   than the version skew — see above).
-3. Once genuinely near zero, remove `continue-on-error: true` from the
-   `typecheck` job in `.github/workflows/ci.yml` so this can't silently
-   regress again — mirroring what was already done for `rls-isolation`.
+   (the `@supabase/ssr` bump) if not already done — this whole
+   assessment traces back to that.
+2. `security-audit`'s findings haven't been triaged the same way —
+   worth the same file-by-file treatment before flipping it to
+   blocking too.
