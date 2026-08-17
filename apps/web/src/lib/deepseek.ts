@@ -9,6 +9,17 @@
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? ''
 
+// deepseek-v4-flash is a reasoning model by default — it spends
+// completion tokens on hidden `reasoning_content` before writing the
+// actual `message.content`, and `max_tokens` caps both combined.
+// Confirmed directly against the real API 2026-08-17: even a 4000-token
+// budget was fully consumed by reasoning on a real blog-post prompt,
+// leaving zero room for the actual answer (empty content,
+// finish_reason "length"). `thinking: { type: "disabled" }` skips
+// reasoning entirely — confirmed this produces the full expected output
+// directly, using far fewer tokens (a real 800-word blog post used
+// ~1500 completion tokens with thinking disabled, vs. reasoning alone
+// exhausting a 4000-token budget with thinking enabled and enabled).
 export async function callDeepSeek(
   prompt: string,
   opts: { maxTokens?: number; temperature?: number } = {},
@@ -26,6 +37,7 @@ export async function callDeepSeek(
       messages: [{ role: 'user', content: prompt }],
       max_tokens: opts.maxTokens ?? 2000,
       temperature: opts.temperature ?? 0.5,
+      thinking: { type: 'disabled' },
     }),
   })
 
