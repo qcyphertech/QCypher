@@ -125,6 +125,163 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_articles: {
+        Row: {
+          ai_generated: boolean
+          approved_by: string | null
+          content: string
+          created_at: string
+          excerpt: string | null
+          id: string
+          is_qcypher_blog: boolean
+          published_at: string | null
+          slug: string
+          status: string
+          tenant_id: string | null
+          title: string
+          updated_at: string
+          views_count: number
+        }
+        Insert: {
+          ai_generated?: boolean
+          approved_by?: string | null
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_qcypher_blog?: boolean
+          published_at?: string | null
+          slug: string
+          status?: string
+          tenant_id?: string | null
+          title: string
+          updated_at?: string
+          views_count?: number
+        }
+        Update: {
+          ai_generated?: boolean
+          approved_by?: string | null
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_qcypher_blog?: boolean
+          published_at?: string | null
+          slug?: string
+          status?: string
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string
+          views_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_articles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_citations: {
+        Row: {
+          article_id: string | null
+          cited_in_chatgpt: boolean
+          cited_in_claude: boolean
+          cited_in_perplexity: boolean
+          id: string
+          notes: string | null
+          position_in_response: number | null
+          tenant_id: string
+          test_keyword: string
+          tracked_at: string
+          tracked_month: string
+        }
+        Insert: {
+          article_id?: string | null
+          cited_in_chatgpt?: boolean
+          cited_in_claude?: boolean
+          cited_in_perplexity?: boolean
+          id?: string
+          notes?: string | null
+          position_in_response?: number | null
+          tenant_id: string
+          test_keyword: string
+          tracked_at?: string
+          tracked_month: string
+        }
+        Update: {
+          article_id?: string | null
+          cited_in_chatgpt?: boolean
+          cited_in_claude?: boolean
+          cited_in_perplexity?: boolean
+          id?: string
+          notes?: string | null
+          position_in_response?: number | null
+          tenant_id?: string
+          test_keyword?: string
+          tracked_at?: string
+          tracked_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_citations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_citations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_metrics: {
+        Row: {
+          articles_published: number
+          citations_found: number
+          citations_tracked: number
+          id: string
+          month: string
+          tenant_id: string
+          total_views: number
+          updated_at: string
+        }
+        Insert: {
+          articles_published?: number
+          citations_found?: number
+          citations_tracked?: number
+          id?: string
+          month: string
+          tenant_id: string
+          total_views?: number
+          updated_at?: string
+        }
+        Update: {
+          articles_published?: number
+          citations_found?: number
+          citations_tracked?: number
+          id?: string
+          month?: string
+          tenant_id?: string
+          total_views?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_metrics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cal_bookings: {
         Row: {
           attendee_email: string | null

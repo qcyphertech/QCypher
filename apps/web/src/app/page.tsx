@@ -1424,6 +1424,7 @@ export default function HomePage() {
           </div>
           <div className="nav-cta">
             <Link href="/about" className="nav-page-link" style={{ fontSize: '15px', fontWeight: 600, color: '#5b6072', marginRight: '4px' }}>About</Link>
+            <Link href="/blog" className="nav-page-link" style={{ fontSize: '15px', fontWeight: 600, color: '#5b6072', marginRight: '4px' }}>Blog</Link>
             <Link href="/auth/login" className="btn btn-ghost btn-sm">Sign in</Link>
           </div>
         </div>
