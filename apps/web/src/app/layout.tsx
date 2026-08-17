@@ -40,10 +40,39 @@ export const viewport: Viewport = {
   themeColor: '#ffffff',
 }
 
+// Runs before first paint so dark mode is already applied when the page
+// first renders — without this, every full page load (not just a
+// client-side <Link> nav) briefly shows light mode until React hydrates
+// and useTheme()'s effect catches up. Previously there was no such
+// script at all despite useTheme()'s own comment claiming one existed,
+// and the hook never read localStorage back either — so dark mode only
+// ever lived in that one AppShell instance's React state, lost on any
+// real navigation or reload.
+//
+// Deliberately a literal <script> tag, NOT next/script's
+// strategy="beforeInteractive" (tried first) — confirmed via direct
+// testing that next/script's injection path silently fails to execute
+// under this app's CSP (script-src has 'unsafe-inline' but not
+// 'unsafe-eval' by deliberate design; next/script's runtime apparently
+// needs the latter). A plain <script> tag is parsed and executed
+// synchronously by the browser itself as part of normal HTML parsing —
+// no Next.js runtime injection involved, so it isn't affected by that.
+// Wrapped in try/catch: localStorage can throw in some privacy-mode
+// browser configurations.
+const THEME_INIT_SCRIPT = `
+try {
+  if (localStorage.getItem('qc-theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+} catch (e) {}
+`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
+        {/* eslint-disable-next-line react/no-danger */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ServiceWorkerRegistrar />
         {children}
         <ChatbotWidgetGate />

@@ -48,16 +48,19 @@
     --badge-tag-bg:      #e8eef8; --badge-tag-text:      #1a3070;
   }
 
-  /* Dark mode — applied via html.dark class */
+  /* Dark mode — applied via html.dark class. Navy-blue hue (222, matching
+     the brand navy #0d2454 used in the marketing hero and chat widgets)
+     at higher saturation than before — the old values (222 28% 10% etc.)
+     read as generic dark gray rather than an on-brand navy. */
   html.dark {
     --heading: #ffffff;
-    --background: 222 28% 10%;
-    --card: 222 24% 14%;
+    --background: 222 46% 8%;
+    --card: 222 38% 12%;
     --foreground: 220 20% 94%;
-    --muted: 222 22% 16%;
-    --muted-foreground: 220 14% 58%;
-    --border: 222 18% 22%;
-    --sidebar-bg: #0d1120;
+    --muted: 222 34% 15%;
+    --muted-foreground: 220 14% 62%;
+    --border: 222 28% 20%;
+    --sidebar-bg: #0a1230;
     --sidebar-border: rgba(255,255,255,0.06);
     --sidebar-text: rgba(255,255,255,0.60);
     --sidebar-text-active: #ffffff;

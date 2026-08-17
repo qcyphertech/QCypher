@@ -1,21 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
+import { useTheme } from '@/hooks/useTheme'
 
+// Was previously a second, independent theme implementation — its own
+// useState synced only from document.documentElement.classList.contains
+// on its own mount, same bug useTheme() had (see that hook's comments)
+// plus a real desync risk: toggling here vs. toggling via TopBar (which
+// uses useTheme() directly) each had their own React state unaware of
+// the other, so this button's Sun/Moon icon could show the wrong state
+// after toggling from the other control. Now shares the same hook/state
+// source as every other theme-aware consumer (TopBar, CrmBotWidget).
 export function ThemeToggle() {
-  const [dark, setDark] = useState(false)
-
-  useEffect(() => {
-    setDark(document.documentElement.classList.contains('dark'))
-  }, [])
-
-  function toggle() {
-    const next = !dark
-    setDark(next)
-    document.documentElement.classList.toggle('dark', next)
-    localStorage.setItem('qc-theme', next ? 'dark' : 'light')
-  }
+  const { dark, toggle } = useTheme()
 
   return (
     <button
