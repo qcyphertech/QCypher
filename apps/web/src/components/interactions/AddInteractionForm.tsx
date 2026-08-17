@@ -19,7 +19,11 @@ export function AddInteractionForm({ contactId }: { contactId: string }) {
     e.preventDefault()
     if (!body.trim()) return
     startTransition(async () => {
-      await supabase.from('interactions').insert({ contact_id: contactId, type, body: body.trim() })
+      const { data: { user } } = await supabase.auth.getUser()
+      const tenantId = user?.app_metadata?.tenant_id ?? user?.user_metadata?.tenant_id
+      if (!tenantId) return
+      const { error } = await supabase.from('interactions').insert({ tenant_id: tenantId, contact_id: contactId, type, body: body.trim() } as never)
+      if (error) return
       logAudit({ action: 'note_created', resource_type: 'note', resource_id: contactId, details: { type } })
       setBody('')
       router.refresh()

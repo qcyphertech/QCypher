@@ -325,6 +325,7 @@ export type Database = {
           email: string | null
           first_name: string
           id: string
+          import_id: string | null
           last_name: string | null
           location_id: string | null
           notes: string | null
@@ -343,6 +344,7 @@ export type Database = {
           email?: string | null
           first_name: string
           id?: string
+          import_id?: string | null
           last_name?: string | null
           location_id?: string | null
           notes?: string | null
@@ -361,6 +363,7 @@ export type Database = {
           email?: string | null
           first_name?: string
           id?: string
+          import_id?: string | null
           last_name?: string | null
           location_id?: string | null
           notes?: string | null
@@ -373,6 +376,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contacts_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contacts_location_id_fkey"
             columns: ["location_id"]
@@ -550,6 +560,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deployment_log: {
+        Row: {
+          commit_hash: string
+          commit_message: string | null
+          created_at: string
+          deployed_at: string
+          deployed_by: string
+          environment: string
+          id: string
+          migration_applied: string | null
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          commit_hash: string
+          commit_message?: string | null
+          created_at?: string
+          deployed_at?: string
+          deployed_by: string
+          environment?: string
+          id?: string
+          migration_applied?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          commit_hash?: string
+          commit_message?: string | null
+          created_at?: string
+          deployed_at?: string
+          deployed_by?: string
+          environment?: string
+          id?: string
+          migration_applied?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       events: {
         Row: {
@@ -753,6 +802,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "impersonation_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          filename: string
+          id: string
+          imported_count: number
+          skipped_count: number
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          filename: string
+          id?: string
+          imported_count?: number
+          skipped_count?: number
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          filename?: string
+          id?: string
+          imported_count?: number
+          skipped_count?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imports_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

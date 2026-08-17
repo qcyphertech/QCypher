@@ -156,7 +156,10 @@ function DealModal({ state, stages, contacts, onClose }: {
       const { error } = await supabase.from('pipeline_deals').update(payload).eq('id', deal.id)
       if (error) { setError(error.message); setSaving(false); return }
     } else {
-      const { error } = await supabase.from('pipeline_deals').insert(payload)
+      const { data: { user } } = await supabase.auth.getUser()
+      const tenantId = user?.app_metadata?.tenant_id ?? user?.user_metadata?.tenant_id
+      if (!tenantId) { setError('Session error — please refresh and try again.'); setSaving(false); return }
+      const { error } = await supabase.from('pipeline_deals').insert({ ...payload, tenant_id: tenantId } as never)
       if (error) { setError(error.message); setSaving(false); return }
     }
     router.refresh(); onClose()
