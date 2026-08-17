@@ -6,6 +6,7 @@ import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { revalidatePath } from 'next/cache'
 import type { TablesUpdate } from '@qcypher/db'
 import { callDeepSeek } from '@/lib/deepseek'
+import { stripHtmlTitle } from '@/lib/blog-excerpt'
 
 export type BlogArticle = {
   id: string
@@ -95,7 +96,7 @@ function extractTitle(html: string): string {
 }
 
 function extractExcerpt(html: string): string {
-  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const text = stripHtmlTitle(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
   return text.slice(0, 160)
 }
 

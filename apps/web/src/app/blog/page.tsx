@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { cleanExcerpt, stripHtmlTitle } from '@/lib/blog-excerpt'
 
 export const metadata: Metadata = {
   title: 'Blog — QCypher Technologies',
@@ -10,9 +11,9 @@ export const metadata: Metadata = {
   alternates: { types: { 'application/rss+xml': '/blog/rss.xml' } },
 }
 
-function excerptOrStrip(html: string, excerpt: string | null) {
-  if (excerpt) return excerpt
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
+function excerptOrStrip(html: string, excerpt: string | null, title: string) {
+  if (excerpt) return cleanExcerpt(excerpt, title)
+  return stripHtmlTitle(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
 }
 
 export default async function BlogListPage() {
@@ -61,7 +62,7 @@ export default async function BlogListPage() {
                 }}
               >
                 <p style={{ fontSize: '21px', fontWeight: 700, color: '#171a2b', marginBottom: '8px' }}>{a.title}</p>
-                <p style={{ fontSize: '15px', color: '#5b6072', lineHeight: 1.65 }}>{excerptOrStrip(a.content, a.excerpt)}</p>
+                <p style={{ fontSize: '15px', color: '#5b6072', lineHeight: 1.65 }}>{excerptOrStrip(a.content, a.excerpt, a.title)}</p>
                 <p style={{ fontSize: '13px', color: '#8a90a3', marginTop: '12px' }}>
                   {a.published_at ? new Date(a.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
                 </p>

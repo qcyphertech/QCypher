@@ -7,6 +7,7 @@ import {
   publishMyBlogArticle, unpublishMyBlogArticle, discardMyBlogArticle,
   type BlogArticle,
 } from '@/lib/actions/blog'
+import { cleanExcerpt } from '@/lib/blog-excerpt'
 
 const STATUS_STYLE: Record<BlogArticle['status'], string> = {
   draft: 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]',
@@ -110,7 +111,7 @@ export function BlogSettingsPanel({ tenantSlug }: { tenantSlug: string }) {
                     )}
                   </div>
                   <p className="text-[15px] font-semibold">{a.title}</p>
-                  <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{a.excerpt}</p>
+                  <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{cleanExcerpt(a.excerpt ?? '', a.title)}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {a.status !== 'published' ? (

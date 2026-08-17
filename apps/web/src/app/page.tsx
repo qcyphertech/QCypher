@@ -102,6 +102,14 @@ export default function HomePage() {
   const [formData, setFormData] = useState({ businessName: '', phone: '', email: '', message: '', selectedPackages: [] as string[] })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formSuccess, setFormSuccess] = useState(false)
+  const [latestPost, setLatestPost] = useState<{ title: string; slug: string; excerpt: string; published_at: string | null } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/blog/latest')
+      .then((res) => res.json())
+      .then((data) => setLatestPost(data.article ?? null))
+      .catch(() => setLatestPost(null))
+  }, [])
 
   const heroCanvasRef = useRef<HTMLDivElement>(null)
   const heroPinRef = useRef<HTMLElement>(null)
@@ -656,6 +664,8 @@ export default function HomePage() {
           .hero-lead { font-size: 15px; }
           .hero .wrap { position: relative; z-index: 10; }
         }
+
+        .latest-post-card:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(13,36,84,0.10); }
 
         /* SECTION */
         section { padding: 72px 0; }
@@ -1825,6 +1835,39 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* FROM THE BLOG — Phase 36 v3, latest published QCypher post */}
+      {latestPost && (
+        <section style={{ background: '#fff', borderTop: '1px solid rgba(31,60,136,.08)', padding: '64px 0' }}>
+          <div className="wrap">
+            <div className="section-head center">
+              <span className="eyebrow">From the Blog</span>
+              <h2>Fresh off the press</h2>
+            </div>
+            <Link
+              href={`/blog/${latestPost.slug}`}
+              style={{
+                display: 'block', maxWidth: '680px', margin: '0 auto',
+                background: 'var(--offwhite)', border: '1px solid var(--navy-line)', borderRadius: '18px',
+                padding: '32px', transition: 'transform .15s, box-shadow .15s',
+              }}
+              className="latest-post-card"
+            >
+              <p style={{ fontSize: '22px', fontWeight: 800, color: 'var(--navy)', marginBottom: '10px', letterSpacing: '-0.01em' }}>{latestPost.title}</p>
+              <p style={{ fontSize: '15px', color: 'var(--soft)', lineHeight: 1.65, marginBottom: '16px' }}>{latestPost.excerpt}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '13px', color: 'var(--soft)' }}>
+                  {latestPost.published_at ? new Date(latestPost.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--indigo-d)' }}>Read more →</span>
+              </div>
+            </Link>
+            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+              <Link href="/blog" className="btn btn-ghost btn-sm">View all posts</Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* FOOTER / CONTACT */}
       <footer id="contact">

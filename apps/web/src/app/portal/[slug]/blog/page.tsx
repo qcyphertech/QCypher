@@ -5,12 +5,13 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
+import { cleanExcerpt, stripHtmlTitle } from '@/lib/blog-excerpt'
 
 export const metadata: Metadata = { title: 'Blog' }
 
-function excerptOrStrip(html: string, excerpt: string | null) {
-  if (excerpt) return excerpt
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
+function excerptOrStrip(html: string, excerpt: string | null, title: string) {
+  if (excerpt) return cleanExcerpt(excerpt, title)
+  return stripHtmlTitle(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
 }
 
 export default async function TenantBlogListPage({ params }: { params: { slug: string } }) {
@@ -52,7 +53,7 @@ export default async function TenantBlogListPage({ params }: { params: { slug: s
                 }}
               >
                 <p style={{ fontSize: '19px', fontWeight: 700, color: '#171a2b', marginBottom: '6px' }}>{a.title}</p>
-                <p style={{ fontSize: '14px', color: '#5b6072', lineHeight: 1.6 }}>{excerptOrStrip(a.content, a.excerpt)}</p>
+                <p style={{ fontSize: '14px', color: '#5b6072', lineHeight: 1.6 }}>{excerptOrStrip(a.content, a.excerpt, a.title)}</p>
                 <p style={{ fontSize: '12px', color: '#8a90a3', marginTop: '10px' }}>
                   {a.published_at ? new Date(a.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
                 </p>

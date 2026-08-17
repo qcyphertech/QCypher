@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cleanExcerpt } from '@/lib/blog-excerpt'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,7 @@ export async function GET() {
       <title>${escapeXml(a.title)}</title>
       <link>https://www.qcyphertech.com/blog/${a.slug}</link>
       <guid>https://www.qcyphertech.com/blog/${a.slug}</guid>
-      <description>${escapeXml(a.excerpt ?? '')}</description>
+      <description>${escapeXml(a.excerpt ? cleanExcerpt(a.excerpt, a.title) : '')}</description>
       <pubDate>${a.published_at ? new Date(a.published_at).toUTCString() : ''}</pubDate>
     </item>`).join('')
 

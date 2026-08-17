@@ -11,6 +11,7 @@ import {
 } from '@/lib/actions/blog'
 import { SectionHeader, EmptyState, PanelSkeleton } from '@/components/admin/AdminPanelUI'
 import type { TenantSummary } from '@/lib/actions/admin-console'
+import { cleanExcerpt } from '@/lib/blog-excerpt'
 
 const STATUS_STYLE: Record<BlogArticle['status'], string> = {
   draft: 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]',
@@ -85,7 +86,7 @@ function ArticleRow({ article, onChange }: { article: BlogArticle; onChange: () 
             <span className="text-[12px] text-[hsl(var(--muted-foreground))]">{fmt(article.published_at ?? article.created_at)}</span>
           </div>
           <p className="text-[15px] font-semibold">{article.title}</p>
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{article.excerpt}</p>
+          <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{cleanExcerpt(article.excerpt ?? '', article.title)}</p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {article.status !== 'published' && (
