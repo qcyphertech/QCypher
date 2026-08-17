@@ -37,6 +37,7 @@ export default function AboutPage() {
           --indigo-d: #2a52a0;
           --cyan: #4a9db5;
           --mint: #00a87a;
+          --orange: #ff7a1a;
         }
 
         .wrap { max-width: 1152px; margin: 0 auto; padding: 0 32px; }
@@ -349,7 +350,7 @@ export default function AboutPage() {
         <div className="wrap">
           <div className="story-grid">
             <div className="story-body">
-              <span className="eyebrow">Why We Built This</span>
+              <span className="eyebrow" style={{ color: 'var(--orange)' }}>Why We Built This</span>
               <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.02em', marginBottom: '20px', lineHeight: 1.2 }}>
                 Tech that actually works for you — not the other way around.
               </h2>
@@ -377,7 +378,7 @@ export default function AboutPage() {
                 <div className="story-stat-label">All-inclusive solution for your whole team</div>
               </div>
               <div className="story-stat">
-                <div className="story-stat-num">5★</div>
+                <div className="story-stat-num" style={{ color: 'var(--orange)' }}>5★</div>
                 <div className="story-stat-label">Average client satisfaction across all services</div>
               </div>
               <div className="story-stat">
@@ -406,7 +407,7 @@ export default function AboutPage() {
                 <img src="/felix-sam.jpeg" alt="Felix Sam" />
               </div>
               <div className="team-name">Felix Sam</div>
-              <div className="team-title">Co-Founder & CEO</div>
+              <div className="team-title" style={{ color: 'var(--orange)' }}>Co-Founder & CEO</div>
               <div className="team-company">QCypher Technologies</div>
               <div className="team-creds">
                 <span className="team-cred">
@@ -425,7 +426,7 @@ export default function AboutPage() {
               <p className="team-bio">
                 Felix Sam has spent his career inside the world of enterprise cybersecurity — the same complex, expensive world most small businesses can't afford to navigate. As a government contractor across Washington, D.C., Virginia, and Maryland, he has worked with leading consulting and cybersecurity firms, including Accenture, performing security control assessments and compliance reviews under the Risk Management Framework (RMF) to help federal agencies achieve and maintain FISMA authorization. At the management level, his experience extends to advising project teams on data protection strategies and information security best practices. Felix co-founded QCypher to put that enterprise-grade expertise to work for the shops, startups, and small teams who deserve serious security without the enterprise price tag.
               </p>
-              <p style={{ fontSize: '14px', color: 'var(--cyan)', fontWeight: 600, marginTop: '12px' }}>Felix takes the first call with every new client.</p>
+              <p style={{ fontSize: '14px', color: 'var(--orange)', fontWeight: 600, marginTop: '12px' }}>Felix takes the first call with every new client.</p>
             </div>
 
             {/* Cofounder 2 */}
@@ -492,7 +493,7 @@ export default function AboutPage() {
               <p className="value-desc">We never sell or share your customer data. What's yours stays yours — always.</p>
             </div>
             <div className="value-card">
-              <div className="value-icon">
+              <div className="value-icon" style={{ background: 'linear-gradient(135deg, var(--orange), #ffb066)' }}>
                 <svg className="stroked" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H13z"/></svg>
               </div>
               <div className="value-name">Speed matters</div>
