@@ -18,6 +18,7 @@ export type BlogArticle = {
   excerpt: string | null
   status: 'draft' | 'pending_approval' | 'published'
   ai_generated: boolean
+  disclose_ai_assistance: boolean
   views_count: number
   approved_by: string | null
   published_at: string | null
@@ -265,6 +266,20 @@ export async function discardMyBlogArticle(articleId: string): Promise<void> {
   const { error } = await admin.from('blog_articles').delete().eq('id', articleId).eq('tenant_id', tenantId)
   if (error) throw new Error(error.message)
   revalidatePath('/settings')
+}
+
+// Purely a visible-note toggle — the `ai-assisted` meta tag is always
+// present on tenant blog posts regardless of this setting.
+export async function setMyBlogDisclosure(articleId: string, disclose: boolean): Promise<void> {
+  const { admin, tenantId } = await requireTenantWriter()
+  const { error } = await admin
+    .from('blog_articles')
+    .update({ disclose_ai_assistance: disclose, updated_at: new Date().toISOString() })
+    .eq('id', articleId)
+    .eq('tenant_id', tenantId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/settings')
+  revalidatePath('/portal', 'layout')
 }
 
 const QCYPHER_TOPICS = [

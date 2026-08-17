@@ -131,6 +131,7 @@ export type Database = {
           approved_by: string | null
           content: string
           created_at: string
+          disclose_ai_assistance: boolean
           excerpt: string | null
           id: string
           is_qcypher_blog: boolean
@@ -147,6 +148,7 @@ export type Database = {
           approved_by?: string | null
           content: string
           created_at?: string
+          disclose_ai_assistance?: boolean
           excerpt?: string | null
           id?: string
           is_qcypher_blog?: boolean
@@ -163,6 +165,7 @@ export type Database = {
           approved_by?: string | null
           content?: string
           created_at?: string
+          disclose_ai_assistance?: boolean
           excerpt?: string | null
           id?: string
           is_qcypher_blog?: boolean

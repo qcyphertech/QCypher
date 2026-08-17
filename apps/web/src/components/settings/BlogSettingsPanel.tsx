@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { Sparkles, CheckCircle2, Trash2, ExternalLink } from 'lucide-react'
 import {
   listMyBlogArticles, listMyCatalogItems, generateMyBlogDraft,
-  publishMyBlogArticle, unpublishMyBlogArticle, discardMyBlogArticle,
+  publishMyBlogArticle, unpublishMyBlogArticle, discardMyBlogArticle, setMyBlogDisclosure,
   type BlogArticle,
 } from '@/lib/actions/blog'
 import { cleanExcerpt } from '@/lib/blog-excerpt'
@@ -63,6 +63,10 @@ export function BlogSettingsPanel({ tenantSlug }: { tenantSlug: string }) {
     setBusyId(id)
     discardMyBlogArticle(id).then(load).finally(() => setBusyId(null))
   }
+  function toggleDisclosure(id: string, next: boolean) {
+    setArticles(prev => prev.map(a => a.id === id ? { ...a, disclose_ai_assistance: next } : a))
+    setMyBlogDisclosure(id, next).catch(() => load())
+  }
 
   const selectCls = 'rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-[15px] bg-transparent outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]'
 
@@ -112,6 +116,15 @@ export function BlogSettingsPanel({ tenantSlug }: { tenantSlug: string }) {
                   </div>
                   <p className="text-[15px] font-semibold">{a.title}</p>
                   <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{cleanExcerpt(a.excerpt ?? '', a.title)}</p>
+                  <label className="flex items-center gap-1.5 mt-2 text-[12px] text-[hsl(var(--muted-foreground))]">
+                    <input
+                      type="checkbox"
+                      checked={a.disclose_ai_assistance}
+                      onChange={e => toggleDisclosure(a.id, e.target.checked)}
+                      className="rounded"
+                    />
+                    Show &ldquo;AI assistance&rdquo; note on this post
+                  </label>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {a.status !== 'published' ? (
