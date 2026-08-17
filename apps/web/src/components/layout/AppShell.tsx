@@ -5,6 +5,7 @@ import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
 import { CommandPalette } from './CommandPalette'
 import { NoBottomOverscroll } from './NoBottomOverscroll'
+import { CrmBotWidget } from './CrmBotWidget'
 import { useTheme } from '@/hooks/useTheme'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 
@@ -42,6 +43,8 @@ export function AppShell({
       </main>
 
       <BottomNav settings={settings} />
+
+      {settings.show_crm_bot && <CrmBotWidget />}
 
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} isAdmin={isAdmin} />
       <NoBottomOverscroll />

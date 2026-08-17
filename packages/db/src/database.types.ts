@@ -476,30 +476,47 @@ export type Database = {
       }
       chatbot_conversations: {
         Row: {
+          bot_type: string
           ended_at: string | null
           id: string
           started_at: string
           status: string
+          tenant_id: string | null
+          user_id: string | null
           visitor_email: string | null
           visitor_name: string | null
         }
         Insert: {
+          bot_type?: string
           ended_at?: string | null
           id?: string
           started_at?: string
           status?: string
+          tenant_id?: string | null
+          user_id?: string | null
           visitor_email?: string | null
           visitor_name?: string | null
         }
         Update: {
+          bot_type?: string
           ended_at?: string | null
           id?: string
           started_at?: string
           status?: string
+          tenant_id?: string | null
+          user_id?: string | null
           visitor_email?: string | null
           visitor_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_conversations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chatbot_leads: {
         Row: {
@@ -653,6 +670,57 @@ export type Database = {
           },
           {
             foreignKeyName: "contacts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_bot_actions: {
+        Row: {
+          action_data: Json
+          action_type: string
+          completed_at: string | null
+          conversation_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          action_data: Json
+          action_type: string
+          completed_at?: string | null
+          conversation_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          action_data?: Json
+          action_type?: string
+          completed_at?: string | null
+          conversation_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_bot_actions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_bot_actions_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
