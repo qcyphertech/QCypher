@@ -111,6 +111,15 @@ no self-hosted fallback.
   full restore, all 54 tables present with correct row counts.
 - No staging environment and no multi-region failover configured — this
   is a deliberate scope trade-off for a 2-person team, not an oversight.
+- **Vercel outage runbook added 2026-08-16** (`docs/vercel-outage-runbook.md`):
+  written after actually checking the codebase for Vercel-specific
+  lock-in — there's very little (no `@vercel/*` packages, no edge
+  runtime, no proprietary image loader). The one real dependency is the
+  10 cron jobs in `vercel.json`, which the runbook shows how to
+  replace with GitHub Actions scheduled workflows (a pattern already
+  proven working elsewhere in this repo). A documentation-only
+  mitigation, not a tested live failover — appropriate cost for the
+  actual likelihood here.
 
 **Residual risk:** Low-Medium (down from Medium). Both backup *creation*
 and *restore* are now genuinely verified working on every nightly run,

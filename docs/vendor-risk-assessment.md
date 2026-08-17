@@ -41,9 +41,16 @@ scheduling doesn't run here — that's GitHub Actions).
   responsible for secure deployment practices and environment variable
   hygiene (enforced partially via `scripts/secret-audit.sh`, currently
   non-blocking in CI — see change-management policy).
-- **Contingency:** Not tested. Migrating to an alternate host would be a
-  non-trivial effort (Next.js-specific deployment config, cron jobs tied
-  to `vercel.json`'s scheduler) — low likelihood, high effort if needed.
+- **Contingency:** No live failover, but a documented runbook now
+  exists — `docs/vercel-outage-runbook.md`, written 2026-08-16 after
+  actually checking the codebase for Vercel lock-in (there's very
+  little: no `@vercel/*` packages, no edge runtime, no proprietary
+  image loader). The one real dependency is the 10 cron jobs in
+  `vercel.json`, which would need replacing with GitHub Actions
+  scheduled workflows (a pattern this repo already uses successfully
+  for 3 other jobs) or an external cron service. This is a
+  documentation-only mitigation — cheap, matches a 2-person team's
+  budget — not a tested live failover.
 
 ## Resend — Transactional Email
 **Integration:** `apps/web/src/lib/email/send.ts`, used across incident
