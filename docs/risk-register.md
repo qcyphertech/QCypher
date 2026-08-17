@@ -213,6 +213,25 @@ for what's actually live.
 reconcile; treat any migration file that references a function not
 provably defined elsewhere as suspect until verified against production.
 
+**Second closed finding (2026-08-16, same day, found via TypeScript
+triage rather than a schema diff):** the entire `imports` table from
+`packages/db/migrations/00011_phase11_imports.sql` was never applied
+live — confirmed via a direct query returning "Could not find the
+table 'public.imports' in the schema cache." This is the most
+consequential instance of this risk yet: `/contacts/import`, a real,
+linked, user-facing feature, has been unable to import a single
+contact since it shipped, because `commitImport()` inserts into
+`imports` before inserting any contacts. Fixed with a new migration
+(`supabase/migrations/20260822000001_phase11_imports_table.sql`),
+using `public.tenant_id()` instead of the stale `public.get_tenant_id()`
+referenced in the original file, applied via `supabase db push`, and
+verified with a real insert/delete round-trip. While applying it,
+also found (and repaired via `supabase migration repair`) 3 more
+migrations already correctly applied live but never marked in the
+CLI's migration-history table — the same drift pattern as this whole
+risk, just in the other direction (applied-but-unrecorded rather than
+recorded-but-unapplied). See `docs/typescript-debt-assessment.md`.
+
 ---
 
 ## Risk #5: Change Shipped Without Independent Review

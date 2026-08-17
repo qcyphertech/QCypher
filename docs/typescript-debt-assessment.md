@@ -87,6 +87,37 @@ after merging.
 `.update()`/`.insert()` calls — not fixed by this bump, need their own
 file-by-file triage.
 
+## Update 2026-08-16 (later same day): triaged 62 → 30, found 3 real bugs
+
+File-by-file triage of the remaining errors turned up more than type
+noise. Full detail in `docs/risk-register.md` Risk #1 and Risk #4, but
+the headline: **3 genuinely broken production features**, all masked
+before because the pre-bump `@supabase/ssr` typing wasn't strict
+enough to catch a required field missing from an insert/table
+reference — the stricter post-bump checking is what surfaced them,
+not something this triage went looking for.
+
+1. **The `imports` table didn't exist live at all** — `/contacts/import`
+   (linked from the Contacts page, not dead code) has been unable to
+   import a single contact since it shipped. Fixed with a new
+   migration, applied and verified with a real insert/delete
+   round-trip.
+2. **`AddInteractionForm.tsx`** inserted into `interactions` without
+   `tenant_id` (`not null`, no default) — every note/call/email/visit
+   log attempt failed, silently, because the insert's error was never
+   even checked.
+3. **`PipelineBoard.tsx`** had the identical missing-`tenant_id` bug
+   creating pipeline deals.
+
+All three fixed the same session. 20 more type-only fixes (Json casts,
+`TablesUpdate<>` types replacing loose `Record<string, unknown>`)
+brought the count to **30 errors remaining**, all in a handful of
+files (`src/app/page.tsx`, `pricing`/`about` pages, `CalendarView.tsx`,
+a couple of admin panels) — real but lower-priority than what's
+already fixed, since none of the remaining ones map to a similarly
+confirmed broken feature. Next pass: check each remaining error the
+same way — don't assume "just a type" without verifying.
+
 ## Recommended next step
 
 1. Review and merge [PR #2](https://github.com/qcyphertech/QCypher/pull/2)
