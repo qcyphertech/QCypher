@@ -77,6 +77,14 @@ marked done, even where the supporting infrastructure is ready.
 
 ## Requires your action — cannot be done autonomously
 
+- [ ] **Test the Stripe→Helcim failover path** (added 2026-08-16, from
+      the cost-efficiency review) — Helcim is already wired in as a
+      free fallback payment processor if Stripe has an extended
+      outage (`docs/vendor-risk-assessment.md`), but reactivating it
+      has never actually been tried. No new cost, no new integration —
+      just needs you to actually flip it on in a test/low-stakes
+      moment and confirm it works, since testing live payment
+      processor reactivation isn't something to do unattended.
 - [ ] **Formal policies signed by executives (Thomas + Felix Sam)** —
       `docs/policy-sign-off.md` is prepared: why this matters for the
       audit (CC1/CC2), three concrete options with a recommendation
