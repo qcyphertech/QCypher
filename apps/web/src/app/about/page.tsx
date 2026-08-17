@@ -147,7 +147,7 @@ export default function AboutPage() {
           border-radius: 16px;
           padding: 20px;
         }
-        .story-stat-num { font-size: 28px; font-weight: 900; color: var(--indigo-d); letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+        .story-stat-num { font-size: 28px; font-weight: 900; color: var(--cyan); letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
         .story-stat-label { font-size: 13px; color: var(--soft); font-weight: 600; line-height: 1.4; }
 
         /* TEAM */
@@ -335,7 +335,7 @@ export default function AboutPage() {
       <div className="page-hero">
         <div className="wrap">
           <div className="page-hero-content">
-            <span className="eyebrow">Our Story</span>
+            <span className="eyebrow" style={{ color: 'var(--orange)' }}>Our Story</span>
             <h1>Built by small business<br/>people, for <em>small businesses.</em></h1>
             <p>We started QCypher because we saw too many local businesses paying too much for tools that were built for enterprises. We fixed that.</p>
           </div>
@@ -350,7 +350,7 @@ export default function AboutPage() {
         <div className="wrap">
           <div className="story-grid">
             <div className="story-body">
-              <span className="eyebrow" style={{ color: 'var(--orange)' }}>Why We Built This</span>
+              <span className="eyebrow" style={{ color: 'var(--cyan)' }}>Why We Built This</span>
               <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.02em', marginBottom: '20px', lineHeight: 1.2 }}>
                 Tech that actually works for you — not the other way around.
               </h2>
@@ -426,7 +426,7 @@ export default function AboutPage() {
               <p className="team-bio">
                 Felix Sam has spent his career inside the world of enterprise cybersecurity — the same complex, expensive world most small businesses can't afford to navigate. As a government contractor across Washington, D.C., Virginia, and Maryland, he has worked with leading consulting and cybersecurity firms, including Accenture, performing security control assessments and compliance reviews under the Risk Management Framework (RMF) to help federal agencies achieve and maintain FISMA authorization. At the management level, his experience extends to advising project teams on data protection strategies and information security best practices. Felix co-founded QCypher to put that enterprise-grade expertise to work for the shops, startups, and small teams who deserve serious security without the enterprise price tag.
               </p>
-              <p style={{ fontSize: '14px', color: 'var(--orange)', fontWeight: 600, marginTop: '12px' }}>Felix takes the first call with every new client.</p>
+              <p style={{ fontSize: '14px', color: 'var(--cyan)', fontWeight: 600, marginTop: '12px' }}>Felix takes the first call with every new client.</p>
             </div>
 
             {/* Cofounder 2 */}
@@ -435,7 +435,7 @@ export default function AboutPage() {
                 <img src="/thomas-ocloo.jpg" alt="Thomas Ocloo" />
               </div>
               <div className="team-name">Thomas Ocloo</div>
-              <div className="team-title">Co-Founder & CTO</div>
+              <div className="team-title" style={{ color: 'var(--orange)' }}>Co-Founder & CTO</div>
               <div className="team-company">QCypher Technologies</div>
               <div className="team-creds">
                 <span className="team-cred">
@@ -479,14 +479,14 @@ export default function AboutPage() {
               <p className="value-desc">If it takes a training session to use, we haven't done our job. Every tool we build should feel obvious.</p>
             </div>
             <div className="value-card">
-              <div className="value-icon">
+              <div className="value-icon" style={{ background: 'linear-gradient(135deg, #00a86b, #4ad991)' }}>
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 9.5a1 1 0 0 0-1-1h-1.6l-3.1-3.1a3 3 0 0 0-2.1-.9H10a3 3 0 0 0-2.1.9L6.2 7H5a3 3 0 0 0-3 3v4a3 3 0 0 0 3 3h.2a2.5 2.5 0 0 0 4.6 0h4.4a2.5 2.5 0 0 0 4.6 0H19a3 3 0 0 0 3-3v-4.5zm-12.3 8a.5.5 0 0 1-1 0v-.5h1zm9 0a.5.5 0 0 1-1 0v-.5h1zM20 14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h1.6l2.3-2.4A1 1 0 0 1 9.6 6h4.8a1 1 0 0 1 .7.3l2.3 2.4H21z"/></svg>
               </div>
               <div className="value-name">Real relationships</div>
               <p className="value-desc">You get a real person, not a ticket number. We know your business, call you by your name, explain your monthly reports, and show up when you need us. Phone calls, not support bots.</p>
             </div>
             <div className="value-card">
-              <div className="value-icon">
+              <div className="value-icon" style={{ background: 'linear-gradient(135deg, #7c3aed, #b794f6)' }}>
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5zm0 2.2l7 3.1V11c0 4.5-3 8.6-7 9.9-4-1.3-7-5.4-7-9.9V6.3zm-1 9.1l4.6-4.6-1.4-1.4L11 9.5 9.8 8.3 8.4 9.7z"/></svg>
               </div>
               <div className="value-name">Your data, your business</div>
@@ -500,7 +500,7 @@ export default function AboutPage() {
               <p className="value-desc">When you need something, you need it now. We move fast — on support, on builds, and on fixes.</p>
             </div>
             <div className="value-card">
-              <div className="value-icon">
+              <div className="value-icon" style={{ background: 'linear-gradient(135deg, #ec4899, #f9a8d4)' }}>
                 <svg className="stroked" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 18.5l5-5 4 4L21 7M21 7h-6m6 0v6"/></svg>
               </div>
               <div className="value-name">Built to grow with you</div>
