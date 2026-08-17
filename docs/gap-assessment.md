@@ -57,6 +57,21 @@ found, not the original estimate:
    whole list) and Google Calendar weren't mentioned at all, and
    Cal.com's env vars were missing from `.env.example` despite being
    live in code.
+4. **3 of the 10 Vercel cron jobs have no evidence of ever firing
+   successfully** (checked 2026-08-16): `invoice_escalations`,
+   `review_requests`, and `renewal_reminders_sent` all have zero rows,
+   which is what `escalate-unpaid-invoices`, `send-review-requests`,
+   and `send-renewal-reminders` would each write to on a successful
+   run. **This is genuinely ambiguous, not a confirmed bug** — unlike
+   the nightly-backup and deployment-logging bugs found earlier this
+   session (which errored/were provably unused), an empty table here
+   could just as easily mean there's been no unpaid invoice, completed
+   order, or due renewal yet for a young app with few real customers.
+   Deliberately **not invoked live to check**, since these routes send
+   real customer-facing email/SMS — testing them isn't something to do
+   unattended. Worth a manual spot-check next time there's a real
+   invoice/order/renewal that should have triggered one of these, to
+   confirm it actually did.
 
 ## Effort actually spent vs. estimated
 
