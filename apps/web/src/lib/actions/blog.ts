@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import type { TablesUpdate } from '@qcypher/db'
 import { callDeepSeek } from '@/lib/deepseek'
 import { stripHtmlTitle } from '@/lib/blog-excerpt'
+import { analyzeAiConfidence } from '@/lib/actions/ai-detection'
 
 export type BlogArticle = {
   id: string
@@ -18,6 +19,7 @@ export type BlogArticle = {
   excerpt: string | null
   status: 'draft' | 'pending_approval' | 'published'
   ai_generated: boolean
+  ai_confidence: number | null
   disclose_ai_assistance: boolean
   views_count: number
   approved_by: string | null
@@ -101,6 +103,17 @@ function extractExcerpt(html: string): string {
   return text.slice(0, 160)
 }
 
+// Best-effort — a detection failure shouldn't block saving the draft.
+async function tryAnalyzeConfidence(html: string): Promise<number | null> {
+  try {
+    const plainText = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    const { confidence } = await analyzeAiConfidence(plainText)
+    return confidence
+  } catch {
+    return null
+  }
+}
+
 function blogPrompt(opts: { businessName: string; serviceName: string; serviceDescription: string; price?: number | null }) {
   return `You are a professional small-business blog writer.
 Write a blog post promoting this service:
@@ -154,6 +167,7 @@ export async function generateTenantBlogDraft(tenantId: string, catalogItemId: s
 
   const title = extractTitle(html)
   const slug = `${slugify(title)}-${Date.now().toString(36)}`
+  const ai_confidence = await tryAnalyzeConfidence(html)
 
   const { data, error } = await admin
     .from('blog_articles')
@@ -166,6 +180,7 @@ export async function generateTenantBlogDraft(tenantId: string, catalogItemId: s
       excerpt: extractExcerpt(html),
       status: 'draft',
       ai_generated: true,
+      ai_confidence,
     })
     .select('id')
     .single()
@@ -218,6 +233,7 @@ export async function generateMyBlogDraft(catalogItemId: string): Promise<{ id: 
 
   const title = extractTitle(html)
   const slug = `${slugify(title)}-${Date.now().toString(36)}`
+  const ai_confidence = await tryAnalyzeConfidence(html)
 
   const { data, error } = await admin
     .from('blog_articles')
@@ -230,6 +246,7 @@ export async function generateMyBlogDraft(catalogItemId: string): Promise<{ id: 
       excerpt: extractExcerpt(html),
       status: 'draft',
       ai_generated: true,
+      ai_confidence,
     })
     .select('id')
     .single()

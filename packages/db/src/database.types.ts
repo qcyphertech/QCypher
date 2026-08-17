@@ -127,6 +127,7 @@ export type Database = {
       }
       blog_articles: {
         Row: {
+          ai_confidence: number | null
           ai_generated: boolean
           approved_by: string | null
           content: string
@@ -144,6 +145,7 @@ export type Database = {
           views_count: number
         }
         Insert: {
+          ai_confidence?: number | null
           ai_generated?: boolean
           approved_by?: string | null
           content: string
@@ -161,6 +163,7 @@ export type Database = {
           views_count?: number
         }
         Update: {
+          ai_confidence?: number | null
           ai_generated?: boolean
           approved_by?: string | null
           content?: string

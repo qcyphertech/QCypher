@@ -24,6 +24,12 @@ function fmt(iso: string | null) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function confidenceCls(score: number) {
+  if (score >= 70) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  if (score >= 40) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+  return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+}
+
 type SubTab = 'qcypher' | 'tenants' | 'citations' | 'analytics'
 
 export function BlogPanel({ tenants }: { tenants: TenantSummary[] }) {
@@ -84,6 +90,11 @@ function ArticleRow({ article, onChange }: { article: BlogArticle; onChange: () 
               {article.status.replace('_', ' ')}
             </span>
             <span className="text-[12px] text-[hsl(var(--muted-foreground))]">{fmt(article.published_at ?? article.created_at)}</span>
+            {article.ai_confidence !== null && (
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${confidenceCls(article.ai_confidence)}`}>
+                {article.ai_confidence}% AI-detected
+              </span>
+            )}
           </div>
           <p className="text-[15px] font-semibold">{article.title}</p>
           <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{cleanExcerpt(article.excerpt ?? '', article.title)}</p>

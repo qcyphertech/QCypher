@@ -20,6 +20,12 @@ function fmt(iso: string | null) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function confidenceCls(score: number) {
+  if (score >= 70) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  if (score >= 40) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+  return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+}
+
 export function BlogSettingsPanel({ tenantSlug }: { tenantSlug: string }) {
   const [articles, setArticles] = useState<BlogArticle[]>([])
   const [catalogItems, setCatalogItems] = useState<{ id: string; name: string }[]>([])
@@ -108,6 +114,11 @@ export function BlogSettingsPanel({ tenantSlug }: { tenantSlug: string }) {
                       {a.status}
                     </span>
                     <span className="text-[12px] text-[hsl(var(--muted-foreground))]">{fmt(a.published_at ?? a.created_at)}</span>
+                    {a.ai_confidence !== null && (
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${confidenceCls(a.ai_confidence)}`}>
+                        {a.ai_confidence}% AI-detected
+                      </span>
+                    )}
                     {a.status === 'published' && (
                       <a href={`/portal/${tenantSlug}/blog/${a.slug}`} target="_blank" rel="noopener noreferrer" className="text-[12px] text-accent flex items-center gap-0.5">
                         <ExternalLink className="w-3 h-3" /> View

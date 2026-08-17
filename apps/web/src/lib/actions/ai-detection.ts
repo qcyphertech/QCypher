@@ -30,9 +30,11 @@ This is a rough heuristic estimate for internal spot-checking, not a certified o
 
 Respond with ONLY raw JSON, no markdown fences, no commentary: {"confidence": <integer 0-100, where 100 = certainly AI-generated>, "reasoning": "<one or two sentences>"}`
 
-export async function detectAiContent(content: string): Promise<{ confidence: number; reasoning: string }> {
-  await requireSuperAdmin()
-
+// Unauthenticated core — callable from other server actions (e.g. the
+// tenant self-serve blog generator, which auto-checks its own AI output
+// and has already done its own tenant-writer auth by the time it calls
+// this). The super-admin-gated wrapper below is for the manual admin tool.
+export async function analyzeAiConfidence(content: string): Promise<{ confidence: number; reasoning: string }> {
   const trimmed = content.trim()
   if (trimmed.length < 100) throw new Error('Content is too short to analyze meaningfully (100 characters minimum)')
 
@@ -57,4 +59,9 @@ export async function detectAiContent(content: string): Promise<{ confidence: nu
   }
 
   return { confidence: Math.max(0, Math.min(100, Math.round(confidence))), reasoning }
+}
+
+export async function detectAiContent(content: string): Promise<{ confidence: number; reasoning: string }> {
+  await requireSuperAdmin()
+  return analyzeAiConfidence(content)
 }
