@@ -5,6 +5,7 @@ import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { callDeepSeekWithTools, type ChatMessage, type ChatTool } from '@/lib/deepseek'
 import { CRM_BOT_SYSTEM_PROMPT } from '@/lib/bot-knowledge'
+import type { Json } from '@qcypher/db'
 
 export type CrmBotProposedAction = {
   id: string
@@ -137,7 +138,7 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
 
     const { data: actionRow, error } = await admin
       .from('crm_bot_actions')
-      .insert({ conversation_id: conversationId, tenant_id: tenantId, action_type: actionType, action_data: call.arguments })
+      .insert({ conversation_id: conversationId, tenant_id: tenantId, action_type: actionType, action_data: call.arguments as Json })
       .select('id')
       .single()
     if (error || !actionRow) throw new Error('Could not save proposed action')
