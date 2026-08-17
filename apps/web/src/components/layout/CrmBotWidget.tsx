@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send } from 'lucide-react'
+import { Sparkles, X, Send } from 'lucide-react'
 import { startCrmBotConversation, sendCrmBotMessage, confirmCrmBotAction, type CrmBotProposedAction } from '@/lib/actions/crm-bot'
 
 type Msg = { role: 'user' | 'assistant'; content: string }
@@ -63,16 +63,39 @@ export function CrmBotWidget() {
 
   return (
     <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 100 }}>
+      <style>{`
+        @keyframes qc-crmbot-glow-pulse {
+          0%, 100% { box-shadow: 0 8px 28px rgba(13,109,255,0.38), 0 0 0 1px rgba(94,234,212,0.25); }
+          50% { box-shadow: 0 8px 32px rgba(13,109,255,0.55), 0 0 0 1px rgba(94,234,212,0.45), 0 0 20px rgba(56,189,248,0.35); }
+        }
+        .qc-crmbot-toggle { animation: qc-crmbot-glow-pulse 3.2s ease-in-out infinite; }
+        .qc-crmbot-input::placeholder { color: rgba(255,255,255,0.4); }
+        .qc-crmbot-input:focus { outline: none; border-color: rgba(56,189,248,0.6) !important; box-shadow: 0 0 0 3px rgba(13,109,255,0.18); }
+      `}</style>
+
       {isOpen && (
         <div style={{
           width: 'min(360px, calc(100vw - 40px))', height: 'min(500px, calc(100vh - 120px))',
-          background: 'hsl(var(--card))', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-          border: '1px solid hsl(var(--border))', display: 'flex', flexDirection: 'column',
-          marginBottom: '12px', overflow: 'hidden',
+          background: 'linear-gradient(180deg, #0b1738 0%, #0a1230 100%)',
+          borderRadius: '18px', boxShadow: '0 24px 70px rgba(3,10,30,0.55), 0 0 0 1px rgba(56,189,248,0.18)',
+          display: 'flex', flexDirection: 'column', marginBottom: '12px', overflow: 'hidden',
         }}>
-          <div style={{ background: '#2a52a0', color: '#fff', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 700, fontSize: '15px' }}>CRM Assistant</span>
-            <button onClick={() => setIsOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex' }}>
+          <div style={{
+            background: 'linear-gradient(120deg, #0d1f45 0%, #12326b 55%, #0d6dff 130%)',
+            borderBottom: '1px solid rgba(94,234,212,0.25)',
+            color: '#fff', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '15px' }}>
+              <span style={{
+                width: '26px', height: '26px', borderRadius: '8px', flexShrink: 0,
+                background: 'linear-gradient(135deg,#38bdf8,#5eead4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Sparkles size={14} color="#0a1230" />
+              </span>
+              CRM Assistant
+            </span>
+            <button onClick={() => setIsOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex' }}>
               <X size={18} />
             </button>
           </div>
@@ -82,39 +105,48 @@ export function CrmBotWidget() {
               <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
                 <p style={{
                   fontSize: '14px', lineHeight: 1.5, margin: 0, padding: '9px 12px', borderRadius: '12px',
-                  background: m.role === 'user' ? '#2a52a0' : 'hsl(var(--muted))',
-                  color: m.role === 'user' ? '#fff' : 'hsl(var(--foreground))',
+                  background: m.role === 'user'
+                    ? 'linear-gradient(135deg,#0d6dff,#2a52a0)'
+                    : 'rgba(255,255,255,0.06)',
+                  border: m.role === 'user' ? 'none' : '1px solid rgba(148,197,255,0.14)',
+                  color: m.role === 'user' ? '#fff' : 'rgba(226,236,255,0.92)',
                 }}>{m.content}</p>
               </div>
             ))}
-            {sending && <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))', margin: 0 }}>Thinking…</p>}
+            {sending && (
+              <p style={{ fontSize: '13px', color: 'rgba(148,197,255,0.6)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', animation: 'qc-crmbot-glow-pulse 1s ease-in-out infinite' }} />
+                Thinking…
+              </p>
+            )}
 
             {pendingAction && (
-              <div style={{ background: 'hsl(var(--muted))', borderRadius: '12px', padding: '12px', display: 'flex', gap: '8px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(94,234,212,0.2)', borderRadius: '12px', padding: '12px', display: 'flex', gap: '8px' }}>
                 <button
                   onClick={() => resolveAction(true)}
                   disabled={resolvingAction}
-                  style={{ flex: 1, background: '#2a52a0', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ flex: 1, background: 'linear-gradient(135deg,#0d6dff,#38bdf8)', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
                 >Confirm</button>
                 <button
                   onClick={() => resolveAction(false)}
                   disabled={resolvingAction}
-                  style={{ flex: 1, background: 'transparent', color: 'hsl(var(--foreground))', border: '1px solid hsl(var(--border))', borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ flex: 1, background: 'transparent', color: 'rgba(226,236,255,0.85)', border: '1px solid rgba(148,197,255,0.3)', borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
                 >Cancel</button>
               </div>
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: '1px solid hsl(var(--border))' }}>
+          <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: '1px solid rgba(94,234,212,0.14)' }}>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={pendingAction ? 'Confirm or cancel above first…' : 'Ask how to…'}
               disabled={sending || !!pendingAction}
-              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '14px', fontFamily: 'inherit', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
+              className="qc-crmbot-input"
+              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(148,197,255,0.22)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
             />
-            <button onClick={send} disabled={sending || !!pendingAction} aria-label="Send" style={{ background: '#2a52a0', color: '#fff', border: 'none', borderRadius: '8px', padding: '0 14px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <button onClick={send} disabled={sending || !!pendingAction} aria-label="Send" style={{ background: 'linear-gradient(135deg,#0d6dff,#38bdf8)', color: '#fff', border: 'none', borderRadius: '8px', padding: '0 14px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <Send size={16} />
             </button>
           </div>
@@ -124,13 +156,14 @@ export function CrmBotWidget() {
       <button
         onClick={() => setIsOpen((v) => !v)}
         aria-label="Open assistant"
+        className="qc-crmbot-toggle"
         style={{
           width: '52px', height: '52px', borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: '#2a52a0', color: '#fff',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(135deg,#0d1f45,#0d6dff)', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
-        {isOpen ? <X size={22} /> : <MessageCircle size={22} />}
+        {isOpen ? <X size={22} /> : <Sparkles size={22} />}
       </button>
     </div>
   )
