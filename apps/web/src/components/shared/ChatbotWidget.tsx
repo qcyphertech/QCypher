@@ -102,7 +102,7 @@ export function ChatbotWidget() {
               }}>
                 <img src="/icon-192.png" alt="" width={20} height={20} style={{ display: 'block' }} />
               </span>
-              QBot — QCypher Assistant
+              QBot
             </span>
             <button onClick={() => setIsOpen(false)} aria-label="Close chat" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex' }}>
               <X size={18} />
