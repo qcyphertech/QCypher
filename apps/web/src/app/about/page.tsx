@@ -50,7 +50,7 @@ export default function AboutPage() {
         }
         .nav-inner {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 20px 32px; max-width: 1152px; margin: 0 auto;
+          padding: 20px 32px; width: 100%;
         }
         .nav-logo { display: flex; align-items: center; gap: 2px; font-weight: 800; font-size: 17px; color: var(--indigo); }
         .nav-logo img { height: 44px; width: auto; display: block; }

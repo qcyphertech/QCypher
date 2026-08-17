@@ -47,7 +47,7 @@ export default function TermsPage() {
         .wrap { max-width: 780px; margin: 0 auto; padding: 0 20px; }
 
         .nav-bar { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
-        .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; max-width: 1152px; margin: 0 auto; }
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; width: 100%; }
         .nav-logo { display: flex; align-items: center; gap: 2px; font-weight: 800; font-size: 17px; color: var(--indigo); }
         .nav-logo img { height: 44px; width: auto; display: block; }
         .nav-links { display: flex; align-items: center; gap: 24px; }
