@@ -27,17 +27,31 @@ consistency against what's written down.
   TypeScript check has pre-existing errors unrelated to any single change
   (fixing them is out of scope for a quick toggle), so making it blocking
   today would immediately red-X every future push.
-- **Deploys are automatic on push to `main`**, via Vercel's GitHub
-  integration — confirmed 2026-08-16 by cross-checking `vercel ls`
-  against git push history (dozens of production deploys, one per
-  push, no separate manual `vercel --prod` step involved). This
-  corrects an earlier version of this doc, which assumed a manual
-  build-then-`vercel --prod` step — that assumption was wrong, and it's
-  *why* `deployment_log` had zero rows despite real deploys happening:
-  the logging script was written to pair with a manual step that
-  doesn't actually exist in the real workflow. No staging environment
-  exists — every deploy goes straight to production (a deliberate scope
-  decision, not an omission).
+- **Deploys are automatic on push to `main`, via a Vercel Deploy Hook**
+  (`.github/workflows/deploy.yml`) — fixed 2026-08-16, and this is the
+  *second* correction to this line in the same day. Earlier the same
+  day this doc claimed deploys were automatic via Vercel's native
+  GitHub integration, "confirmed" by cross-checking `vercel ls`
+  timestamps against git push history — that cross-check was against
+  the wrong signal. What it actually showed was a human or an agent
+  manually running `vercel --prod` after most pushes, out of habit,
+  which happened to correlate closely enough with push timing to look
+  automatic. The real state, found while investigating why the live
+  site was visibly stale: this project's native Vercel↔GitHub
+  integration has not triggered a single automatic deploy since the
+  repo moved from the `nevis09` GitHub account to the `qcyphertech`
+  org on 2026-08-10 — confirmed via the Vercel API's deployment
+  history, every entry in that window shows `source: "cli"`. Production
+  drifted **~9 days and 190 commits** behind `main` before this was
+  caught. Fixed with a Vercel Deploy Hook (verified via a real test to
+  correctly pull from `qcyphertech/QCypher`, not the stale `nevis09`
+  link) triggered by a GitHub Actions workflow on every push — this
+  doesn't depend on repairing the native integration, which needs an
+  interactive OAuth reconnect neither an agent nor a quick fix can do.
+  Confirmed end-to-end with a real push: GitHub Action fired, Vercel
+  built and shipped it, live site updated. No staging environment
+  exists — every deploy goes straight to production (a deliberate
+  scope decision, not an omission).
 - **Deployment logging is now automatic**, not manual — see "What
   every deployment should record" below.
 - **Database migrations** are written as `.sql` files, pasted into the

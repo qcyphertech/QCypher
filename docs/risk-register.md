@@ -267,6 +267,57 @@ options if the team grows.
 
 ---
 
+## Risk #6: Silent Deployment Pipeline Failure
+
+**Likelihood:** Low (2/5) now that it's fixed and automated end-to-end;
+was effectively certain (5/5) while the underlying cause was unknown.
+**Impact:** High (4/5) — every fix, feature, and security patch merged
+to `main` is worthless in practice until it's actually live; a critical
+security fix could sit unshipped indefinitely with no alert.
+**Risk score:** 8 (HIGH, based on pre-fix likelihood — see residual risk)
+
+**What happened:** Discovered 2026-08-16 when a change (the Admin
+Console sidebar) didn't appear on the live site after being pushed and
+merged. Investigation found the production Vercel project's native
+GitHub integration had not triggered a single automatic deployment
+since the repo moved from the `nevis09` GitHub account to the
+`qcyphertech` org on **2026-08-10** — confirmed via the Vercel API's
+deployment history, every entry in that 6-day/190-commit window shows
+`source: "cli"`, meaning a human or an agent had to manually run
+`vercel --prod` for anything to reach production. Earlier the same day,
+this very register (and `docs/change-management-policy.md`) had
+claimed deploys were "confirmed automatic" — that conclusion was
+wrong, built on a coincidental correlation (manual deploys happening to
+track push timing closely) rather than a real causal check. Production
+was **~9 days and 190 commits behind `main`** before this was caught,
+with no error, alert, or CI failure anywhere — the failure was
+completely silent because nothing was checking that a push actually
+resulted in a live deploy, only that CI passed and the commit landed.
+
+**Mitigation:** Manually deployed current `HEAD` to production
+immediately upon discovery (verified live). Added a Vercel Deploy Hook
+— confirmed via a real test to correctly pull from the actual
+`qcyphertech/QCypher` repo, not the stale link — triggered by
+`.github/workflows/deploy.yml` on every push to `main`. Verified
+end-to-end with a real push: GitHub Action fired, Vercel built and
+shipped it, live site updated, no manual step. This restores automatic
+deployment without depending on repairing the native Vercel↔GitHub
+integration, which needs an interactive OAuth reconnect.
+
+**Residual risk:** Low. The deploy hook is a real, independently-tested
+mechanism, not a repeat of the earlier unverified assumption. What's
+still open: the native integration itself remains disconnected/stale
+(cosmetic at this point, since the deploy hook doesn't depend on it,
+but worth a real fix during a calmer moment — Vercel dashboard →
+Project Settings → Git → reconnect to `qcyphertech/QCypher`). There is
+also still no automated alert if a *future* deploy step fails (the
+GitHub Action would show a failed run, but nothing pages anyone) —
+lower priority given the workflow is now simple and has already been
+verified working, but worth a periodic manual check (e.g., alongside
+the monthly evidence-gap review already in place for other controls).
+
+---
+
 ## Review cadence
 
 Reviewed quarterly by Thomas + Felix Sam. Each review should:
