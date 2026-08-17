@@ -110,6 +110,11 @@ export default function HomePage() {
       .catch(() => setLatestPost(null))
   }, [])
 
+  const heroPinRef = useRef<HTMLElement>(null)
+  const heroAlphaRef = useRef<HTMLDivElement>(null)
+  const heroBetaRef = useRef<HTMLDivElement>(null)
+  const mobileTiltRef = useRef<HTMLDivElement>(null)
+
   // Lenis intercepts native scroll (drives its own virtual scroll position
   // via rAF), so a plain window.scrollTo(0,0) alone gets fought/overridden
   // on the next frame — logo-click-to-top needs to reset Lenis's own state
@@ -169,18 +174,73 @@ export default function HomePage() {
     }
     rafId = requestAnimationFrame(raf)
 
-    // Hero used to be a pinned two-phase (alpha -> beta) scroll-through via
-    // GSAP ScrollTrigger — removed along with hero-phase-beta (the "Let's
-    // get digital" marketing content). Lenis stays for smooth scroll
-    // site-wide; ScrollTrigger.update keeps syncing it with GSAP even
-    // though nothing currently pins.
+    const canPin = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+
+    // Hero — pinned scroll-through, Alpha -> Beta
+    let heroCtx: gsap.Context | undefined
+    if (canPin && heroPinRef.current && heroAlphaRef.current && heroBetaRef.current) {
+      heroCtx = gsap.context(() => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: heroPinRef.current,
+            start: 'top top',
+            end: '+=200%',
+            scrub: true,
+            pin: true,
+          },
+        })
+        tl.to(heroAlphaRef.current, { opacity: 0, scale: 0.85, z: -300, ease: 'none' }, 0)
+          .fromTo(
+            heroBetaRef.current,
+            { opacity: 0, scale: 0.8, z: -400, y: 60 },
+            { opacity: 1, scale: 1, z: 0, y: 0, ease: 'none' },
+            0.25
+          )
+          // Hand off clickability at the crossover point (halfway through
+          // beta's fade-in) — before this, alpha is the visible phase and
+          // its buttons must stay clickable; after, beta is visible and on
+          // top, so it should own clicks instead. .set() applies instantly
+          // rather than interpolating, so there's no ambiguous in-between
+          // state where both or neither phase is clickable.
+          .set(heroAlphaRef.current, { pointerEvents: 'none' }, 0.5)
+          .set(heroBetaRef.current, { pointerEvents: 'auto' }, 0.5)
+      })
+    }
 
     return () => {
       cancelAnimationFrame(rafId)
       lenis.destroy()
       lenisRef.current = null
+      heroCtx?.revert()
       ScrollTrigger.getAll().forEach((st) => st.kill())
     }
+  }, [])
+
+  // Mobile-only idle CSS 3D tilt for hero-phase-beta's iso-block visual
+  // (no mouse to react to on touch devices, unlike a desktop hover
+  // effect). The desktop counterpart this used to pair with (a WebGL
+  // Three.js scene on heroCanvasRef) is not restored here — confirmed
+  // it was already fully dead code before tonight's changes even
+  // started (heroCanvasRef was never attached to any element in JSX),
+  // so bringing it back would just reintroduce dead weight, not real
+  // functionality.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches
+    if (isDesktop || !mobileTiltRef.current) return
+
+    const el = mobileTiltRef.current
+    let raf2: number
+    let t = 0
+    const idle = () => {
+      t += 0.01
+      const rx = Math.sin(t) * 8
+      const ry = Math.cos(t * 0.8) * 10
+      el.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`
+      raf2 = requestAnimationFrame(idle)
+    }
+    idle()
+    return () => cancelAnimationFrame(raf2)
   }, [])
 
   return (
@@ -252,21 +312,16 @@ export default function HomePage() {
         .btn-sm { min-height: 38px; padding: 0 14px; font-size: 14px; white-space: nowrap; }
         .btn-full { width: 100%; }
 
-        /* HERO — single static phase, dark navy gradient, white text.
-           Was previously two rules: this one (light off-white bg — a
-           leftover from an even earlier hero design, always fully
-           overridden in practice by the more-specific .hero.hero-pin
-           below, back when both classes were applied together) plus
-           .hero.hero-pin (the dark bg actually used). Consolidated into
-           one rule now that hero-pin (and hero-phase-beta, and the GSAP
-           pin/crossfade that animated between them) are gone — leaving
-           the old light-bg version in place under just ".hero" would
-           have silently reactivated it, clashing with the white hero
-           text once the hero-pin class no longer applied. */
+        /* HERO — Huly-inspired, off-white bg, navy text, electric-blue accent grid.
+           This base rule is always fully overridden by the more-specific
+           .hero.hero-pin further down (both classes are applied together
+           in JSX) — it only matters as a fallback if hero-pin's class
+           were ever removed. */
         .hero {
-          padding: 88px 0 96px;
-          background: linear-gradient(160deg, #0a1440 0%, #12266b 45%, #0f3d6e 100%);
+          padding: 88px 0 72px;
+          background: var(--offwhite);
           position: relative; overflow: hidden;
+          border-bottom: 1px solid var(--navy-line);
         }
         .hero::before {
           content: '';
@@ -278,6 +333,10 @@ export default function HomePage() {
           -webkit-mask-image: radial-gradient(ellipse 60% 70% at 78% 45%, black 0%, transparent 72%);
           mask-image: radial-gradient(ellipse 60% 70% at 78% 45%, black 0%, transparent 72%);
           pointer-events: none;
+        }
+        .hero-eyebrow {
+          font-size: 12px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+          color: var(--orange); margin-bottom: 14px; display: block;
         }
         .hero .wrap { position: relative; z-index: 2; }
         .hero h1 {
@@ -311,11 +370,86 @@ export default function HomePage() {
         }
         .hero-canvas-3d { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 
+        /* Hero visual — stacked isometric 3D blocks (blue/green/orange),
+           floating in place, with a separate rotating ring orbiting them.
+           Used by hero-phase-beta. */
+        .hero-iso-stage { perspective: 1200px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+        .hero-iso-ring {
+          position: absolute; width: 300px; height: 300px; border-radius: 50%;
+          border: 2px dashed rgba(13,109,255,0.4);
+          animation: heroRingSpin 12s linear infinite;
+        }
+        .hero-iso-ring::before, .hero-iso-ring::after {
+          content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%;
+        }
+        .hero-iso-ring::before { top: -5px; left: 50%; margin-left: -5px; background: #0d6dff; box-shadow: 0 0 10px #0d6dff; }
+        .hero-iso-ring::after { bottom: -5px; left: 50%; margin-left: -5px; background: #ff7a1a; box-shadow: 0 0 10px #ff7a1a; }
+        @keyframes heroRingSpin { to { transform: rotate(360deg); } }
+        .hero-iso { position: relative; width: 240px; height: 240px; transform-style: preserve-3d; transform: rotateX(55deg) rotateZ(45deg); animation: heroIsoFloat 6s ease-in-out infinite; }
+        @keyframes heroIsoFloat {
+          0%, 100% { transform: rotateX(55deg) rotateZ(45deg) translateZ(0); }
+          50% { transform: rotateX(55deg) rotateZ(45deg) translateZ(22px); }
+        }
+        .hero-iso-block { position: absolute; inset: 0; border-radius: 18px; box-shadow: 0 24px 48px rgba(13,36,84,0.22); }
+        .hero-iso-b1 { background: linear-gradient(135deg, #0d6dff, #4d9bff); }
+        .hero-iso-b2 { transform: translateZ(50px) scale(0.8); background: linear-gradient(135deg, #00a86b, #3fcf9a); }
+        .hero-iso-b3 { transform: translateZ(100px) scale(0.6); background: linear-gradient(135deg, #ff7a1a, #ffab5c); }
+        @media (max-width: 900px) {
+          .hero-iso { width: 180px; height: 180px; }
+          .hero-iso-ring { width: 230px; height: 230px; }
+        }
+
+        /* HERO PIN — pinned scroll-through, Alpha (current hero) -> Beta,
+           replicating the Digital Presentation Dock's pin+crossfade pattern. */
+        .hero.hero-pin {
+          height: 100vh; padding: 0; display: block;
+          /* Static background shared by both phases — lives on the pin
+             container (not the phases) so it never fades/crossfades; only
+             the phase content transitions on top of it. */
+          background: linear-gradient(160deg, #0a1440 0%, #12266b 45%, #0f3d6e 100%);
+        }
+        .hero-phase { position: absolute; inset: 0; transform-style: preserve-3d; }
+        .hero-phase-alpha { display: flex; align-items: center; }
+        .hero-phase-alpha .wrap, .hero-phase-beta .wrap { width: 100%; }
+        .hero-phase-beta {
+          display: flex; align-items: center;
+          /* Starts invisible (opacity:0, set inline) but is still a
+             full-size absolutely-positioned box stacked on top of
+             hero-phase-alpha in DOM order — opacity alone doesn't
+             remove it from hit-testing, so without this its (invisible)
+             buttons silently intercepted every click meant for alpha's
+             real, visible buttons underneath. The GSAP timeline flips
+             this to 'auto' (and alpha to 'none') once beta actually
+             becomes the visible phase. */
+          pointer-events: none;
+        }
+        .hero-phase-beta h2 {
+          font-size: clamp(40px, 6vw, 88px); font-weight: 800; line-height: 1.02;
+          letter-spacing: -0.03em; color: #fff; margin-bottom: 20px;
+        }
+        .hero-phase-beta .accent {
+          background: linear-gradient(90deg, #5eead4, #38bdf8);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .hero-phase-beta p { font-size: 17px; color: rgba(255,255,255,0.72); max-width: 480px; line-height: 1.7; margin-bottom: 26px; }
+        .hero-phase-beta .btn-ghost {
+          background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent;
+        }
+        /* Explicitly repeats background/color/border-color (not just
+           opacity) — .hero .btn-ghost:hover (above, a leftover from an
+           even earlier hero design) ties this rule's specificity on
+           those properties and, appearing later in the cascade, was
+           winning: this button rendered with navy text on a
+           near-transparent navy background on hover, i.e. invisible
+           against the dark hero. Confirmed via a real :hover inspection,
+           not guessed from reading the CSS. */
+        .hero-phase-beta .btn-ghost:hover {
+          opacity: 0.92; background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent;
+        }
         .hero-micro { font-size: 13px; color: var(--soft); font-weight: 500; margin-bottom: 28px; }
 
-        /* Hero content panel — white text on the dark navy .hero background */
-        .hero-phase-alpha { display: flex; align-items: center; }
-        .hero-phase-alpha .wrap { width: 100%; position: relative; z-index: 2; }
+        /* Phase Alpha — "We handle the tech" panel with glowing ring visual */
+        .hero-phase-alpha .wrap { position: relative; z-index: 2; }
         .hero-phase-alpha h1 { color: #fff; }
         .hero-phase-alpha .hero-lead { color: rgba(255,255,255,0.72); }
         .hero-phase-alpha .accent {
@@ -326,7 +460,7 @@ export default function HomePage() {
         .hero-phase-alpha .btn-hero-primary { color: var(--navy); }
         .hero-phase-alpha .btn-ghost { background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent; }
         /* Explicitly repeats background/color/border-color on hover (not
-           just opacity) — .hero .btn-ghost:hover (below, a leftover from
+           just opacity) — .hero .btn-ghost:hover (above, a leftover from
            an even earlier hero design) ties this rule's specificity on
            those properties and, appearing later in the cascade, was
            winning: this button rendered with navy text on a
@@ -337,6 +471,8 @@ export default function HomePage() {
           opacity: 0.92; background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent;
         }
         .hero-phase-alpha .hero-micro { color: rgba(255,255,255,0.6); }
+        .hero-phase-alpha .trust-row { color: rgba(255,255,255,0.68); }
+        .hero-phase-alpha .trust-row .dot { background: #5eead4; }
 
         .hero-ring-stage { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         .hero-ring {
@@ -372,7 +508,9 @@ export default function HomePage() {
           .hero-ring-stage { transform: translateX(33%) translateY(-25%); }
         }
         @media (max-width: 767px) {
-          .hero { padding: 56px 0 48px; }
+          .hero.hero-pin { height: auto; padding: 56px 0 48px; }
+          .hero-phase { position: relative; }
+          .hero-phase-beta { display: none; }
           /* The visual column was vertically centering against the much
              taller text column, pushing the ring well below the top of the
              headline. Top-align it instead so it sits level with the text. */
@@ -497,15 +635,21 @@ export default function HomePage() {
           /* JS drives the tilt below 768px, so disable the CSS float keyframe to avoid fighting it */
           .clay-laptop { animation: none; }
         }
+        /* Alpha hero's trust-row — desktop keeps it in the text column;
+           mobile shows a second copy under the image instead (and hides
+           the text-column one) since the columns don't stack on mobile. */
+        .trust-row-mobile { display: none; }
         @media (max-width: 767px) {
           .hero-phase-alpha .hero-visual {
             flex-direction: column; height: auto; margin-top: 0; gap: 16px; padding-bottom: 8px;
           }
+          .trust-row-desktop { display: none; }
+          /* Pull this up to close the gap left by hero-ring-stage's
+             translateY(-25%) shift (transform doesn't affect layout flow,
+             so without this the trust-row stays where the ring used to
+             sit). */
+          .trust-row-mobile { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: -155px; }
         }
-        /* Reused below the packages section for the "no long-term
-           contracts / switch anytime / real humans" line that used to
-           live in the hero (moved out per the compliance-focused hero
-           rewrite). */
         .trust-row span { display: flex; align-items: center; gap: 6px; }
         .dot { width: 5px; height: 5px; border-radius: 50%; background: #00e5aa; flex-shrink: 0; }
         @media (max-width: 600px) {
@@ -744,7 +888,11 @@ export default function HomePage() {
         .pkg-list { list-style: none; }
         .pkg-list li { display: flex; gap: 8px; font-size: 14px; color: var(--soft); padding: 5px 0; border-top: 1px solid var(--border); align-items: flex-start; line-height: 1.5; }
         .pkg-list li:first-child { border-top: none; }
-        .pkg-inherit { font-size: 13px; font-style: italic; color: var(--soft); padding: 8px 0 6px; }
+        .pkg-inherit {
+          font-size: 13px; font-weight: 700; font-style: italic; color: var(--orange);
+          display: inline-block; padding: 4px 10px; margin: 8px 0 6px; border-radius: 6px;
+          background: rgba(255,122,26,0.12);
+        }
         .chk { flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%; background: rgba(0,200,150,.15); color: var(--mint); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; margin-top: 2px; }
 
         .pkg-switch { font-size: 13px; color: var(--soft); text-align: center; margin-top: 10px; }
@@ -1277,21 +1425,31 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* HERO — single static phase (was a pinned GSAP alpha->beta crossfade;
-          beta was the "Let's get digital" marketing content, removed along
-          with the pin/crossfade machinery itself — see the removed
-          hero-phase-beta and its GSAP timeline, previously above). */}
-      <section className="hero">
-        <div className="hero-phase-alpha">
+      {/* HERO — pinned scroll-through, Alpha ("We handle the tech") -> Beta
+          ("Security On Autopilot"). Restored after a prior revision fully
+          removed the two-phase pin — that revision was wrong: only beta's
+          content (the old "Let's get digital" marketing copy) was meant
+          to change, not the alpha/beta structure itself. Alpha is back to
+          its original copy verbatim; beta now carries the security/
+          compliance messaging instead of the marketing content it used
+          to. The GSAP pin/crossfade + the pointer-events and hover-color
+          fixes from the version this restores from are both back too. */}
+      <section ref={heroPinRef} className="hero hero-pin">
+        <div ref={heroAlphaRef} className="hero-phase hero-phase-alpha">
           <div className="wrap hero-alpha-wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '32px', alignItems: 'center' }}>
             <div>
-              <h1>Security On <span className="accent-orange">Autopilot.</span><br/>Stay Compliant.<br/>Keep Your Clients <span className="accent">Safe.</span></h1>
-              <p className="hero-lead">Your data. Your customers&apos; data. Protected by default. Built-in security, compliance checks, and a real person to guide you through it all.</p>
+              <h1>We handle the <span className="accent-orange">tech.</span><br/>You run the <span className="accent">business.</span></h1>
+              <p className="hero-lead">We build your website, handle setup with you personally, and manage everything ongoing. Real person from day one — monthly reports explained</p>
               <div className="hero-actions">
                 <Link href="#packages-section" className="btn btn-hero-primary">See packages</Link>
                 <button onClick={() => setShowContactModal(true)} className="btn btn-ghost">Get a free quote</button>
               </div>
               <p className="hero-micro">Talk to Felix or Thomas directly. No sales team.</p>
+              <div className="trust-row trust-row-desktop">
+                <span><span className="dot" />No long-term contracts</span>
+                <span><span className="dot" />Switch tiers anytime</span>
+                <span><span className="dot" />Real humans, real support</span>
+              </div>
             </div>
             <div className="hero-visual">
               <div className="hero-ring-stage">
@@ -1302,6 +1460,34 @@ export default function HomePage() {
                 <div className="hero-badge hb-4"><svg viewBox="0 0 24 24" fill="none"><path d="M7 18a4 4 0 0 1-.5-7.97A5 5 0 0 1 16.9 9.1 4.5 4.5 0 0 1 16.5 18H7Z" stroke="currentColor" strokeWidth="1.6"/></svg></div>
                 <div className="hero-badge hb-5"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.6"/></svg></div>
                 <div className="hero-badge hb-6"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg></div>
+              </div>
+              <div className="trust-row trust-row-mobile">
+                <span><span className="dot" />No long-term contracts</span>
+                <span><span className="dot" />Switch tiers anytime</span>
+                <span><span className="dot" />Real humans, real support</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div ref={heroBetaRef} className="hero-phase hero-phase-beta" style={{ opacity: 0 }}>
+          <div className="wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '32px', alignItems: 'center' }}>
+            <div>
+              <span className="hero-eyebrow">Security &amp; compliance, built in</span>
+              <h2>Security On Autopilot.<br/>Stay <span className="accent">Compliant.</span></h2>
+              <p>Your data. Your customers&apos; data. Protected by default. Built-in security, compliance checks, and a real person to guide you through it all.</p>
+              <div className="hero-actions">
+                <Link href="#packages-section" className="btn btn-hero-primary">See packages</Link>
+                <button onClick={() => setShowContactModal(true)} className="btn btn-ghost">Get a free quote</button>
+              </div>
+            </div>
+            <div className="hero-visual">
+              <div ref={mobileTiltRef} className="hero-iso-stage">
+                <div className="hero-iso-ring" />
+                <div className="hero-iso">
+                  <div className="hero-iso-block hero-iso-b1" />
+                  <div className="hero-iso-block hero-iso-b2" />
+                  <div className="hero-iso-block hero-iso-b3" />
+                </div>
               </div>
             </div>
           </div>
@@ -1469,11 +1655,6 @@ export default function HomePage() {
             </div>
             <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#171a2b', marginBottom: '8px' }}>We stand behind our work</h3>
             <p style={{ fontSize: '15px', color: '#5b6072', lineHeight: 1.6, margin: 0, maxWidth: '560px', marginLeft: 'auto', marginRight: 'auto' }}>All packages come with hands-on setup, dedicated support, and the confidence that we're invested in your success. Not seeing results? Let's talk.</p>
-          </div>
-          <div className="trust-row" style={{ justifyContent: 'center', marginTop: '24px' }}>
-            <span><span className="dot" style={{ background: '#00a87a' }} />No long-term contracts</span>
-            <span><span className="dot" style={{ background: '#00a87a' }} />Switch tiers anytime</span>
-            <span><span className="dot" style={{ background: '#00a87a' }} />Real humans, real support</span>
           </div>
         </div>
       </section>
