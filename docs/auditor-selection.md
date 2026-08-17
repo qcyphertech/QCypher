@@ -1,7 +1,7 @@
 # Auditor Selection — Research & Decision Framework
 
 **Status: researched, not decided.** Selecting and engaging a firm is a
-real financial/contractual commitment only you and Felix can make —
+real financial/contractual commitment only you and Felix Sam can make —
 this exists so that decision takes an afternoon of comparing real
 options instead of starting from a blank search. Nothing here has been
 contacted or committed to on your behalf.

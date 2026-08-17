@@ -3,7 +3,7 @@
 **Status: prepared, not yet signed.** This exists so that formalizing
 sign-off is a 10-minute task instead of a research project. The actual
 attestation — both of you reading each policy and agreeing to it — is
-something only you and Felix can do; nothing below fakes that it's
+something only you and Felix Sam can do; nothing below fakes that it's
 already happened.
 
 ## Why this matters for the audit
@@ -46,9 +46,9 @@ matches that pattern exactly:
    ```
    git commit -m "Executive sign-off: Phase 35 policies approved
 
-   Reviewed and approved by Thomas Ocloo and Felix [surname], 2026-09-XX.
+   Reviewed and approved by Thomas Ocloo and Felix Sam, 2026-09-XX.
 
-   Co-Authored-By: Felix [surname] <[felix's real email]>"
+   Co-Authored-By: Felix Sam <[felix's real email]>"
    ```
 4. Push it. The commit itself, in `evidence/policies/` or this file's
    own history, is the durable record.
@@ -101,7 +101,7 @@ backfill a date earlier than when you actually read it.
 | Name | Role | Date reviewed | Outcome |
 |---|---|---|---|
 | Thomas Ocloo | CTO | | |
-| Felix | CEO | | |
+| Felix Sam | CEO | | |
 
 **Next review:** annually, or whenever a listed policy changes
 materially — whichever comes first. Re-approval after a material

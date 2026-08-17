@@ -3,7 +3,7 @@
 Run against the exact checklist provided 2026-08-16, item by item,
 verified against real code/CI/evidence state — not assumed. Two
 categories: things this session could fix and did, and things that
-genuinely require a human (Thomas/Felix) to act — those are **not**
+genuinely require a human (Thomas/Felix Sam) to act — those are **not**
 marked done, even where the supporting infrastructure is ready.
 
 ## Done, verified
@@ -71,13 +71,13 @@ marked done, even where the supporting infrastructure is ready.
       because it's the playbook's least-tested path, not the easy
       cron-detected case), step-by-step walkthrough questions tied to
       each playbook phase, and an outcome template to fill in. This is
-      genuinely as far as this can go without you and Felix — running
+      genuinely as far as this can go without you and Felix Sam — running
       a tabletop drill is, by definition, two people actually talking
       it through. See "Requires your action" below.
 
 ## Requires your action — cannot be done autonomously
 
-- [ ] **Formal policies signed by executives (Thomas + Felix)** —
+- [ ] **Formal policies signed by executives (Thomas + Felix Sam)** —
       `docs/policy-sign-off.md` is prepared: why this matters for the
       audit (CC1/CC2), three concrete options with a recommendation
       (a dated commit with both names — matches this project's
@@ -105,7 +105,7 @@ marked done, even where the supporting infrastructure is ready.
       value), and why QCypher's situation narrows it to one real
       question — is there a deal or prospect waiting on a report in
       the next 1-3 months? If yes, Type I first; if no, skip straight
-      to Type II. Still a business call only you and Felix can make.
+      to Type II. Still a business call only you and Felix Sam can make.
 - [ ] **Auditor selected + engagement letter signed** —
       `docs/auditor-selection.md` researches this: realistic cost/
       timeline for a 2-person company ($12K-$40K depending on Type I
@@ -127,7 +127,7 @@ marked done, even where the supporting infrastructure is ready.
       priority: Supabase and Stripe (CRITICAL risk vendors) — do those
       two first if time is short.
 - [ ] **Incident response drill** — the script is written
-      (`docs/incident-response-tabletop-drill.md`); you and Felix need
+      (`docs/incident-response-tabletop-drill.md`); you and Felix Sam need
       to actually block ~30-45 minutes, run through it together, and
       fill in the "Outcome" section, then save a copy into
       `evidence/monitoring/` with the real date.

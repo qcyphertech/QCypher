@@ -1,6 +1,6 @@
 # Change Management Policy
 
-For QCypher's 2-person team (Thomas — CTO, Felix — CEO). Written to match
+For QCypher's 2-person team (Thomas — CTO, Felix Sam — CEO). Written to match
 how changes actually get made here, not an aspirational process the team
 doesn't follow — a policy that describes a fictional workflow is worse
 than no policy for SOC 2 purposes, since Type II testing checks

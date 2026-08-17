@@ -27,7 +27,7 @@ oversight, commitment to competence, accountability.*
 2-person team.**
 
 - Organizational structure: 2 people, both founders — Thomas (CTO,
-  technical/engineering decisions) and Felix (CEO, business decisions).
+  technical/engineering decisions) and Felix Sam (CEO, business decisions).
   No board; no separate audit committee. This is accurately described
   in `docs/system-description.md` and `docs/staff-training.md`.
 - Accountability: every production change is a git commit attributed to
@@ -216,7 +216,7 @@ collected).**
 None of the 🟡/🔴 items above are silently missing — each has an
 existing doc describing the real state and, where relevant, a
 remediation plan. See `docs/qa-checklist-status.md` for which of these
-require your (Thomas/Felix's) direct action vs. further engineering
+require your (Thomas/Felix Sam's) direct action vs. further engineering
 work.
 
 ## Review cadence

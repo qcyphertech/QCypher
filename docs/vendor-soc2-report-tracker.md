@@ -5,7 +5,7 @@ Real, sourced request paths for every vendor in
 starting from scratch. **Nothing has been requested yet** — every
 request path below requires logging into an actual QCypher vendor
 account (Supabase, Vercel, etc.) or emailing from a real QCypher
-address, which has to be you or Felix, not something done on your
+address, which has to be you or Felix Sam, not something done on your
 behalf here. Sending vendor emails or account-authenticated requests
 without you present is exactly the kind of external, hard-to-reverse
 action this assistant won't take unattended — this tracker exists so

@@ -1,7 +1,7 @@
 # Type I vs. Type II — Decision Writeup
 
 **Status: analysis complete, decision not made.** This is written to
-give you and Felix everything needed to decide in one sitting, not to
+give you and Felix Sam everything needed to decide in one sitting, not to
 decide for you — which path to take depends on something only you two
 know: whether there's an actual deal or prospect waiting on a report
 right now, or whether this is running ahead of sales need.

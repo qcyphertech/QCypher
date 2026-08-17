@@ -233,7 +233,7 @@ options if the team grows.
 
 ## Review cadence
 
-Reviewed quarterly by Thomas + Felix. Each review should:
+Reviewed quarterly by Thomas + Felix Sam. Each review should:
 1. Re-score every risk based on what's actually changed (new controls,
    new vulnerabilities, new vendors).
 2. Add any risk discovered since the last review — including ones found

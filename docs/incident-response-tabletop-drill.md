@@ -1,7 +1,7 @@
 # Incident Response Tabletop Drill — Prep & Script
 
 **Status: prepared, not yet run.** This is the drill script and
-recording template for Thomas and Felix to actually walk through
+recording template for Thomas and Felix Sam to actually walk through
 together — it can't be run autonomously since it's a discussion
 exercise between the two of you, not something to fake or simulate
 into existence. See `docs/qa-checklist-status.md` for why this is

@@ -1,6 +1,6 @@
 # Staff Security Onboarding & Training
 
-For QCypher's team — currently Thomas (CTO) and Felix (CEO), both with
+For QCypher's team — currently Thomas (CTO) and Felix Sam (CEO), both with
 super-admin access. Written as a real checklist to actually run through,
 not a generic security-awareness slideshow. Every item here points to a
 real control already built into this app, not an aspirational policy.
