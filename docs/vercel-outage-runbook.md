@@ -1,4 +1,12 @@
-# Vercel Outage / Migration Runbook
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Vercel Outage / Migration Runbook</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 **Purpose:** the cheap contingency for Vercel (HIGH risk, no fallback
 today — see `docs/vendor-risk-assessment.md`) that costs writing time,

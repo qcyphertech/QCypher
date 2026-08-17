@@ -1,4 +1,12 @@
-# Type I vs. Type II — Decision Writeup
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Type I vs. Type II — Decision Writeup</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 **Status: analysis complete, decision not made.** This is written to
 give you and Felix Sam everything needed to decide in one sitting, not to

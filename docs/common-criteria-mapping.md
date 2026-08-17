@@ -1,4 +1,12 @@
-# SOC 2 Common Criteria (CC1–CC9) Mapping
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">SOC 2 Common Criteria (CC1–CC9) Mapping</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Maps each Trust Services Criteria category to the real, verifiable
 controls in this codebase — not an aspirational description. Where a

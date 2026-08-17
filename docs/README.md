@@ -1,4 +1,12 @@
-# QCypher Policy & Process Docs
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">QCypher Policy & Process Docs</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Written for a real 2-person team, grounded in verified codebase facts —
 not generic compliance templates. See each file's own notes on when it

@@ -1,4 +1,12 @@
-# Executive Policy Sign-Off
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Executive Policy Sign-Off</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 **Status: prepared, not yet signed.** This exists so that formalizing
 sign-off is a 10-minute task instead of a research project. The actual

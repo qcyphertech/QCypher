@@ -1,4 +1,12 @@
-# Staff Security Onboarding & Training
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Staff Security Onboarding & Training</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 For QCypher's team — currently Thomas (CTO) and Felix Sam (CEO), both with
 super-admin access. Written as a real checklist to actually run through,

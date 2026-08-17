@@ -1,4 +1,12 @@
-# Phase 35 QA Checklist — Status
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Phase 35 QA Checklist — Status</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Run against the exact checklist provided 2026-08-16, item by item,
 verified against real code/CI/evidence state — not assumed. Two

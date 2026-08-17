@@ -1,4 +1,12 @@
-# SOC 2 Gap Assessment
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">SOC 2 Gap Assessment</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Verified against the actual codebase and live database on 2026-08-16 —
 not assumed from the original phase plan. Where the original claim was

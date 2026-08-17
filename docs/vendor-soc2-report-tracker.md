@@ -1,4 +1,12 @@
-# Vendor SOC 2 Report Collection — Tracker
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Vendor SOC 2 Report Collection — Tracker</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Real, sourced request paths for every vendor in
 `docs/vendor-risk-assessment.md`, researched 2026-08-16 so you're not

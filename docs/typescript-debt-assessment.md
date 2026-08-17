@@ -1,4 +1,12 @@
-# TypeScript Error Debt — Honest Assessment
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">TypeScript Error Debt — Honest Assessment</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Run 2026-08-16 as part of Phase 35 QA (`pnpm --filter web exec tsc --noEmit`).
 Documented rather than blind-fixed — see reasoning below.

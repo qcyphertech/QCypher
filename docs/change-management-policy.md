@@ -1,4 +1,12 @@
-# Change Management Policy
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Change Management Policy</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 For QCypher's 2-person team (Thomas — CTO, Felix Sam — CEO). Written to match
 how changes actually get made here, not an aspirational process the team

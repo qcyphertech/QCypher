@@ -1,4 +1,12 @@
-# System Description
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">System Description</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 What QCypher actually is, how it's put together, and where the security
 boundaries are — written for an auditor or a new engineer, grounded in

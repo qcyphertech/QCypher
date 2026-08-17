@@ -1,4 +1,12 @@
-# Third-Party Vendor Risk Assessment
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Third-Party Vendor Risk Assessment</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Vendor list verified against actual wired-up code (not `.env.example`
 placeholders) as of the 2026-08-16 gap assessment. Security posture

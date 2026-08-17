@@ -1,4 +1,12 @@
-# Incident Response Tabletop Drill — Prep & Script
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Incident Response Tabletop Drill — Prep & Script</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 **Status: prepared, not yet run.** This is the drill script and
 recording template for Thomas and Felix Sam to actually walk through

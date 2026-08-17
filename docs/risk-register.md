@@ -1,4 +1,12 @@
-# Risk Register
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Risk Register</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Reviewed quarterly (see cadence note at the bottom). Risk score =
 Likelihood (1–5) × Impact (1–5). Every mitigation cited here points to a

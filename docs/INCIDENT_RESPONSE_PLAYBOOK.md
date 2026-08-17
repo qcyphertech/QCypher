@@ -1,4 +1,12 @@
-# Incident Response Playbook
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Incident Response Playbook</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 For QCypher's 2-person team. This is a checklist, not a workflow tool — if you're
 reading this during a real incident, start at **Phase 1** and work down.

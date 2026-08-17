@@ -1,4 +1,12 @@
-# Evidence Repository
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Evidence Repository</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Evidence for the SOC 2 observation period — proof that controls documented
 in `/docs` were actually followed, not just written down. A Type II audit

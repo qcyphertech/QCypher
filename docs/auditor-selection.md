@@ -1,4 +1,12 @@
-# Auditor Selection — Research & Decision Framework
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Auditor Selection — Research & Decision Framework</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 **Status: researched, not decided.** Selecting and engaging a firm is a
 real financial/contractual commitment only you and Felix Sam can make —

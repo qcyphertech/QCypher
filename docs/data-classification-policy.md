@@ -1,4 +1,12 @@
-# Data Classification & Handling Policy
+<p align="center">
+  <img src="../apps/web/public/qcypher-logo-horizontal.png" alt="QCypher Technologies" width="220">
+</p>
+
+<h1 align="center">Data Classification & Handling Policy</h1>
+
+<p align="center"><sub>QCypher Technologies &middot; Internal Documentation</sub></p>
+
+<br>
 
 Grounded in what the app's schema and privacy page actually say, not a
 generic template — verified against code 2026-08-16.
