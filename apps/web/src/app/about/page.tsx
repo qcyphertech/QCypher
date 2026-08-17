@@ -378,7 +378,7 @@ export default function AboutPage() {
                 <div className="story-stat-label">All-inclusive solution for your whole team</div>
               </div>
               <div className="story-stat">
-                <div className="story-stat-num" style={{ color: 'var(--orange)' }}>5★</div>
+                <div className="story-stat-num">5★</div>
                 <div className="story-stat-label">Average client satisfaction across all services</div>
               </div>
               <div className="story-stat">
