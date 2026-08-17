@@ -116,6 +116,23 @@ export default function HomePage() {
   const heroAlphaRef = useRef<HTMLDivElement>(null)
   const heroBetaRef = useRef<HTMLDivElement>(null)
   const mobileTiltRef = useRef<HTMLDivElement>(null)
+  // Lenis intercepts native scroll (drives its own virtual scroll position
+  // via rAF), so a plain window.scrollTo(0,0) alone gets fought/overridden
+  // on the next frame — logo-click-to-top needs to reset Lenis's own state
+  // too, not just the browser's native scrollY.
+  const lenisRef = useRef<Lenis | null>(null)
+
+  function scrollToTop(e: React.MouseEvent) {
+    e.preventDefault()
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true })
+    } else {
+      window.scrollTo({ top: 0 })
+    }
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }
 
   const formatPhoneNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, '')
@@ -152,6 +169,7 @@ export default function HomePage() {
 
     const lenis = new Lenis({ lerp: 0.1 })
     lenis.on('scroll', ScrollTrigger.update)
+    lenisRef.current = lenis
 
     let rafId: number
     function raf(time: number) {
@@ -196,6 +214,7 @@ export default function HomePage() {
     return () => {
       cancelAnimationFrame(rafId)
       lenis.destroy()
+      lenisRef.current = null
       heroCtx?.revert()
       ScrollTrigger.getAll().forEach((st) => st.kill())
     }
@@ -1484,9 +1503,9 @@ export default function HomePage() {
       {/* NAV */}
       <header className="nav-bar">
         <div className="nav-inner">
-          <div className="nav-logo">
+          <a href="/" onClick={scrollToTop} className="nav-logo" aria-label="Back to top">
             <img src="/qcypher-logo-horizontal.png" alt="QCypher Technologies" />
-          </div>
+          </a>
           <div className="nav-cta">
             <Link href="/about" className="nav-page-link" style={{ fontSize: '15px', fontWeight: 600, color: '#5b6072', marginRight: '4px' }}>About</Link>
             <Link href="/blog" className="nav-page-link" style={{ fontSize: '15px', fontWeight: 600, color: '#5b6072', marginRight: '4px' }}>Blog</Link>
