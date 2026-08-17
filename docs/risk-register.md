@@ -316,6 +316,18 @@ lower priority given the workflow is now simple and has already been
 verified working, but worth a periodic manual check (e.g., alongside
 the monthly evidence-gap review already in place for other controls).
 
+**Follow-up gap found and fixed 2026-08-25:** the deploy hook above
+triggered directly on push, independent of the CI workflow — it never
+checked whether CI actually passed. Confirmed for real on commit
+`29c6187`: CI failed with a genuine TypeScript error (a jsonb column
+insert typed incorrectly), but the separate deploy workflow fired on
+the same push event regardless and deployed it successfully anyway —
+the bug reached production for a few minutes before being caught and
+fixed in `a113124`. `deploy.yml` now triggers on CI's `completed` event
+and only runs `if: github.event.workflow_run.conclusion == 'success'`,
+so a failing type-check or RLS test blocks the deploy itself, not just
+the CI status badge.
+
 ---
 
 ## Review cadence

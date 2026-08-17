@@ -13,17 +13,27 @@ name: Deploy to production
 # This restores real automatic deployment without depending on fixing
 # that native integration (which needs an interactive OAuth reconnect):
 # a Vercel Deploy Hook, confirmed via a real test to correctly pull the
-# current commit from the qcyphertech/QCypher repo, triggered here on
-# every push to main.
+# current commit from the qcyphertech/QCypher repo, triggered here.
+#
+# Gated on CI as of 2026-08-25 — a second real gap: this used to trigger
+# directly on push, independent of the CI workflow, so a commit that
+# failed `tsc --noEmit` in CI (confirmed happened for real on commit
+# 29c6187 — Record<string, unknown> not assignable to Json) still
+# deployed, because the deploy hook doesn't care whether CI passed. Now
+# triggered by CI's own completion instead of push, and only proceeds
+# if CI's conclusion was "success".
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
 
 jobs:
   deploy:
     name: Trigger Vercel production deploy
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Trigger deploy hook
         run: |
