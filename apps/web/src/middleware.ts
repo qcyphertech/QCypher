@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/faq' ||
     pathname.startsWith('/blog') ||
     pathname.startsWith('/api/blog/latest') ||
+    pathname.startsWith('/api/bot/') ||
     pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/api/security/') ||
     pathname.startsWith('/api/telnyx/') ||

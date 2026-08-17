@@ -49,6 +49,40 @@ export async function callDeepSeek(
   return text
 }
 
+export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
+
+// Multi-turn variant for conversational callers (Phase 37 website bot) —
+// callDeepSeek() above only ever sends one user message, so it can't carry
+// a system prompt + prior turns. Same reasoning-mode caveat applies.
+export async function callDeepSeekChat(
+  messages: ChatMessage[],
+  opts: { maxTokens?: number; temperature?: number } = {},
+): Promise<string> {
+  if (!DEEPSEEK_API_KEY) throw new Error('DEEPSEEK_API_KEY not configured')
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-v4-flash',
+      messages,
+      max_tokens: opts.maxTokens ?? 500,
+      temperature: opts.temperature ?? 0.5,
+      thinking: { type: 'disabled' },
+    }),
+  })
+
+  const json = await res.json()
+  const text = json.choices?.[0]?.message?.content?.trim() ?? ''
+  if (!res.ok || !text) {
+    throw new Error(json.error?.message ?? `DeepSeek call failed (HTTP ${res.status})`)
+  }
+  return text
+}
+
 /** True if the DeepSeek key is configured — callers use this to fall back gracefully. */
 export function deepseekConfigured(): boolean {
   return !!DEEPSEEK_API_KEY

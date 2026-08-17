@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar'
+import { ChatbotWidgetGate } from '@/components/shared/ChatbotWidgetGate'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ServiceWorkerRegistrar />
         {children}
+        <ChatbotWidgetGate />
       </body>
     </html>
   )
