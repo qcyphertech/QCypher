@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, CheckCircle2, Users, ClipboardCheck, AlertTriangle, LayoutGrid, ScrollText, Receipt, Gift, ShieldAlert, FileText } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { ApprovalRequestsPanel } from '@/components/admin/ApprovalRequestsPanel'
 import { AdminAuditTrailPanel } from '@/components/admin/AdminAuditTrailPanel'
 import { IncidentsPanel } from '@/components/admin/IncidentsPanel'
@@ -21,17 +20,43 @@ type Tenant = {
 }
 
 const TABS = [
-  { id: 'clients', label: 'Clients', icon: Users },
-  { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck },
-  { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
-  { id: 'security', label: 'Security', icon: ShieldAlert },
-  { id: 'invoices', label: 'Invoices', icon: Receipt },
-  { id: 'referrals', label: 'Referrals', icon: Gift },
-  { id: 'modules', label: 'Modules', icon: LayoutGrid },
-  { id: 'audit', label: 'Audit Trail', icon: ScrollText },
-  { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'clients', label: 'Clients', icon: Users, color: '#2a52a0' },
+  { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck, color: '#a855f7' },
+  { id: 'incidents', label: 'Incidents', icon: AlertTriangle, color: '#ef4444' },
+  { id: 'security', label: 'Security', icon: ShieldAlert, color: '#f97316' },
+  { id: 'invoices', label: 'Invoices', icon: Receipt, color: '#0ea5e9' },
+  { id: 'referrals', label: 'Referrals', icon: Gift, color: '#ec4899' },
+  { id: 'modules', label: 'Modules', icon: LayoutGrid, color: '#14b8a6' },
+  { id: 'audit', label: 'Audit Trail', icon: ScrollText, color: '#eab308' },
+  { id: 'documents', label: 'Documents', icon: FileText, color: '#10b981' },
 ] as const
 type TabId = typeof TABS[number]['id']
+
+// Icon-circle sidebar row, matching SettingsTabs.tsx's desktop sidebar exactly.
+function sidebarItemStyle(isActive: boolean): React.CSSProperties {
+  return {
+    display: 'flex', alignItems: 'center', gap: '12px',
+    padding: '10px 12px', borderRadius: '12px',
+    fontSize: '14px', fontWeight: isActive ? 700 : 500,
+    color: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+    background: isActive ? 'hsl(var(--muted))' : 'transparent',
+    border: 'none', cursor: 'pointer', textDecoration: 'none',
+    width: '100%', textAlign: 'left',
+    transition: 'background 0.15s, color 0.15s',
+  }
+}
+
+function SidebarIcon({ Icon, color }: { Icon: React.ElementType; color: string }) {
+  return (
+    <div style={{
+      width: '30px', height: '30px', borderRadius: '9px', flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: `${color}1a`,
+    }}>
+      <Icon style={{ width: '15px', height: '15px', color }} />
+    </div>
+  )
+}
 
 type Props = {
   tenants: Tenant[]
@@ -65,7 +90,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
   const visibleTabs = isSuperAdmin ? TABS : TABS.filter(t => t.id === 'clients')
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-[#2a52a0] to-[#4a9db5] bg-clip-text text-transparent">
@@ -86,50 +111,77 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
         )}
       </div>
 
-      {visibleTabs.length > 1 && (
-        <div className="flex gap-1 p-1 rounded-2xl bg-[hsl(var(--muted))]/60 overflow-x-auto">
-          {visibleTabs.map(t => {
-            const Icon = t.icon
-            const active = tab === t.id
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  'flex items-center gap-2 text-[14px] font-medium px-3.5 py-2 rounded-xl whitespace-nowrap transition-all outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
-                  active
-                    ? 'bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm'
-                    : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]',
-                )}
-              >
-                <Icon className={cn('w-3.5 h-3.5', active && 'text-accent')} />
-                {t.label}
-              </button>
-            )
-          })}
+      <div className="flex flex-col md:flex-row" style={{ gap: '32px', alignItems: 'flex-start' }}>
+        {visibleTabs.length > 1 && (
+          <>
+            {/* Desktop: persistent left sidebar, matching SettingsTabs.tsx */}
+            <nav
+              className="hidden md:flex"
+              style={{ flexDirection: 'column', gap: '2px', width: '220px', flexShrink: 0 }}
+            >
+              {visibleTabs.map(t => {
+                const Icon = t.icon
+                const active = tab === t.id
+                return (
+                  <button key={t.id} onClick={() => setTab(t.id)} style={sidebarItemStyle(active)}>
+                    <SidebarIcon Icon={Icon} color={t.color} />
+                    {t.label}
+                  </button>
+                )
+              })}
+            </nav>
+
+            {/* Mobile: horizontal tabs */}
+            <div className="flex md:hidden" style={{ gap: '4px', borderBottom: '1px solid hsl(var(--border))', marginBottom: '8px', overflowX: 'auto', width: '100%' }}>
+              {visibleTabs.map(t => {
+                const Icon = t.icon
+                const active = tab === t.id
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0,
+                      padding: '10px 14px',
+                      fontSize: '14px', fontWeight: active ? 700 : 500,
+                      color: active ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      borderBottom: active ? '2px solid #2a52a0' : '2px solid transparent',
+                      marginBottom: '-1px',
+                    }}
+                  >
+                    <Icon style={{ width: '15px', height: '15px', flexShrink: 0 }} />
+                    {t.label}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
+          {tab === 'clients' && (
+            <ClientsPanel
+              tenants={tenants}
+              totalClients={totalClients}
+              filteredCount={filteredCount}
+              page={page}
+              pageSize={pageSize}
+              isSuperAdmin={isSuperAdmin}
+              availablePlans={availablePlans}
+            />
+          )}
+
+          {tab === 'approvals' && isSuperAdmin && <ApprovalRequestsPanel />}
+          {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={allTenants} />}
+          {tab === 'security' && isSuperAdmin && <SecurityPanel />}
+          {tab === 'invoices' && isSuperAdmin && <InvoicesPanel tenants={allTenants} />}
+          {tab === 'referrals' && isSuperAdmin && <ReferralProgramPanel />}
+          {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}
+          {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={allTenants} />}
+          {tab === 'documents' && isSuperAdmin && <DocumentsPanel />}
         </div>
-      )}
-
-      {tab === 'clients' && (
-        <ClientsPanel
-          tenants={tenants}
-          totalClients={totalClients}
-          filteredCount={filteredCount}
-          page={page}
-          pageSize={pageSize}
-          isSuperAdmin={isSuperAdmin}
-          availablePlans={availablePlans}
-        />
-      )}
-
-      {tab === 'approvals' && isSuperAdmin && <ApprovalRequestsPanel />}
-      {tab === 'incidents' && isSuperAdmin && <IncidentsPanel tenants={allTenants} />}
-      {tab === 'security' && isSuperAdmin && <SecurityPanel />}
-      {tab === 'invoices' && isSuperAdmin && <InvoicesPanel tenants={allTenants} />}
-      {tab === 'referrals' && isSuperAdmin && <ReferralProgramPanel />}
-      {tab === 'modules' && isSuperAdmin && <PlatformModulesPanel />}
-      {tab === 'audit' && isSuperAdmin && <AdminAuditTrailPanel tenants={allTenants} />}
-      {tab === 'documents' && isSuperAdmin && <DocumentsPanel />}
+      </div>
 
       {showInvite && <InviteModal onClose={() => { setShowInvite(false); router.refresh() }} />}
     </div>
