@@ -768,15 +768,14 @@ export default function HomePage() {
               0 0 30px 9px color-mix(in srgb, var(--pkg-outline, var(--border2)) 28%, transparent);
           }
         }
-        /* Corner brackets — dashed at rest, snap solid and grow on hover
-           (same "at rest vs. engaged" language the old ring used). Four
+        /* Corner brackets — solid at rest, grow slightly on hover. Four
            span children, one per corner, added in JSX next to each
            .pkg-card. */
         .pkg-bracket {
           position: absolute; width: 22px; height: 22px;
-          border-width: 3px; border-style: dashed;
+          border-width: 3px; border-style: solid;
           border-color: var(--pkg-outline, var(--border2));
-          transition: width .18s ease, height .18s ease, border-style .1s;
+          transition: width .18s ease, height .18s ease;
           pointer-events: none;
         }
         .pkg-bracket.tl { top: -10px; left: -10px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
@@ -784,7 +783,6 @@ export default function HomePage() {
         .pkg-bracket.bl { bottom: -10px; left: -10px; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
         .pkg-bracket.br { bottom: -10px; right: -10px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
         .pkg-card:hover .pkg-bracket {
-          border-style: solid;
           width: 28px; height: 28px;
         }
         .pkg-card:hover {
