@@ -5,7 +5,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: { default: 'QCypher Technologies', template: '%s — QCypher Technologies' },
-  description: 'We handle the tech. You run the business. Website, bookings, reviews, and tools built for small businesses — no tech skills required.',
+  description: 'Security on autopilot. Stay compliant. Keep your clients safe. Website, CRM, security monitoring, and AI tools for local service businesses.',
   manifest: '/manifest.json',
   icons: {
     icon: [
@@ -19,14 +19,14 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://www.qcyphertech.com',
     siteName: 'QCypher Technologies',
-    title: 'QCypher Technologies — We handle the tech. You run the business.',
-    description: 'Website, bookings, reviews, and tools built for small businesses — no tech skills required.',
+    title: 'QCypher Technologies — Security On Autopilot. Compliance Built In.',
+    description: 'Security on autopilot. Stay compliant. Keep your clients safe. Website, CRM, security monitoring, and AI tools for local service businesses.',
     images: [{ url: 'https://www.qcyphertech.com/qcypher-logo-full.png', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'QCypher Technologies — We handle the tech. You run the business.',
-    description: 'Website, bookings, reviews, and tools built for small businesses — no tech skills required.',
+    title: 'QCypher Technologies — Security On Autopilot. Compliance Built In.',
+    description: 'Security on autopilot. Stay compliant. Keep your clients safe. Website, CRM, security monitoring, and AI tools for local service businesses.',
     images: ['https://www.qcyphertech.com/qcypher-logo-full.png'],
   },
 }
