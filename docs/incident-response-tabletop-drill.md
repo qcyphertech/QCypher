@@ -31,6 +31,38 @@ If any of this changes (a new page added, logging behavior changed),
 re-verify before running the drill — don't assume this note stays
 accurate forever.
 
+## Express version (10 minutes)
+
+If 30-45 minutes doesn't fit, this covers the one finding that
+actually matters most, cut down to 4 questions. Skip straight to
+**Outcome** at the bottom when done — the full version below is there
+if you want more depth later, not required.
+
+Same scenario as below: a tenant ("Acme Rentals") reports seeing
+another tenant's customer in their contacts list. No incident
+auto-detected (the daily cron only catches bulk deletion and
+self-role-escalation, not this).
+
+1. **Where's "Report incident manually"?** (Admin Console → Incidents,
+   top-right button.) If either of you had to think about it or look
+   it up, that's already a finding — write it down.
+2. **The one real question:** the audit trail won't show anything for
+   this, because *reads* aren't logged — only mutating actions are
+   (confirmed against the actual code, see the verification note
+   above). If the audit trail comes up empty, how would you actually
+   confirm or rule out a cross-tenant exposure? Say the answer out
+   loud. If neither of you has a good one, that's the finding this
+   drill exists to surface.
+3. **Severity, out loud:** agree together this would be **Critical**
+   (customer data exposed to the wrong tenant) — don't let it default
+   to something lower just because nothing's confirmed yet.
+4. **One gut check:** would you two actually hit the 24-hour deadline
+   for customer notification if this happened for real today, given
+   how you'd actually find out (not how fast a drill goes)?
+
+Fill in **Outcome** below with whatever came up — even "we don't have
+a good answer to #2 yet" is a real, useful result.
+
 ## Why this scenario, specifically
 
 Picked to deliberately exercise the playbook's weakest, least-tested
@@ -46,7 +78,8 @@ were found against this session (`order_number_counters`,
 more valuable than drilling the automated path, which is already
 exercised for real every time the cron runs.
 
-**Time needed:** ~30-45 minutes, both of you together (or async with a
+**Time needed:** ~30-45 minutes for the full version, **10 minutes**
+for the express version above — both of you together (or async with a
 shared doc, but a live discussion surfaces more real gaps).
 
 **Format:** one of you plays "on-call responder," the other plays

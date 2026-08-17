@@ -135,10 +135,12 @@ marked done, even where the supporting infrastructure is ready.
       priority: Supabase and Stripe (CRITICAL risk vendors) — do those
       two first if time is short.
 - [ ] **Incident response drill** — the script is written
-      (`docs/incident-response-tabletop-drill.md`); you and Felix Sam need
-      to actually block ~30-45 minutes, run through it together, and
-      fill in the "Outcome" section, then save a copy into
-      `evidence/monitoring/` with the real date.
+      (`docs/incident-response-tabletop-drill.md`), now with a
+      **10-minute express version** (4 questions, same core finding)
+      if the full 30-45 minute version doesn't fit. You and Felix Sam
+      need to actually run either one together and fill in the
+      "Outcome" section, then save a copy into `evidence/monitoring/`
+      with the real date.
 
 ## What changed this session beyond the checklist itself
 
