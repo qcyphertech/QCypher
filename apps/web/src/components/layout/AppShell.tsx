@@ -44,7 +44,7 @@ export function AppShell({
 
       <BottomNav settings={settings} />
 
-      {settings.show_crm_bot && <CrmBotWidget />}
+      {settings.show_crm_bot && <CrmBotWidget dark={dark} />}
 
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} isAdmin={isAdmin} />
       <NoBottomOverscroll />

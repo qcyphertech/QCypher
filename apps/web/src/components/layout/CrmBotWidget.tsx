@@ -6,7 +6,7 @@ import { startCrmBotConversation, sendCrmBotMessage, confirmCrmBotAction, type C
 
 type Msg = { role: 'user' | 'assistant'; content: string }
 
-export function CrmBotWidget() {
+export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([
     { role: 'assistant', content: "Hi, I'm QBot. Ask me how to do something, or tell me to add a contact or schedule something — I'll check with you before making any changes." },
@@ -61,6 +61,22 @@ export function CrmBotWidget() {
     }
   }
 
+  const panelBg = dark ? 'linear-gradient(180deg, #0b1738 0%, #0a1230 100%)' : '#ffffff'
+  const panelShadow = dark ? '0 24px 70px rgba(3,10,30,0.55), 0 0 0 1px rgba(56,189,248,0.18)' : '0 24px 60px rgba(13,36,84,0.18), 0 0 0 1px rgba(13,109,255,0.12)'
+  const bodyBorderTop = dark ? '1px solid rgba(94,234,212,0.14)' : '1px solid rgba(13,36,84,0.08)'
+  const assistantBubbleBg = dark ? 'rgba(255,255,255,0.06)' : '#f2f6fd'
+  const assistantBubbleBorder = dark ? '1px solid rgba(148,197,255,0.14)' : '1px solid rgba(13,36,84,0.06)'
+  const assistantText = dark ? 'rgba(226,236,255,0.92)' : '#171a2b'
+  const typingText = dark ? 'rgba(148,197,255,0.6)' : '#5b6072'
+  const actionBoxBg = dark ? 'rgba(255,255,255,0.05)' : '#f2f6fd'
+  const actionBoxBorder = dark ? '1px solid rgba(94,234,212,0.2)' : '1px solid rgba(13,109,255,0.15)'
+  const cancelText = dark ? 'rgba(226,236,255,0.85)' : '#2a52a0'
+  const cancelBorder = dark ? '1px solid rgba(148,197,255,0.3)' : '1px solid rgba(13,36,84,0.18)'
+  const inputBg = dark ? 'rgba(255,255,255,0.04)' : '#f8faff'
+  const inputBorder = dark ? '1px solid rgba(148,197,255,0.22)' : '1px solid rgba(13,36,84,0.15)'
+  const inputText = dark ? '#fff' : '#171a2b'
+  const inputPlaceholder = dark ? 'rgba(255,255,255,0.4)' : 'rgba(23,26,43,0.4)'
+
   return (
     <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 100 }}>
       <style>{`
@@ -69,15 +85,15 @@ export function CrmBotWidget() {
           50% { box-shadow: 0 8px 32px rgba(13,109,255,0.55), 0 0 0 1px rgba(94,234,212,0.45), 0 0 20px rgba(56,189,248,0.35); }
         }
         .qc-crmbot-toggle { animation: qc-crmbot-glow-pulse 3.2s ease-in-out infinite; }
-        .qc-crmbot-input::placeholder { color: rgba(255,255,255,0.4); }
-        .qc-crmbot-input:focus { outline: none; border-color: rgba(56,189,248,0.6) !important; box-shadow: 0 0 0 3px rgba(13,109,255,0.18); }
+        .qc-crmbot-input::placeholder { color: ${inputPlaceholder}; }
+        .qc-crmbot-input:focus { outline: none; border-color: rgba(13,109,255,0.6) !important; box-shadow: 0 0 0 3px rgba(13,109,255,0.15); }
       `}</style>
 
       {isOpen && (
         <div style={{
           width: 'min(360px, calc(100vw - 40px))', height: 'min(500px, calc(100vh - 120px))',
-          background: 'linear-gradient(180deg, #0b1738 0%, #0a1230 100%)',
-          borderRadius: '18px', boxShadow: '0 24px 70px rgba(3,10,30,0.55), 0 0 0 1px rgba(56,189,248,0.18)',
+          background: panelBg,
+          borderRadius: '18px', boxShadow: panelShadow,
           display: 'flex', flexDirection: 'column', marginBottom: '12px', overflow: 'hidden',
         }}>
           <div style={{
@@ -107,21 +123,21 @@ export function CrmBotWidget() {
                   fontSize: '14px', lineHeight: 1.5, margin: 0, padding: '9px 12px', borderRadius: '12px',
                   background: m.role === 'user'
                     ? 'linear-gradient(135deg,#0d6dff,#2a52a0)'
-                    : 'rgba(255,255,255,0.06)',
-                  border: m.role === 'user' ? 'none' : '1px solid rgba(148,197,255,0.14)',
-                  color: m.role === 'user' ? '#fff' : 'rgba(226,236,255,0.92)',
+                    : assistantBubbleBg,
+                  border: m.role === 'user' ? 'none' : assistantBubbleBorder,
+                  color: m.role === 'user' ? '#fff' : assistantText,
                 }}>{m.content}</p>
               </div>
             ))}
             {sending && (
-              <p style={{ fontSize: '13px', color: 'rgba(148,197,255,0.6)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', animation: 'qc-crmbot-glow-pulse 1s ease-in-out infinite' }} />
+              <p style={{ fontSize: '13px', color: typingText, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0d6dff', animation: 'qc-crmbot-glow-pulse 1s ease-in-out infinite' }} />
                 Thinking…
               </p>
             )}
 
             {pendingAction && (
-              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(94,234,212,0.2)', borderRadius: '12px', padding: '12px', display: 'flex', gap: '8px' }}>
+              <div style={{ background: actionBoxBg, border: actionBoxBorder, borderRadius: '12px', padding: '12px', display: 'flex', gap: '8px' }}>
                 <button
                   onClick={() => resolveAction(true)}
                   disabled={resolvingAction}
@@ -130,13 +146,13 @@ export function CrmBotWidget() {
                 <button
                   onClick={() => resolveAction(false)}
                   disabled={resolvingAction}
-                  style={{ flex: 1, background: 'transparent', color: 'rgba(226,236,255,0.85)', border: '1px solid rgba(148,197,255,0.3)', borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ flex: 1, background: 'transparent', color: cancelText, border: cancelBorder, borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
                 >Cancel</button>
               </div>
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: '1px solid rgba(94,234,212,0.14)' }}>
+          <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: bodyBorderTop }}>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -144,7 +160,7 @@ export function CrmBotWidget() {
               placeholder={pendingAction ? 'Confirm or cancel above first…' : 'Ask how to…'}
               disabled={sending || !!pendingAction}
               className="qc-crmbot-input"
-              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(148,197,255,0.22)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
+              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: inputBorder, background: inputBg, color: inputText, fontSize: '14px', fontFamily: 'inherit' }}
             />
             <button onClick={send} disabled={sending || !!pendingAction} aria-label="Send" style={{ background: 'linear-gradient(135deg,#0d6dff,#38bdf8)', color: '#fff', border: 'none', borderRadius: '8px', padding: '0 14px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <Send size={16} />

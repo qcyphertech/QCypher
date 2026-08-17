@@ -5,6 +5,9 @@ import { Sparkles, X, Send } from 'lucide-react'
 
 type Msg = { role: 'user' | 'assistant'; content: string }
 
+// Public marketing site has no dark/light toggle, so this widget is
+// permanently light — matches the site's own always-light aesthetic
+// (see the CRM's CrmBotWidget for the theme-aware in-app equivalent).
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([
@@ -74,19 +77,19 @@ export function ChatbotWidget() {
     <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 200, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <style>{`
         @keyframes qc-bot-glow-pulse {
-          0%, 100% { box-shadow: 0 8px 28px rgba(13,109,255,0.38), 0 0 0 1px rgba(94,234,212,0.25); }
-          50% { box-shadow: 0 8px 32px rgba(13,109,255,0.55), 0 0 0 1px rgba(94,234,212,0.45), 0 0 20px rgba(56,189,248,0.35); }
+          0%, 100% { box-shadow: 0 8px 28px rgba(13,109,255,0.30), 0 0 0 1px rgba(13,109,255,0.15); }
+          50% { box-shadow: 0 8px 32px rgba(13,109,255,0.45), 0 0 0 1px rgba(13,109,255,0.3), 0 0 20px rgba(56,189,248,0.25); }
         }
         .qc-bot-toggle { animation: qc-bot-glow-pulse 3.2s ease-in-out infinite; }
-        .qc-bot-input::placeholder { color: rgba(255,255,255,0.4); }
-        .qc-bot-input:focus { outline: none; border-color: rgba(56,189,248,0.6) !important; box-shadow: 0 0 0 3px rgba(13,109,255,0.18); }
+        .qc-bot-input::placeholder { color: rgba(23,26,43,0.4); }
+        .qc-bot-input:focus { outline: none; border-color: rgba(13,109,255,0.55) !important; box-shadow: 0 0 0 3px rgba(13,109,255,0.15); }
       `}</style>
 
       {isOpen && (
         <div style={{
           width: 'min(370px, calc(100vw - 40px))', height: 'min(530px, calc(100vh - 120px))',
-          background: 'linear-gradient(180deg, #0b1738 0%, #0a1230 100%)',
-          borderRadius: '18px', boxShadow: '0 24px 70px rgba(3,10,30,0.55), 0 0 0 1px rgba(56,189,248,0.18)',
+          background: '#ffffff',
+          borderRadius: '18px', boxShadow: '0 24px 60px rgba(13,36,84,0.18), 0 0 0 1px rgba(13,109,255,0.12)',
           display: 'flex', flexDirection: 'column', marginBottom: '12px', overflow: 'hidden',
         }}>
           <div style={{
@@ -116,27 +119,27 @@ export function ChatbotWidget() {
                   fontSize: '14px', lineHeight: 1.5, margin: 0, padding: '9px 12px', borderRadius: '12px',
                   background: m.role === 'user'
                     ? 'linear-gradient(135deg,#0d6dff,#2a52a0)'
-                    : 'rgba(255,255,255,0.06)',
-                  border: m.role === 'user' ? 'none' : '1px solid rgba(148,197,255,0.14)',
-                  color: m.role === 'user' ? '#fff' : 'rgba(226,236,255,0.92)',
+                    : '#f2f6fd',
+                  border: m.role === 'user' ? 'none' : '1px solid rgba(13,36,84,0.06)',
+                  color: m.role === 'user' ? '#fff' : '#171a2b',
                 }}>{m.content}</p>
               </div>
             ))}
             {sending && (
-              <p style={{ fontSize: '13px', color: 'rgba(148,197,255,0.6)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', animation: 'qc-bot-glow-pulse 1s ease-in-out infinite' }} />
+              <p style={{ fontSize: '13px', color: '#5b6072', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0d6dff', animation: 'qc-bot-glow-pulse 1s ease-in-out infinite' }} />
                 Typing…
               </p>
             )}
 
             {showLeadForm && !leadSaved && (
-              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(94,234,212,0.2)', borderRadius: '12px', padding: '14px', marginTop: '4px' }}>
-                <p style={{ fontSize: '13px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Let&apos;s set up a call</p>
+              <div style={{ background: '#f2f6fd', border: '1px solid rgba(13,109,255,0.15)', borderRadius: '12px', padding: '14px', marginTop: '4px' }}>
+                <p style={{ fontSize: '13px', fontWeight: 700, color: '#171a2b', marginBottom: '8px' }}>Let&apos;s set up a call</p>
                 <input value={leadName} onChange={(e) => setLeadName(e.target.value)} placeholder="Your name" className="qc-bot-input"
-                  style={{ width: '100%', marginBottom: '6px', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(148,197,255,0.22)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '13px' }} />
+                  style={{ width: '100%', marginBottom: '6px', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(13,36,84,0.15)', background: '#f8faff', color: '#171a2b', fontSize: '13px' }} />
                 <input value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} placeholder="Your email" type="email" className="qc-bot-input"
-                  style={{ width: '100%', marginBottom: '8px', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(148,197,255,0.22)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '13px' }} />
-                {leadError && <p style={{ fontSize: '12px', color: '#ff8a80', marginBottom: '6px' }}>{leadError}</p>}
+                  style={{ width: '100%', marginBottom: '8px', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(13,36,84,0.15)', background: '#f8faff', color: '#171a2b', fontSize: '13px' }} />
+                {leadError && <p style={{ fontSize: '12px', color: '#c0392b', marginBottom: '6px' }}>{leadError}</p>}
                 <button onClick={submitLead} style={{ width: '100%', background: 'linear-gradient(135deg,#0d6dff,#38bdf8)', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                   Continue to booking
                 </button>
@@ -144,8 +147,8 @@ export function ChatbotWidget() {
             )}
 
             {leadSaved && (
-              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(94,234,212,0.2)', borderRadius: '12px', padding: '14px', marginTop: '4px' }}>
-                <p style={{ fontSize: '13px', color: 'rgba(226,236,255,0.92)', marginBottom: '8px' }}>Thanks! Pick a time that works for you:</p>
+              <div style={{ background: '#f2f6fd', border: '1px solid rgba(13,109,255,0.15)', borderRadius: '12px', padding: '14px', marginTop: '4px' }}>
+                <p style={{ fontSize: '13px', color: '#171a2b', marginBottom: '8px' }}>Thanks! Pick a time that works for you:</p>
                 <a href={leadSaved} target="_blank" rel="noopener noreferrer"
                   style={{ display: 'block', textAlign: 'center', background: 'linear-gradient(135deg,#0d6dff,#38bdf8)', color: '#fff', borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>
                   Open booking calendar
@@ -154,7 +157,7 @@ export function ChatbotWidget() {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: '1px solid rgba(94,234,212,0.14)' }}>
+          <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: '1px solid rgba(13,36,84,0.08)' }}>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -162,7 +165,7 @@ export function ChatbotWidget() {
               placeholder="Ask me anything…"
               disabled={sending}
               className="qc-bot-input"
-              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(148,197,255,0.22)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
+              style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(13,36,84,0.15)', background: '#f8faff', color: '#171a2b', fontSize: '14px', fontFamily: 'inherit' }}
             />
             <button onClick={send} disabled={sending} aria-label="Send" style={{ background: 'linear-gradient(135deg,#0d6dff,#38bdf8)', color: '#fff', border: 'none', borderRadius: '8px', padding: '0 14px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <Send size={16} />
