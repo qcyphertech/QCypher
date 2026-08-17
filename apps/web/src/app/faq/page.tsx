@@ -48,7 +48,7 @@ export default function FaqPage() {
         .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
 
         .nav-bar { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
-        .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; max-width: 1060px; margin: 0 auto; }
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; max-width: 1152px; margin: 0 auto; }
         .nav-logo { display: flex; align-items: center; gap: 2px; font-weight: 800; font-size: 17px; color: var(--indigo); }
         .nav-logo img { height: 44px; width: auto; display: block; }
         .nav-links { display: flex; align-items: center; gap: 24px; }
@@ -170,7 +170,6 @@ export default function FaqPage() {
           <Link href="/" className="nav-logo"><img src="/qcypher-logo-horizontal.png" alt="QCypher Technologies" /></Link>
           <nav className="nav-links">
             <Link href="/" className="nav-link">Home</Link>
-            <Link href="/pricing" className="nav-link">Pricing</Link>
             <Link href="/security" className="nav-link">Security</Link>
           </nav>
           <div className="nav-cta"><Link href="/auth/login" className="btn btn-ghost btn-sm">Sign in</Link></div>

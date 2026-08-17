@@ -39,7 +39,7 @@ export default function AboutPage() {
           --mint: #00a87a;
         }
 
-        .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
+        .wrap { max-width: 1152px; margin: 0 auto; padding: 0 32px; }
 
         /* NAV */
         .nav-bar {
@@ -50,7 +50,7 @@ export default function AboutPage() {
         }
         .nav-inner {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 12px 20px; max-width: 1060px; margin: 0 auto;
+          padding: 20px 32px; max-width: 1152px; margin: 0 auto;
         }
         .nav-logo { display: flex; align-items: center; gap: 2px; font-weight: 800; font-size: 17px; color: var(--indigo); }
         .nav-logo img { height: 44px; width: auto; display: block; }

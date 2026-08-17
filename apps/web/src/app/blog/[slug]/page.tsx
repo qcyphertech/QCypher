@@ -56,7 +56,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(26,48,112,0.10)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', maxWidth: '1060px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 32px', maxWidth: '1152px', margin: '0 auto' }}>
           <Link href="/"><img src="/qcypher-logo-horizontal.png" alt="QCypher Technologies" style={{ height: '44px', width: 'auto' }} /></Link>
           <Link href="/blog" style={{ fontSize: '15px', fontWeight: 600, color: '#5b6072', textDecoration: 'none' }}>← All articles</Link>
         </div>

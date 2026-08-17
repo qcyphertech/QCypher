@@ -329,7 +329,7 @@ export default function HomePage() {
         }
         .nav-inner {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 12px 20px; max-width: 1060px; margin: 0 auto;
+          padding: 20px 32px; max-width: 1152px; margin: 0 auto;
         }
         .nav-logo { display: flex; align-items: center; gap: 2px; font-weight: 800; font-size: 17px; color: var(--indigo); }
         .nav-logo img { height: 44px; width: auto; display: block; }
@@ -1887,7 +1887,7 @@ export default function HomePage() {
             </div>
             <div className="foot-col">
               <h5>Quick Links</h5>
-              <Link href="/pricing">Packages</Link>
+              <a href="#packages">Packages</a>
               <a href="#crm">Customer Management</a>
               <Link href="/about">About Us</Link>
               <Link href="/security">Security</Link>
