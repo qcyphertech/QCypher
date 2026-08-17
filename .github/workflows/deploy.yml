@@ -1,0 +1,33 @@
+name: Deploy to production
+
+# Fixes a real gap found 2026-08-16: this Vercel project's native GitHub
+# integration link is stale (still labeled org: nevis09 internally, from
+# before the repo moved to the qcyphertech GitHub org on 2026-08-10) and
+# has not triggered a single automatic deploy since then — every one of
+# the 190+ commits in that window (confirmed via the Vercel API's
+# deployment history, all showing source: "cli") only reached production
+# because a human or an agent manually ran `vercel --prod`. Nobody did
+# that consistently, so production drifted ~9 days behind main before
+# this was caught.
+#
+# This restores real automatic deployment without depending on fixing
+# that native integration (which needs an interactive OAuth reconnect):
+# a Vercel Deploy Hook, confirmed via a real test to correctly pull the
+# current commit from the qcyphertech/QCypher repo, triggered here on
+# every push to main.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Trigger Vercel production deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy hook
+        run: |
+          set -euo pipefail
+          RESPONSE=$(curl -sS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}")
+          echo "$RESPONSE"
+          echo "$RESPONSE" | grep -q '"state"' || (echo "Deploy hook did not return a job state" && exit 1)
