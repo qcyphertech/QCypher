@@ -8,7 +8,7 @@ type Msg = { role: 'user' | 'assistant'; content: string }
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'assistant', content: "Hi! I'm QCypher's assistant. Ask me about our features, pricing, or how it works — or I can set up a call with the team." },
+    { role: 'assistant', content: "Hi, I'm Cy — QCypher's assistant. Ask me about our features, pricing, or how it works, or I can set up a call with the team." },
   ])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -97,12 +97,12 @@ export function ChatbotWidget() {
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '15px' }}>
               <span style={{
                 width: '26px', height: '26px', borderRadius: '8px', flexShrink: 0,
-                background: 'linear-gradient(135deg,#38bdf8,#5eead4)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(255,255,255,0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px',
               }}>
-                <Sparkles size={14} color="#0a1230" />
+                <img src="/icon-192.png" alt="" width={20} height={20} style={{ display: 'block' }} />
               </span>
-              QCypher Assistant
+              Cy — QCypher Assistant
             </span>
             <button onClick={() => setIsOpen(false)} aria-label="Close chat" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex' }}>
               <X size={18} />
