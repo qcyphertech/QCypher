@@ -5,6 +5,7 @@ import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { renderBrandedEmail } from '@/lib/email/brand'
 import { sendEmail } from '@/lib/email/send'
+import type { Json } from '@qcypher/db'
 
 export type ApprovalRequestType = 'delete_account' | 'change_plan' | 'enable_integration' | 'disable_integration'
 export type ApprovalStatus = 'pending' | 'approved' | 'denied'
@@ -66,7 +67,7 @@ export async function createApprovalRequest(
 
   const { data: req, error } = await admin
     .from('approval_requests')
-    .insert({ tenant_id, requested_by: user.id, request_type, details: details ?? null })
+    .insert({ tenant_id, requested_by: user.id, request_type, details: (details ?? null) as Json | null })
     .select('id')
     .single()
 
@@ -173,7 +174,7 @@ export async function decideApprovalRequest(id: string, status: 'approved' | 'de
   if (error) throw new Error(error.message)
 
   if (status === 'approved') {
-    await executeApproval(admin, req)
+    await executeApproval(admin, req as { tenant_id: string; request_type: ApprovalRequestType; details: Record<string, unknown> | null })
   }
 
   const { data: { user: requester } } = await admin.auth.admin.getUserById(req.requested_by)

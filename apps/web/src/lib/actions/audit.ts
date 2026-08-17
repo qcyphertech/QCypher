@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import type { Role } from '@/lib/actions/team'
+import type { Json } from '@qcypher/db'
 
 export type AuditAction =
   | 'contact_created' | 'contact_updated' | 'contact_deleted'
@@ -62,7 +63,7 @@ export async function logAudit(params: {
       resource_type: params.resource_type,
       resource_id: params.resource_id ?? null,
       resource_name: params.resource_name ?? null,
-      details: params.details ?? null,
+      details: (params.details ?? null) as Json | null,
     })
   } catch {
     // best-effort — swallow

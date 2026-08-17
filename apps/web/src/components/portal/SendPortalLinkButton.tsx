@@ -28,7 +28,7 @@ export function SendPortalLinkButton({
     setBusy('email')
     setResult(null)
     const res = await sendPortalMagicLink({ contactId, tenantId, tenantSlug, businessName })
-    setResult(res.ok ? { ok: true, message: 'Portal link sent via email' } : { ok: false, message: res.error })
+    setResult(res.ok ? { ok: true, message: 'Portal link sent via email' } : { ok: false, message: res.error ?? 'Something went wrong' })
     setBusy(null)
     if (res.ok) setTimeout(() => setResult(null), 3000)
   }
@@ -37,7 +37,7 @@ export function SendPortalLinkButton({
     setBusy('sms')
     setResult(null)
     const res = await sendPortalMagicLinkSms({ contactId, tenantId, tenantSlug, businessName })
-    setResult(res.ok ? { ok: true, message: 'Portal link sent via SMS' } : { ok: false, message: res.error })
+    setResult(res.ok ? { ok: true, message: 'Portal link sent via SMS' } : { ok: false, message: res.error ?? 'Something went wrong' })
     setBusy(null)
     if (res.ok) setTimeout(() => setResult(null), 3000)
   }

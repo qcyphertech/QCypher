@@ -5,6 +5,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { renderBrandedEmail } from '@/lib/email/brand'
 import { sendEmail } from '@/lib/email/send'
+import type { Json } from '@qcypher/db'
+
+type IncidentTimeline = Record<string, string | undefined>
 
 export type IncidentType = 'unauthorized_access' | 'breach_attempt' | 'data_exposure' | 'system_anomaly'
 export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical'
@@ -150,11 +153,11 @@ export async function sendInitialCustomerNotification(incidentId: string, opts: 
     }),
   })
 
-  const timeline = { ...(incident.timeline ?? {}), notified_at: new Date().toISOString() }
+  const timeline = { ...(incident.timeline as IncidentTimeline ?? {}), notified_at: new Date().toISOString() }
   await admin.from('incidents').update({
     customers_notified: true,
     notification_sent_at: new Date().toISOString(),
-    timeline,
+    timeline: timeline as Json,
     updated_at: new Date().toISOString(),
   }).eq('id', incidentId)
 }
@@ -173,7 +176,7 @@ export async function sendRootCauseSummary(incidentId: string) {
   if (!emails.length) throw new Error('No admin emails found for this tenant')
 
   const fmt = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }) : '—'
-  const timeline = incident.timeline ?? {}
+  const timeline = (incident.timeline as IncidentTimeline) ?? {}
 
   await sendEmail({
     to: emails,
@@ -196,7 +199,7 @@ export async function sendRootCauseSummary(incidentId: string) {
   await admin.from('incidents').update({
     root_cause_summary: incident.root_cause,
     summary_sent_at: new Date().toISOString(),
-    timeline: { ...timeline, summary_sent_at: new Date().toISOString() },
+    timeline: { ...timeline, summary_sent_at: new Date().toISOString() } as Json,
     updated_at: new Date().toISOString(),
   }).eq('id', incidentId)
 }

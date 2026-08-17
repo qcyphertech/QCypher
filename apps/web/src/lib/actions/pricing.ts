@@ -6,6 +6,7 @@ import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { sendEmail } from '@/lib/email/send'
 import { renderBrandedEmail } from '@/lib/email/brand'
 import { revalidatePath } from 'next/cache'
+import type { Json } from '@qcypher/db'
 import { BASE_PRICING, type PriceTier, type PricingReason } from '@/lib/pricing-constants'
 
 export type { PriceTier, PricingReason }
@@ -51,7 +52,7 @@ async function logPricingAudit(
     action,
     resource_type: 'pricing',
     resource_id: tenantId,
-    details,
+    details: details as Json,
   })
 }
 

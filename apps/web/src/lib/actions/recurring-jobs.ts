@@ -6,6 +6,7 @@ import { sendEmail } from '@/lib/email/send'
 import { renderNeutralEmail } from '@/lib/email/neutral'
 import { revalidatePath } from 'next/cache'
 import { computeNextOccurrence, formatTimeLabel, type RecurrenceFrequency } from '@/lib/recurrence'
+import type { TablesUpdate } from '@qcypher/db'
 
 export type RecurringJob = {
   id: string
@@ -167,7 +168,7 @@ async function notifyAffectedOccurrences(
   }>) {
     // Price always reflects the current series terms; time only if the
     // customer hasn't already picked their own via reschedule.
-    const patch: Record<string, unknown> = {}
+    const patch: TablesUpdate<'orders'> = {}
     if (changes.priceChanged) {
       await admin.from('order_line_items')
         .update({ item_name_snapshot: changes.title, description_snapshot: changes.description, unit_price: changes.amount })
@@ -214,7 +215,7 @@ async function setStatus(id: string, status: 'active' | 'paused' | 'cancelled') 
   const { data: job } = await admin.from('recurring_jobs').select('contact_id').eq('id', id).eq('tenant_id', tenantId).maybeSingle()
   if (!job) return { ok: false as const, error: 'Recurring job not found' }
 
-  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
+  const patch: TablesUpdate<'recurring_jobs'> = { status, updated_at: new Date().toISOString() }
   if (status === 'paused') patch.paused_at = new Date().toISOString()
   if (status === 'cancelled') patch.cancelled_at = new Date().toISOString()
   if (status === 'active') { patch.paused_at = null }

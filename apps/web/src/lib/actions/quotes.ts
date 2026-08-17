@@ -227,7 +227,7 @@ export async function getQuoteByToken(token: string): Promise<{
   if (!order) return { valid: false }
   if (order.signed_at) return { valid: false, alreadySigned: true }
 
-  const contact = order.contact as { first_name: string; last_name: string | null } | null
+  const contact = order.contact as unknown as { first_name: string; last_name: string | null } | null
 
   return {
     valid: true,

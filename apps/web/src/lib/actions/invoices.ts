@@ -7,6 +7,7 @@ import { sendEmail } from '@/lib/email/send'
 import { renderBrandedEmail } from '@/lib/email/brand'
 import { verifyHelcimTransaction } from '@/lib/helcim-verify'
 import { revalidatePath } from 'next/cache'
+import type { Json } from '@qcypher/db'
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void'
 export type InvoiceType = 'one_time' | 'monthly' | 'custom'
@@ -57,7 +58,7 @@ async function logInvoiceAudit(
     resource_type: 'invoice',
     resource_id: invoiceId,
     resource_name: invoiceNumber,
-    details: details ?? null,
+    details: (details ?? null) as Json | null,
   })
 }
 

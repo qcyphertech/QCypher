@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { revalidatePath } from 'next/cache'
+import type { Json } from '@qcypher/db'
 
 export type StaffLocationAssignment = {
   id: string
@@ -45,7 +46,7 @@ async function logAssignmentAudit(userId: string, tenantId: string, action: 'sta
     action,
     resource_type: 'team',
     resource_id: targetUserId,
-    details: details ?? null,
+    details: (details ?? null) as Json | null,
   })
 }
 

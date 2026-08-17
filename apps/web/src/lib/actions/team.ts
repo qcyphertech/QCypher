@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
+import type { Json } from '@qcypher/db'
 
 // 'owner' = Admin, 'member' = User, 'read_only' = Read-only (Phase 21 RBAC)
 export type Role = 'owner' | 'member' | 'read_only'
@@ -75,7 +76,7 @@ async function logTeamAudit(
     action,
     resource_type: 'team',
     resource_id,
-    details: details ?? null,
+    details: (details ?? null) as Json | null,
   })
 }
 

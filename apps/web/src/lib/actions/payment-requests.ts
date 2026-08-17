@@ -6,6 +6,7 @@ import { sendEmail } from '@/lib/email/send'
 import { renderNeutralEmail } from '@/lib/email/neutral'
 import { sendSms } from '@/lib/telnyx'
 import { revalidatePath } from 'next/cache'
+import type { Json } from '@qcypher/db'
 
 export type PaymentRequest = {
   id: string
@@ -49,7 +50,7 @@ async function logPaymentAudit(
     action,
     resource_type: 'payment',
     resource_id: orderId,
-    details: details ?? null,
+    details: (details ?? null) as Json | null,
   })
 }
 

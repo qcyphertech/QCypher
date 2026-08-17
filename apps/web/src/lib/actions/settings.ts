@@ -9,7 +9,7 @@ export async function updateTenantSettings(settings: Partial<TenantSettings>) {
   const { data: tenant } = await supabase.from('tenants').select('id, settings').single()
   if (!tenant) throw new Error('Tenant not found')
 
-  const merged = { ...DEFAULT_SETTINGS, ...(tenant.settings ?? {}), ...settings }
+  const merged = { ...DEFAULT_SETTINGS, ...(tenant.settings as Record<string, unknown> ?? {}), ...settings }
   const { error } = await supabase
     .from('tenants')
     .update({ settings: merged })
