@@ -665,7 +665,9 @@ export default function HomePage() {
           .hero .wrap { position: relative; z-index: 10; }
         }
 
-        .latest-post-card:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(13,36,84,0.10); }
+        .latest-post-card:hover { transform: translateY(-4px); box-shadow: 0 20px 44px rgba(13,36,84,0.14); border-color: rgba(13,109,255,0.22) !important; }
+        .latest-post-card:hover .latest-post-cta span { transform: translateX(3px); }
+        .latest-post-cta span { display: inline-block; transition: transform .15s ease; }
 
         /* SECTION */
         section { padding: 72px 0; }
@@ -1866,31 +1868,47 @@ export default function HomePage() {
 
       {/* FROM THE BLOG — Phase 36 v3, latest published QCypher post */}
       {latestPost && (
-        <section style={{ background: '#fff', borderTop: '1px solid rgba(31,60,136,.08)', padding: '64px 0' }}>
+        <section style={{ background: '#fff', borderTop: '1px solid rgba(31,60,136,.08)', padding: '72px 0' }}>
           <div className="wrap">
             <div className="section-head center">
-              <span className="eyebrow">From the Blog</span>
+              <span className="eyebrow" style={{ color: 'var(--orange)' }}>From the Blog</span>
               <h2>Fresh off the press</h2>
             </div>
             <Link
               href={`/blog/${latestPost.slug}`}
               style={{
-                display: 'block', maxWidth: '680px', margin: '0 auto',
-                background: 'var(--offwhite)', border: '1px solid var(--navy-line)', borderRadius: '18px',
-                padding: '32px', transition: 'transform .15s, box-shadow .15s',
+                display: 'block', maxWidth: '700px', margin: '0 auto', position: 'relative',
+                background: '#fff', border: '1px solid rgba(13,36,84,0.08)', borderRadius: '20px',
+                padding: '36px 40px', overflow: 'hidden',
+                boxShadow: '0 4px 24px rgba(13,36,84,0.06)',
+                transition: 'transform .18s ease, box-shadow .18s ease',
               }}
               className="latest-post-card"
             >
-              <p style={{ fontSize: '22px', fontWeight: 800, color: 'var(--navy)', marginBottom: '10px', letterSpacing: '-0.01em' }}>{latestPost.title}</p>
-              <p style={{ fontSize: '15px', color: 'var(--soft)', lineHeight: 1.65, marginBottom: '16px' }}>{latestPost.excerpt}</p>
+              <span style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
+                background: 'linear-gradient(90deg, var(--orange), var(--electric), var(--cyan))',
+              }} />
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 800,
+                letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--electric)',
+                background: 'rgba(13,109,255,0.08)', border: '1px solid rgba(13,109,255,0.18)',
+                borderRadius: '999px', padding: '5px 12px', marginBottom: '18px',
+              }}>
+                Latest
+              </span>
+              <p style={{ fontSize: '24px', fontWeight: 800, color: 'var(--navy)', marginBottom: '12px', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{latestPost.title}</p>
+              <p style={{ fontSize: '15px', color: 'var(--soft)', lineHeight: 1.7, marginBottom: '22px' }}>{latestPost.excerpt}</p>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '13px', color: 'var(--soft)' }}>
+                <span style={{ fontSize: '13px', color: '#8a90a3', fontWeight: 600 }}>
                   {latestPost.published_at ? new Date(latestPost.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
                 </span>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--indigo-d)' }}>Read more →</span>
+                <span className="latest-post-cta" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--electric)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  Read article <span aria-hidden="true">→</span>
+                </span>
               </div>
             </Link>
-            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+            <div style={{ textAlign: 'center', marginTop: '28px' }}>
               <Link href="/blog" className="btn btn-ghost btn-sm">View all posts</Link>
             </div>
           </div>
