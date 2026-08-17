@@ -741,7 +741,7 @@ export default function HomePage() {
              shrink together to co-exist in one screen width, breaking the
              "one card ~full width, swipe for the next" mobile layout — the
              sizing has to come entirely from the basis instead. Subtracts
-             38px (.wrap's 40px side padding, minus the outline ring's 9px-
+             38px (.wrap's 40px side padding, minus the outline ring's 10px-
              per-side bleed that's now real layout space via nth-of-type(1)'s
              margin-left below) + 24px safety buffer (mobile Safari's 100vw
              can render wider than the actual visible viewport) — a bit
@@ -749,38 +749,62 @@ export default function HomePage() {
              centered instead of leaving a big empty gap on the right. */
           flex: 0 0 clamp(260px, calc(100vw - 62px), 415px);
           scroll-snap-align: start;
-          /* Second border line — a thicker offset outline, one color per
-             tile. outline-offset keeps it as a visibly separate ring
-             rather than doubling up flush against the card's own border;
-             .pkg-grid's larger gap + padding above gives it room to
-             breathe without touching neighboring cards. */
-          outline: 3px solid var(--pkg-outline, var(--border2));
-          outline-offset: 6px;
+          /* HUD corner brackets (see .pkg-bracket) replace the old full
+             ring — a slow pulsing glow instead of a static outline, so
+             the card reads as "active" at rest, not just on hover. Each
+             card's animation-delay is offset (below, per nth-of-type) so
+             the three tiles don't pulse in lockstep. */
+          animation: pkg-pulse 2.6s ease-in-out infinite;
+        }
+        @keyframes pkg-pulse {
+          0%, 100% {
+            box-shadow:
+              0 0 9px 1px color-mix(in srgb, var(--pkg-outline, var(--border2)) 35%, transparent),
+              0 0 20px 5px color-mix(in srgb, var(--pkg-outline, var(--border2)) 14%, transparent);
+          }
+          50% {
+            box-shadow:
+              0 0 15px 2px color-mix(in srgb, var(--pkg-outline, var(--border2)) 60%, transparent),
+              0 0 30px 9px color-mix(in srgb, var(--pkg-outline, var(--border2)) 28%, transparent);
+          }
+        }
+        /* Corner brackets — dashed at rest, snap solid and grow on hover
+           (same "at rest vs. engaged" language the old ring used). Four
+           span children, one per corner, added in JSX next to each
+           .pkg-card. */
+        .pkg-bracket {
+          position: absolute; width: 22px; height: 22px;
+          border-width: 3px; border-style: dashed;
+          border-color: var(--pkg-outline, var(--border2));
+          transition: width .18s ease, height .18s ease, border-style .1s;
+          pointer-events: none;
+        }
+        .pkg-bracket.tl { top: -10px; left: -10px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+        .pkg-bracket.tr { top: -10px; right: -10px; border-left: none; border-bottom: none; border-radius: 0 8px 0 0; }
+        .pkg-bracket.bl { bottom: -10px; left: -10px; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
+        .pkg-bracket.br { bottom: -10px; right: -10px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
+        .pkg-card:hover .pkg-bracket {
+          border-style: solid;
+          width: 28px; height: 28px;
         }
         .pkg-card:hover {
-          /* Ambient glow via box-shadow — a filter:blur() pseudo-element
-             with negative z-index looked more evenly rounded, but is a
-             known browser compositing gotcha: the blurred layer can end up
-             painting OVER its sibling's opaque background instead of
-             behind it, washing the whole card's interior with color. A
-             plain box-shadow always respects the card's own border-radius
-             and paints correctly behind it, with no such risk — the
-             corners read a little less rounded at this blur/spread ratio,
-             but the tile itself never gets tinted. */
-          box-shadow:
-            0 20px 44px rgba(15,23,42,.12),
-            0 0 8px 8px var(--pkg-glow, transparent);
+          /* Lift shadow on top of whatever phase the pulse animation is
+             currently in — box-shadow here would fight the keyframes'
+             own box-shadow, so the lift uses a filter/transform instead
+             of trying to merge into the same property. */
           transform: translateY(-3px);
+          filter: drop-shadow(0 14px 28px rgba(15,23,42,.14));
         }
-        .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #0d6dff; --pkg-glow: rgba(13,109,255,0.22); }
+        .pkg-grid .pkg-card:nth-of-type(1) { --pkg-outline: #4a9db5; --pkg-glow: rgba(74,157,181,0.22); }
         @media (max-width: 900px) {
-          /* Shift just the first card right by the outline ring's bleed
-             (9px) via margin (not .pkg-grid padding — scroll-snap-align
-             auto-scrolls to cancel that out entirely) so the ring's outer
-             edge lands flush with .wrap's padding, matching the pill and
-             heading above instead of overhanging further left. */
+          /* Shift just the first card right by the corner brackets' bleed
+             (10px, same amount the old outline ring used) via margin (not .pkg-grid
+             padding — scroll-snap-align auto-scrolls to cancel that out
+             entirely) so the ring's outer edge lands flush with .wrap's
+             padding, matching the pill and heading above instead of
+             overhanging further left. */
           .pkg-grid .pkg-card:nth-of-type(1) {
-            margin-left: 9px;
+            margin-left: 10px;
             /* scroll-snap-align:start on the first card makes the browser
                auto-scroll to snap it flush at rest, silently cancelling
                out ANY leading space before it (margin or padding, tried
@@ -791,14 +815,14 @@ export default function HomePage() {
             scroll-snap-align: none;
           }
         }
-        .pkg-grid .pkg-card:nth-of-type(2) { --pkg-outline: #00a86b; --pkg-glow: rgba(0,168,107,0.22); }
-        .pkg-grid .pkg-card:nth-of-type(3) { --pkg-outline: #ff7a1a; --pkg-glow: rgba(255,122,26,0.22); }
+        .pkg-grid .pkg-card:nth-of-type(2) { --pkg-outline: #00a86b; --pkg-glow: rgba(0,168,107,0.22); animation-delay: -0.6s; }
+        .pkg-grid .pkg-card:nth-of-type(3) { --pkg-outline: #ff9a4d; --pkg-glow: rgba(255,122,26,0.22); animation-delay: -1.3s; }
         @media (max-width: 900px) {
           /* Mirror the first card's leading margin fix: with no trailing
-             padding on .pkg-grid at this width, the last card's outline
-             ring (9px bleed) had no scroll room to reach and was clipped
+             padding on .pkg-grid at this width, the last card's corner
+             brackets had no scroll room to reach and were clipped
              flush against the scroll container's right edge. */
-          .pkg-grid .pkg-card:last-child { margin-right: 9px; }
+          .pkg-grid .pkg-card:last-child { margin-right: 10px; }
         }
         .pkg-card.pop {
           border-top: 3px solid var(--border2);
@@ -1610,6 +1634,8 @@ export default function HomePage() {
 
             {/* Starter */}
             <div className="pkg-card">
+              <span className="pkg-bracket tl" /><span className="pkg-bracket tr" />
+              <span className="pkg-bracket bl" /><span className="pkg-bracket br" />
               <span className="pkg-badge-spacer" />
               <div className="pkg-for">Getting started with protection</div>
               <div className="pkg-name">Starter</div>
@@ -1630,6 +1656,8 @@ export default function HomePage() {
 
             {/* Growth */}
             <div className="pkg-card pop">
+              <span className="pkg-bracket tl" /><span className="pkg-bracket tr" />
+              <span className="pkg-bracket bl" /><span className="pkg-bracket br" />
               <div className="pkg-badge">Most popular</div>
               <div className="pkg-for">Ready for more customers</div>
               <div className="pkg-name">Growth</div>
@@ -1650,6 +1678,8 @@ export default function HomePage() {
 
             {/* All-In */}
             <div className="pkg-card">
+              <span className="pkg-bracket tl" /><span className="pkg-bracket tr" />
+              <span className="pkg-bracket bl" /><span className="pkg-bracket br" />
               <span className="pkg-badge-spacer" />
               <div className="pkg-for">Fully hands-off growth</div>
               <div className="pkg-name">All-In</div>
