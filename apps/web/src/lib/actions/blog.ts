@@ -5,8 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { revalidatePath } from 'next/cache'
 import type { TablesUpdate } from '@qcypher/db'
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? ''
+import { callDeepSeek } from '@/lib/deepseek'
 
 export type BlogArticle = {
   id: string
@@ -78,25 +77,6 @@ function extractExcerpt(html: string): string {
   return text.slice(0, 160)
 }
 
-async function callGemini(prompt: string): Promise<string> {
-  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured')
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.6, maxOutputTokens: 2000 },
-      }),
-    },
-  )
-  const json = await res.json()
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
-  if (!text) throw new Error(json.error?.message ?? 'Gemini returned no content')
-  return text
-}
-
 function blogPrompt(opts: { businessName: string; serviceName: string; serviceDescription: string; price?: number | null }) {
   return `You are a professional small-business blog writer.
 Write a blog post promoting this service:
@@ -141,7 +121,7 @@ export async function generateTenantBlogDraft(tenantId: string, catalogItemId: s
   ])
   if (!tenant || !item) throw new Error('Tenant or catalog item not found')
 
-  const html = await callGemini(blogPrompt({
+  const html = await callDeepSeek(blogPrompt({
     businessName: tenant.name,
     serviceName: item.name,
     serviceDescription: item.description ?? '',
@@ -188,7 +168,7 @@ export async function generateQcypherBlogDrafts(): Promise<{ created: number }> 
 
   for (const topic of QCYPHER_TOPICS) {
     try {
-      const html = await callGemini(`You are writing for QCypher Technologies' own blog (qcyphertech.com), a company that builds CRM/scheduling software for small local service businesses (plumbers, HVAC, cleaners, etc.).
+      const html = await callDeepSeek(`You are writing for QCypher Technologies' own blog (qcyphertech.com), a company that builds CRM/scheduling software for small local service businesses (plumbers, HVAC, cleaners, etc.).
 
 Topic: ${topic}
 

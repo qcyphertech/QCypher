@@ -1,7 +1,15 @@
 /**
  * POST /api/admin/report
- * Assembles real numbers for a tenant, calls Gemini to write 2-3 warm sentences
- * around those numbers (no invention allowed), then sends via Resend.
+ * Assembles real numbers for a tenant, calls DeepSeek to write 2-3 warm
+ * sentences around those numbers (no invention allowed), then sends via
+ * Resend.
+ *
+ * Switched from Gemini to DeepSeek 2026-08-17: gemini-2.0-flash (the
+ * model this route called) was shut down by Google on 2026-06-01, so
+ * this integration had been silently broken for ~2.5 months — every
+ * call fell through to the plain-data fallback below with no error
+ * surfaced anywhere. DeepSeek V4 Flash is also meaningfully cheaper
+ * than Gemini's current-generation replacement models.
  *
  * Body: { tenantId: string, recipientEmail: string }
  */
@@ -12,8 +20,8 @@ import { createClient as createAdmin } from '@supabase/supabase-js'
 import { assembleReportData } from '@/lib/actions/admin'
 import { renderBrandedEmail } from '@/lib/email/brand'
 import { isSuperAdminUser } from '@/lib/auth/superadmin'
+import { callDeepSeek, deepseekConfigured } from '@/lib/deepseek'
 
-const GEMINI_API_KEY  = process.env.GEMINI_API_KEY ?? ''
 const RESEND_API_KEY  = process.env.RESEND_API_KEY ?? ''
 const RESEND_FROM     = process.env.RESEND_FROM_EMAIL ?? 'hello@qcyphertech.com'
 
@@ -74,27 +82,15 @@ Write the summary now. Use only these exact numbers.`
 
   let aiSummary = ''
 
-  if (GEMINI_API_KEY) {
+  if (deepseekConfigured()) {
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
-          }),
-        },
-      )
-      const json = await res.json()
-      aiSummary = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+      aiSummary = await callDeepSeek(prompt, { maxTokens: 200, temperature: 0.3 })
     } catch {
       aiSummary = ''
     }
   }
 
-  // Fallback if Gemini key missing or call failed — pure data summary, no AI
+  // Fallback if DeepSeek key missing or call failed — pure data summary, no AI
   if (!aiSummary) {
     aiSummary = `This ${data.month}, QCypher sent ${data.reviewsSent} review request${data.reviewsSent !== 1 ? 's' : ''} on your behalf and automatically followed up on ${data.missedCallTexts} missed call${data.missedCallTexts !== 1 ? 's' : ''}. Your online scheduler is ${data.calConnected ? 'active and accepting bookings' : 'not yet connected'}.`
   }
