@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
   // Auth check
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const tenantId = user.app_metadata?.tenant_id ?? user.user_metadata?.tenant_id
+  if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { templateId, contactId, preview: _preview, channel: _channel } = await request.json() as {
     templateId: string
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
   const { data: logEntry } = await supabase
     .from('send_log')
     .insert({
+      tenant_id:   tenantId,
       contact_id:  contactId,
       template_id: templateId,
       channel,
@@ -114,6 +117,7 @@ export async function POST(request: NextRequest) {
 
     const label = channel === 'sms' ? 'SMS' : 'Email'
     await supabase.from('interactions').insert({
+      tenant_id:   tenantId,
       contact_id:  contactId,
       type:        'note',
       body:        `${label} sent: "${template.name ?? template.subject ?? 'message'}" — ${preview.slice(0, 100)}${preview.length > 100 ? '…' : ''}`,

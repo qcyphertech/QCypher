@@ -64,7 +64,10 @@ export function MfaSetupForm() {
       // Clean up any stale unverified factor from a previous abandoned
       // attempt — Supabase rejects a second enroll() while one is pending.
       const { data: factors } = await supabase.auth.mfa.listFactors()
-      const stale = factors?.totp.find(f => f.status === 'unverified')
+      // `.totp` is typed (and per Supabase's docs, behaves) as verified-only
+      // — `.all` is the one that actually includes unverified factors, which
+      // is what this cleanup needs to find.
+      const stale = factors?.all.find(f => f.factor_type === 'totp' && f.status === 'unverified')
       if (stale) {
         await supabase.auth.mfa.unenroll({ factorId: stale.id })
       }
