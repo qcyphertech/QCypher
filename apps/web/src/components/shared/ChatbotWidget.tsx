@@ -157,6 +157,9 @@ export function ChatbotWidget() {
             )}
           </div>
 
+          <p style={{ fontSize: '11px', fontWeight: 600, color: '#8a90a3', textAlign: 'center', padding: '6px 12px 0', margin: 0, letterSpacing: '0.02em' }}>
+            Powered by AI
+          </p>
           <div style={{ display: 'flex', gap: '8px', padding: '12px', borderTop: '1px solid rgba(13,36,84,0.08)' }}>
             <input
               value={input}

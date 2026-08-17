@@ -110,6 +110,13 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
                 <img src="/icon-192.png" alt="" width={20} height={20} style={{ display: 'block' }} />
               </span>
               QBot
+              <span style={{
+                fontSize: '10px', fontWeight: 700, color: '#5eead4', letterSpacing: '0.04em',
+                background: 'rgba(94,234,212,0.12)', border: '1px solid rgba(94,234,212,0.3)',
+                borderRadius: '999px', padding: '2px 7px',
+              }}>
+                AI-ASSISTED
+              </span>
             </span>
             <button onClick={() => setIsOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex' }}>
               <X size={18} />

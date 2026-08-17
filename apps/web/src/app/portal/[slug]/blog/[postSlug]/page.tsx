@@ -58,17 +58,19 @@ export default async function TenantBlogPostPage({ params }: { params: { slug: s
         <Link href={`/portal/${params.slug}/blog`} style={{ fontSize: '13px', color: '#2a52a0', textDecoration: 'none', fontWeight: 600 }}>
           ← Back to {tenant.name} blog
         </Link>
-        <article style={{ background: '#ffffff', borderRadius: '16px', padding: '40px', marginTop: '20px', border: '1px solid rgba(26,48,112,0.08)', boxShadow: '0 4px 24px rgba(26,48,112,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }}>
-            <p style={{ fontSize: '13px', color: '#8a90a3', margin: 0 }}>
-              {article.published_at ? new Date(article.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
-            </p>
-            {article.disclose_ai_assistance && (
-              <span style={{ fontSize: '12px', color: '#0c4a6e', background: '#f0f9ff', borderLeft: '3px solid #0ea5e9', borderRadius: '4px', padding: '4px 10px', flexShrink: 0 }}>
-                This post was created with AI assistance
-              </span>
-            )}
-          </div>
+        <article style={{ position: 'relative', background: '#ffffff', borderRadius: '16px', padding: '40px', marginTop: '20px', border: '1px solid rgba(26,48,112,0.08)', boxShadow: '0 4px 24px rgba(26,48,112,0.06)' }}>
+          {article.disclose_ai_assistance && (
+            <span style={{
+              position: 'absolute', top: '16px', right: '16px',
+              fontSize: '11px', fontWeight: 700, color: '#0c4a6e', background: '#f0f9ff',
+              border: '1px solid rgba(14,165,233,0.3)', borderRadius: '999px', padding: '4px 10px',
+            }}>
+              ⚡ AI-Assisted
+            </span>
+          )}
+          <p style={{ fontSize: '13px', color: '#8a90a3', margin: '0 0 16px' }}>
+            {article.published_at ? new Date(article.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
+          </p>
           {/* AI-generated HTML, reviewed by a super admin before publish (see docs/) */}
           <div
             style={{ color: '#171a2b', fontSize: '16px', lineHeight: 1.75 }}

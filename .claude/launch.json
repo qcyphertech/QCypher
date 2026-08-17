@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3011,
       "cwd": "apps/web"
+    },
+    {
+      "name": "QCypher CRM (prod)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start"],
+      "port": 3011,
+      "cwd": "apps/web"
     }
   ]
 }
