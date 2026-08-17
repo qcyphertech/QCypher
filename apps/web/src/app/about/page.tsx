@@ -595,8 +595,8 @@ export default function AboutPage() {
                   cursor: 'pointer',
                   transition: 'transform 0.2s',
                 }}
-                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 📅 Schedule a Meeting
               </button>
@@ -613,8 +613,8 @@ export default function AboutPage() {
                   cursor: 'pointer',
                   transition: 'transform 0.2s',
                 }}
-                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 📝 Fill Out Form
               </button>

@@ -114,7 +114,7 @@ function layoutEvents(evs: CalEvent[]) {
   const sorted = [...evs].sort((a, b) =>
     parseISO(a.starts_at).getTime() - parseISO(b.starts_at).getTime()
   )
-  const cols: number[][] = [] // cols[i] = end minute of last event in column i
+  const cols: number[] = [] // cols[i] = end minute of last event in column i
   const result: { ev: CalEvent; col: number; totalCols: number }[] = []
 
   sorted.forEach(ev => {

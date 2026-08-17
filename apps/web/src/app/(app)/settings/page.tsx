@@ -88,7 +88,7 @@ export default async function SettingsPage() {
   const locations = isAdmin && tenantId ? await getLocations(tenantId).catch(() => []) : []
   const staffAssignments = isAdmin && tenantId && locations.length > 0 ? await getStaffLocationAssignments(tenantId).catch(() => []) : []
 
-  const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings ?? {}) }
+  const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}) }
   const identities  = user.identities ?? []
   const hasPassword = identities.some(i => i.provider === 'email')
   const hasGoogle   = identities.some(i => i.provider === 'google')

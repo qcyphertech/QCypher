@@ -99,7 +99,7 @@ export default function HomePage() {
   const [showReportModal, setShowReportModal] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ businessName: '', phone: '', email: '', message: '', selectedPackages: [] })
+  const [formData, setFormData] = useState({ businessName: '', phone: '', email: '', message: '', selectedPackages: [] as string[] })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formSuccess, setFormSuccess] = useState(false)
 
@@ -1958,8 +1958,8 @@ export default function HomePage() {
                   cursor: 'pointer',
                   transition: 'transform 0.2s',
                 }}
-                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 📅 Schedule a Meeting
               </button>
@@ -1980,8 +1980,8 @@ export default function HomePage() {
                   cursor: 'pointer',
                   transition: 'transform 0.2s',
                 }}
-                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 📝 Fill Out Form
               </button>

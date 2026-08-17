@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import type { Json } from '@qcypher/db'
 
 // Cal.com sends webhook events here.
 // We cache booking data into cal_bookings and attempt to link to a contact.
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
     attendee_email:      attendeeEmail,
     attendee_phone:      attendeePhone,
     cal_event_type_id:   Number(booking.eventTypeId ?? 0) || null,
-    raw:                 payload,
+    raw:                 payload as Json,
     updated_at:          new Date().toISOString(),
   }
 

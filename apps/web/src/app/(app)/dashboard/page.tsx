@@ -292,7 +292,7 @@ export default async function DashboardPage() {
     supabase.from('events').select('*', { count: 'exact', head: true }).gte('starts_at', now.toISOString()),
     supabase.from('orders').select('total_amount').eq('payment_status', 'paid').gte('created_at', startOfMonth),
     supabase.from('orders').select('id, total_amount, payment_status, created_at, contact:contacts(first_name, last_name)').order('created_at', { ascending: false }).limit(5),
-    supabase.from('pipeline_deals').select('*', { count: 'exact', head: true }).then(r => r).catch(() => ({ count: 0, data: null, error: null })),
+    supabase.from('pipeline_deals').select('*', { count: 'exact', head: true }).then(r => r, () => ({ count: 0, data: null, error: null })),
     supabase.from('orders').select('total_amount, created_at').eq('payment_status', 'paid'),
   ])
 

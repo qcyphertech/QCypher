@@ -83,7 +83,7 @@ export function IncidentsPanel({ tenants }: { tenants: TenantSummary[] }) {
                     onToggle={() => setExpanded(e => e === inc.id ? null : inc.id)}
                     isPending={isPending}
                     onRefresh={load}
-                    startTransition={startTransition}
+                    startTransition={startTransition as (fn: () => void | Promise<void>) => void}
                   />
                 ))}
               </div>
@@ -103,7 +103,7 @@ export function IncidentsPanel({ tenants }: { tenants: TenantSummary[] }) {
                     onToggle={() => setExpanded(e => e === inc.id ? null : inc.id)}
                     isPending={isPending}
                     onRefresh={load}
-                    startTransition={startTransition}
+                    startTransition={startTransition as (fn: () => void | Promise<void>) => void}
                   />
                 ))}
               </div>

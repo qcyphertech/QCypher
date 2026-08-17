@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ContactDetail } from '@/components/contacts/ContactDetail'
 import type { Metadata } from 'next'
+import type { RecurringJob } from '@/lib/actions/recurring-jobs'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -45,7 +46,7 @@ export default async function ContactPage({ params }: Props) {
       tenantSlug={tenant?.slug ?? ''}
       businessName={tenant?.name ?? ''}
       catalogItems={catalogItems ?? []}
-      recurringJobs={recurringJobs ?? []}
+      recurringJobs={(recurringJobs ?? []) as RecurringJob[]}
     />
   )
 }

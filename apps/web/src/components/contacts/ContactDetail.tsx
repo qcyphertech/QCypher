@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
 
 type Contact = Tables<'contacts'>
 type Interaction = Tables<'interactions'>
-type Order = { id: string; total_amount: number; payment_status: string; notes: string | null; created_at: string }
+type Order = { id: string; order_number: number | null; total_amount: number; payment_status: string; notes: string | null; created_at: string }
 
 const STATUS_COLOR: Record<Contact['status'], string> = {
   active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
