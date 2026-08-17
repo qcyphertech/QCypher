@@ -8,7 +8,7 @@ type Msg = { role: 'user' | 'assistant'; content: string }
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'assistant', content: "Hi, I'm Cy — QCypher's assistant. Ask me about our features, pricing, or how it works, or I can set up a call with the team." },
+    { role: 'assistant', content: "Hi, I'm QBot — QCypher's assistant. Ask me about our features, pricing, or how it works, or I can set up a call with the team." },
   ])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -102,7 +102,7 @@ export function ChatbotWidget() {
               }}>
                 <img src="/icon-192.png" alt="" width={20} height={20} style={{ display: 'block' }} />
               </span>
-              Cy — QCypher Assistant
+              QBot — QCypher Assistant
             </span>
             <button onClick={() => setIsOpen(false)} aria-label="Close chat" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex' }}>
               <X size={18} />

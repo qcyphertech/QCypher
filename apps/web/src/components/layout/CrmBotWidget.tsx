@@ -9,7 +9,7 @@ type Msg = { role: 'user' | 'assistant'; content: string }
 export function CrmBotWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'assistant', content: "Hi, I'm Cy. Ask me how to do something, or tell me to add a contact or schedule something — I'll check with you before making any changes." },
+    { role: 'assistant', content: "Hi, I'm QBot. Ask me how to do something, or tell me to add a contact or schedule something — I'll check with you before making any changes." },
   ])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -93,7 +93,7 @@ export function CrmBotWidget() {
               }}>
                 <img src="/icon-192.png" alt="" width={20} height={20} style={{ display: 'block' }} />
               </span>
-              Cy — CRM Assistant
+              QBot — CRM Assistant
             </span>
             <button onClick={() => setIsOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex' }}>
               <X size={18} />
