@@ -27,7 +27,11 @@ jobs:
   typecheck:
     name: TypeScript
     runs-on: ubuntu-latest
-    continue-on-error: true   # surface issues without blocking; fix separately
+    # Blocking as of 2026-08-16: debt paid down from 135 errors to 0
+    # (see docs/typescript-debt-assessment.md) - a real @supabase/ssr
+    # version-skew root cause plus 3 confirmed production bugs found
+    # along the way (docs/risk-register.md Risk #4). Was
+    # continue-on-error: true before this.
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
