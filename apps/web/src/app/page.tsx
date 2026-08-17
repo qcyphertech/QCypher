@@ -182,6 +182,14 @@ export default function HomePage() {
             { opacity: 1, scale: 1, z: 0, y: 0, ease: 'none' },
             0.25
           )
+          // Hand off clickability at the crossover point (halfway through
+          // beta's fade-in) — before this, alpha is the visible phase and
+          // its buttons must stay clickable; after, beta is visible and on
+          // top, so it should own clicks instead. .set() applies instantly
+          // rather than interpolating, so there's no ambiguous in-between
+          // state where both or neither phase is clickable.
+          .set(heroAlphaRef.current, { pointerEvents: 'none' }, 0.5)
+          .set(heroBetaRef.current, { pointerEvents: 'auto' }, 0.5)
       })
     }
 
@@ -448,6 +456,15 @@ export default function HomePage() {
         .hero-phase-alpha .wrap, .hero-phase-beta .wrap { width: 100%; }
         .hero-phase-beta {
           display: flex; align-items: center;
+          /* Starts invisible (opacity:0, set inline) but is still a
+             full-size absolutely-positioned box stacked on top of
+             hero-phase-alpha in DOM order — opacity alone doesn't
+             remove it from hit-testing, so without this its (invisible)
+             buttons silently intercepted every click meant for alpha's
+             real, visible buttons underneath. The GSAP timeline below
+             flips this to 'auto' (and alpha to 'none') once beta
+             actually becomes the visible phase. */
+          pointer-events: none;
         }
         .hero-phase-beta h2 {
           font-size: clamp(40px, 6vw, 88px); font-weight: 800; line-height: 1.02;
