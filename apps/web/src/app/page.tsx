@@ -478,7 +478,17 @@ export default function HomePage() {
         .hero-phase-beta .btn-ghost {
           background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent;
         }
-        .hero-phase-beta .btn-ghost:hover { opacity: 0.92; }
+        /* Explicitly repeats background/color/border-color (not just
+           opacity) — .hero .btn-ghost:hover (below, a leftover from
+           before this hero had alpha/beta phases) ties this rule's
+           specificity on those properties and, since it comes later in
+           the cascade, was winning: this button rendered with navy
+           text on a near-transparent navy background on hover, i.e.
+           invisible against the dark hero. Confirmed via a real :hover
+           inspection, not guessed from reading the CSS. */
+        .hero-phase-beta .btn-ghost:hover {
+          opacity: 0.92; background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent;
+        }
         .hero-micro { font-size: 13px; color: var(--soft); font-weight: 500; margin-bottom: 28px; }
 
         /* Phase Alpha — "We handle the tech" panel with glowing ring visual */
@@ -492,7 +502,11 @@ export default function HomePage() {
         .hero-phase-alpha .accent-orange { color: var(--orange); }
         .hero-phase-alpha .btn-hero-primary { color: var(--navy); }
         .hero-phase-alpha .btn-ghost { background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent; }
-        .hero-phase-alpha .btn-ghost:hover { opacity: 0.92; }
+        /* See the matching comment on .hero-phase-beta .btn-ghost:hover
+           above — same fix, same reason. */
+        .hero-phase-alpha .btn-ghost:hover {
+          opacity: 0.92; background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; border-color: transparent;
+        }
         .hero-phase-alpha .hero-micro { color: rgba(255,255,255,0.6); }
         .hero-phase-alpha .trust-row { color: rgba(255,255,255,0.68); }
         .hero-phase-alpha .trust-row .dot { background: #5eead4; }
