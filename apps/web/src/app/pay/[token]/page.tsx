@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getPaymentRequestByToken } from '@/lib/actions/payment-requests'
+import { getPaymentRequestByToken, getPaymentRequestOrderLines } from '@/lib/actions/payment-requests'
 import { PayRequestCard } from '@/components/invoice/PayRequestCard'
 import type { Metadata } from 'next'
 
@@ -15,7 +15,14 @@ export default async function PayRequestPage({ params }: { params: { token: stri
   const r = request as unknown as {
     token: string; order_id: string; tenant_id: string; contact_id: string; amount: number; status: string
     expires_at: string
-    orders: { payment_status: string } | null
+    orders: {
+      order_number: number | null
+      payment_status: string
+      discount_type: 'percent' | 'flat' | null
+      discount_value: number | null
+      show_discount: boolean
+      created_at: string
+    } | null
     contacts: { first_name: string; last_name: string | null; email: string | null } | null
     tenants: { name: string } | null
   }
@@ -27,6 +34,10 @@ export default async function PayRequestPage({ params }: { params: { token: stri
   // pay, and this keeps that check next to where it's used.
   const isExpired = r.status === 'active' && new Date(r.expires_at).getTime() < Date.now()
   const effectiveStatus = r.orders?.payment_status === 'paid' ? 'paid' : isExpired ? 'expired' : r.status
+
+  // Only fetch line items for a link someone can actually still act on —
+  // an invalid/expired link doesn't need the extra query.
+  const lines = effectiveStatus === 'active' ? await getPaymentRequestOrderLines(r.order_id, r.tenant_id) : []
 
   return (
     <PayRequestCard
@@ -40,7 +51,13 @@ export default async function PayRequestPage({ params }: { params: { token: stri
         businessName: r.tenants?.name ?? 'this business',
         customerName: `${r.contacts?.first_name ?? ''} ${r.contacts?.last_name ?? ''}`.trim(),
         customerEmail: r.contacts?.email ?? '',
+        orderNumber: r.orders?.order_number ?? null,
+        orderCreatedAt: r.orders?.created_at ?? null,
+        orderDiscountType: r.orders?.discount_type ?? null,
+        orderDiscountValue: r.orders?.discount_value ?? null,
+        orderShowDiscount: r.orders?.show_discount ?? true,
       }}
+      lines={lines as any}
     />
   )
 }

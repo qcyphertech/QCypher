@@ -185,10 +185,27 @@ export async function getPaymentRequestByToken(token: string) {
   const admin = createAdminClient()
   const { data } = await admin
     .from('payment_requests')
-    .select('id, token, order_id, tenant_id, contact_id, amount, status, expires_at, orders(id, total_amount, payment_status, notes), contacts(first_name, last_name, email), tenants(name)')
+    .select('id, token, order_id, tenant_id, contact_id, amount, status, expires_at, orders(id, order_number, total_amount, payment_status, notes, discount_type, discount_value, show_discount, created_at), contacts(first_name, last_name, email), tenants(name)')
     .eq('token', token)
     .maybeSingle()
   return data
+}
+
+// Line items for the order behind a payment link, so the customer gets a
+// reminder of what they're actually paying for instead of a bare amount —
+// same "Invoice details" breakdown the portal's own payment page shows,
+// just for the public token-authed link. No contact-ownership check:
+// the payment request token itself is the auth here, same trust model
+// noted on the page that calls this.
+export async function getPaymentRequestOrderLines(orderId: string, tenantId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('order_line_items')
+    .select('id, item_name_snapshot, description_snapshot, quantity, unit_price, discount_type, discount_value, show_discount, billing_unit_snapshot')
+    .eq('order_id', orderId)
+    .eq('tenant_id', tenantId)
+    .order('created_at')
+  return data ?? []
 }
 
 export async function markPaymentRequestPaid(token: string) {
