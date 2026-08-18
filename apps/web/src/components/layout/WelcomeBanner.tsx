@@ -29,7 +29,7 @@ export function WelcomeBanner() {
           Welcome to QCypher CRM
         </p>
         <p className="text-[15px] leading-relaxed mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-          Start by adding your first contact, or explore the Pipeline and Calendar.
+          Start by adding your first contact, or explore the Calendar.
           Everything is organized around making your day faster — not busier.
         </p>
       </div>

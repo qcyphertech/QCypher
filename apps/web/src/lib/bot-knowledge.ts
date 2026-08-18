@@ -11,7 +11,7 @@ PACKAGES (monthly plans, all include hands-on setup + a Customer Management Tool
 - All-In: everything in Growth, plus a simple online store with payments, email/text outreach, 24/7 website chat.
 - Custom packages are also available depending on budget — no long-term contracts, switch tiers anytime.
 
-BUILT-IN CRM (free with every monthly plan): full contact list, notes/call history per customer, scheduling calendar, sales pipeline, quick-reply text/email templates, works on phone/tablet/computer.
+BUILT-IN CRM (free with every monthly plan): full contact list, notes/call history per customer, scheduling calendar, quick-reply text/email templates, works on phone/tablet/computer.
 
 HOW IT WORKS: Day 1 setup call (site built, Google claimed, email live) -> site live within the first week with training -> 90-day check-in call -> ongoing monthly reports explained by a real person (not just a dashboard dump).
 

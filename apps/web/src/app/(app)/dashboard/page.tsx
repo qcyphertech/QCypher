@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
-import { Users, Calendar, UserPlus, Activity, ShoppingBag, DollarSign, LayoutGrid, BookOpen, FileText, ArrowUpRight } from 'lucide-react'
+import { Users, Calendar, UserPlus, Activity, ShoppingBag, DollarSign, BookOpen, FileText, ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import { WelcomeBanner } from '@/components/layout/WelcomeBanner'
 import { getRecentAuditLogs, type AuditLog } from '@/lib/actions/audit'
@@ -248,7 +248,6 @@ export default async function DashboardPage() {
     { count: upcomingEvents },
     { data: paidOrders },
     { data: recentOrders },
-    { count: openDeals },
   ] = await Promise.all([
     supabase.from('contacts').select('*', { count: 'exact', head: true }),
     supabase.from('contacts').select('*', { count: 'exact', head: true }).gte('created_at', startOfMonth),
@@ -257,7 +256,6 @@ export default async function DashboardPage() {
     supabase.from('events').select('*', { count: 'exact', head: true }).gte('starts_at', now.toISOString()),
     supabase.from('orders').select('total_amount').eq('payment_status', 'paid').gte('created_at', startOfMonth),
     supabase.from('orders').select('id, total_amount, payment_status, created_at, contact:contacts(first_name, last_name)').order('created_at', { ascending: false }).limit(5),
-    supabase.from('pipeline_deals').select('*', { count: 'exact', head: true }).then(r => r, () => ({ count: 0, data: null, error: null })),
   ])
 
   const revenueThisMonth = (paidOrders ?? []).reduce((s, o) => s + (Number(o.total_amount) || 0), 0)
@@ -293,15 +291,14 @@ export default async function DashboardPage() {
           desktop with no code-level cause found. Inline critical CSS can't
           be purged or dropped, so it can't silently regress the same way. */}
       <style>{`
-        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 12px; }
         @media (min-width: 1024px) {
-          .stat-grid { grid-template-columns: repeat(4, 1fr); }
+          .stat-grid { grid-template-columns: repeat(3, 1fr); }
         }
       `}</style>
       <div className="stat-grid">
         <StatCard label="Total Contacts" value={totalContacts ?? 0} sub={`+${newThisMonth ?? 0} this month`} icon={Users} accent={BLUE} glow={`${BLUE}44`} />
         <StatCard label="Revenue (Month)" value={fmtRevenue} sub="paid orders" icon={DollarSign} accent="#10b981" glow="rgba(16,185,129,0.35)" />
-        <StatCard label="Pipeline Deals" value={openDeals ?? 0} sub="open deals" icon={LayoutGrid} accent="#f97316" glow="rgba(249,115,22,0.35)" />
         <StatCard label="Upcoming Events" value={upcomingEvents ?? 0} sub="on calendar" icon={Calendar} accent={TEAL} glow={`${TEAL}44`} />
       </div>
 
@@ -348,7 +345,6 @@ export default async function DashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }} className="sm:grid-cols-6">
           <QuickAction href="/contacts/new"  icon={UserPlus}    label="Add Contact"   color={BLUE} />
           <QuickAction href="/orders"        icon={ShoppingBag} label="New Order"     color="#10b981" />
-          <QuickAction href="/pipeline"      icon={Activity}    label="Pipeline"      color="#f97316" />
           <QuickAction href="/templates/new" icon={FileText}    label="New Template"  color="#a855f7" />
           <QuickAction href="/calendar"      icon={Calendar}    label="Calendar"      color={TEAL} />
           <QuickAction href="/inventory"     icon={BookOpen}    label="Inventory"     color="#ec4899" />

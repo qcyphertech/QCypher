@@ -52,7 +52,7 @@ function ClayLaptop({ screenRef }: { screenRef?: React.Ref<HTMLDivElement> }) {
           <div className="clay-crm-nav">
             <div className="clay-crm-nav-item active"><span className="clay-crm-nav-dot" /><span>Dashboard</span></div>
             <div className="clay-crm-nav-item"><span className="clay-crm-nav-dot" /><span>Contacts</span></div>
-            <div className="clay-crm-nav-item"><span className="clay-crm-nav-dot" /><span>Pipeline</span></div>
+            <div className="clay-crm-nav-item"><span className="clay-crm-nav-dot" /><span>Orders</span></div>
             <div className="clay-crm-nav-item"><span className="clay-crm-nav-dot" /><span>Reports</span></div>
           </div>
           <div className="clay-crm-main">
@@ -1676,7 +1676,6 @@ export default function HomePage() {
                 <li><span className="chk">✓</span>Your full customer contact list — always organized</li>
                 <li><span className="chk">✓</span>Notes and call history on every customer</li>
                 <li><span className="chk">✓</span>Built-in scheduling calendar</li>
-                <li><span className="chk">✓</span>Sales pipeline — see where every deal stands</li>
                 <li><span className="chk">✓</span>Quick-reply text & email templates</li>
                 <li><span className="chk">✓</span>Works on your phone, tablet, or computer</li>
               </ul>

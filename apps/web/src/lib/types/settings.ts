@@ -1,5 +1,4 @@
 export type TenantSettings = {
-  show_pipeline:  boolean
   show_calendar:  boolean
   show_templates: boolean
   show_catalog:   boolean
@@ -9,7 +8,6 @@ export type TenantSettings = {
 }
 
 export const DEFAULT_SETTINGS: TenantSettings = {
-  show_pipeline:  true,
   show_calendar:  true,
   show_templates: true,
   show_catalog:   true,

@@ -21,7 +21,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
     id: 'features',
     label: 'Features & CRM',
     items: [
-      { q: 'What’s included in the customer management tool?', a: 'It’s a simple CRM: contacts, notes, call history, appointment scheduling, SMS and email templates, and a sales pipeline view. It’s included free with every monthly plan.' },
+      { q: 'What’s included in the customer management tool?', a: 'It’s a simple CRM: contacts, notes, call history, appointment scheduling, and SMS and email templates. It’s included free with every monthly plan.' },
       { q: 'Can I import my existing customers?', a: 'Yes. Upload a CSV file of your contacts. We’ll flag anything that looks like a duplicate so you can review it before it’s added.' },
       { q: 'Does the scheduling work on my phone?', a: 'Yes. Everything works on desktop, tablet, or phone — you can manage appointments from anywhere.' },
       { q: 'Can my team members use the CRM?', a: 'Yes. You can invite team members and set their access level: Admin, User, or Read-only.' },

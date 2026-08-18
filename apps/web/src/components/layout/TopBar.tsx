@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Search, Bell, Sun, Moon, Menu, X,
-  LayoutDashboard, Users, GitBranch, Calendar,
+  LayoutDashboard, Users, Calendar,
   Package, ShoppingBag, FileText, Settings, ShieldCheck, Home, Wallet,
   HelpCircle, LogOut, BarChart2,
 } from 'lucide-react'
@@ -36,7 +36,6 @@ const PRIMARY_NAV: NavItem[] = [
 ]
 
 const SECONDARY_NAV: NavItem[] = [
-  { href: '/pipeline',  label: 'Pipeline',  icon: GitBranch,   color: '#f97316', bg: 'rgba(249,115,22,0.12)',  flag: 'show_pipeline'  },
   { href: '/inventory', label: 'Inventory', icon: Package,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   flag: 'show_catalog'   },
   { href: '/payments',  label: 'Payments',  icon: Wallet,      color: '#2a52a0', bg: 'rgba(42,82,160,0.12)',   flag: 'show_orders'    },
   { href: '/templates', label: 'Templates', icon: FileText,    color: '#a855f7', bg: 'rgba(168,85,247,0.12)',  flag: 'show_templates' },

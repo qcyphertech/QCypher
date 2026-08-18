@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { updateTenantSettings } from '@/lib/actions/settings'
 import { type TenantSettings } from '@/lib/types/settings'
-import { GitBranch, Calendar, FileText, Package, ShoppingBag, BarChart2, Bot } from 'lucide-react'
+import { Calendar, FileText, Package, ShoppingBag, BarChart2, Bot } from 'lucide-react'
 
 const MODULES: Array<{
   key: keyof TenantSettings
@@ -12,7 +12,6 @@ const MODULES: Array<{
   icon: React.ElementType
   color: string
 }> = [
-  { key: 'show_pipeline',  label: 'Pipeline',   description: 'Deal stages and sales pipeline',        icon: GitBranch,   color: '#f97316' },
   { key: 'show_calendar',  label: 'Calendar',   description: 'Scheduling and event management',       icon: Calendar,    color: '#0ea5e9' },
   { key: 'show_catalog',   label: 'Catalog',    description: 'Products, services & rentals',          icon: Package,     color: '#f59e0b' },
   { key: 'show_orders',    label: 'Orders',     description: 'Sales orders and invoicing',            icon: ShoppingBag, color: '#10b981' },

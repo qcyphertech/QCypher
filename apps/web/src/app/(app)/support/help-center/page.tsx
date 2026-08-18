@@ -7,10 +7,9 @@ const GUIDES = [
   {
     title: 'Getting started',
     steps: [
-      'Sign in and you\'ll land on your Dashboard — a snapshot of recent contacts, upcoming events, and pipeline activity.',
+      'Sign in and you\'ll land on your Dashboard — a snapshot of recent contacts and upcoming events.',
       'Head to Contacts and create your first contact. Fill in a name and email — everything else is optional.',
       'Add a note to a contact from their detail page to log a call, meeting, or any interaction.',
-      'Open Pipeline to move contacts through your sales or service stages.',
     ],
   },
   {

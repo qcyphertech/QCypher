@@ -37,7 +37,7 @@ export default function AboutPage() {
         </p>
         <p className="text-[15px] leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
           The Micro-CRM is everything you actually need to manage your customers: contacts, notes,
-          a pipeline, a calendar, and quick replies — nothing more, nothing less.
+          a calendar, and quick replies — nothing more, nothing less.
         </p>
       </div>
 
