@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 export type Notification = {
   id: string
   tenant_id: string
-  type: 'quote_signed' | 'invoice_paid' | 'contact_updated'
+  type: 'quote_signed' | 'invoice_paid' | 'contact_updated' | 'qbot_insight'
   title: string
   body: string | null
   link: string | null

@@ -11,7 +11,7 @@ import type { Json } from '@qcypher/db'
 
 export type CrmBotActionType =
   | 'create_contact' | 'schedule_event' | 'create_invoice' | 'mark_order_paid' | 'add_order_discount'
-  | 'toggle_module' | 'invite_team_member'
+  | 'toggle_module' | 'invite_team_member' | 'undo_last_action'
 
 export type CrmBotProposedAction = {
   id: string
@@ -103,7 +103,7 @@ const CRM_BOT_TOOLS: ChatTool[] = [
   },
   {
     name: 'query_business_data',
-    description: 'Answer a question about the tenant\'s real business numbers by fetching one live metric. Call this instead of guessing or making up a number whenever the user asks about revenue, unpaid invoices, leads, customers, upcoming events, or expenses.',
+    description: 'Fetch one live metric and state it plainly. Use this for a simple lookup ("how much revenue this month", "how many leads") — for anything that needs comparing, explaining, or reasoning over the numbers ("why is revenue down", "compare this month to last"), call analyze_business_data instead.',
     parameters: {
       type: 'object',
       properties: {
@@ -114,6 +114,17 @@ const CRM_BOT_TOOLS: ChatTool[] = [
         },
       },
       required: ['metric'],
+    },
+  },
+  {
+    name: 'analyze_business_data',
+    description: 'Answer a question that requires reasoning over real business numbers — comparisons, trends, explanations ("why is revenue down", "compare this month vs last", "how are we doing overall"). Pulls a full snapshot of real current + prior-period numbers and reasons over them; never invents a figure not in that snapshot.',
+    parameters: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', description: 'The user\'s question, verbatim or close to it' },
+      },
+      required: ['question'],
     },
   },
   {
@@ -201,7 +212,22 @@ const CRM_BOT_TOOLS: ChatTool[] = [
       required: ['email'],
     },
   },
+  {
+    name: 'undo_last_action',
+    description: 'Propose reversing the most recent completed action from this conversation (e.g. "undo that", "never mind, undo the discount"). Only the last completed action can be undone, and only once.',
+    parameters: { type: 'object', properties: {}, required: [] },
+  },
 ]
+
+// Reversible action types only — create_invoice and invite_team_member
+// are deliberately excluded: undoing a sent invite means revoking
+// account access after the fact, and undoing an invoice after it may
+// already be visible to a customer is a different risk profile than
+// undoing a same-conversation typo. Both are still fixable manually
+// from their own pages.
+const UNDOABLE_ACTIONS = new Set<CrmBotActionType>([
+  'create_contact', 'schedule_event', 'mark_order_paid', 'add_order_discount', 'toggle_module',
+])
 
 // Only paths this bot's own knowledge base actually documents — a
 // model-invented path would otherwise become a real, clickable link to a
@@ -239,6 +265,9 @@ function summarizeAction(type: string, data: Record<string, unknown>): string {
   }
   if (type === 'invite_team_member') {
     return `Invite ${data.email} as ${data.role ?? 'member'}`
+  }
+  if (type === 'undo_last_action') {
+    return `Undo: ${data.target_summary}`
   }
   return `${type}: ${JSON.stringify(data)}`
 }
@@ -333,6 +362,75 @@ async function runSearch(admin: AdminClient, tenantId: string, recordType: strin
   return { text: "I can only search contacts or orders.", links: [] }
 }
 
+type ContactMatch = { id: string; first_name: string; last_name: string | null }
+// Was a silent "first ilike match wins" in schedule_event and
+// create_invoice — with two "John"s, it would confidently link the
+// wrong one with no indication it had guessed. Now returns every match
+// (capped) so a caller can refuse to guess when there's more than one.
+async function matchContactByName(admin: AdminClient, tenantId: string, name: string): Promise<{ matches: ContactMatch[] }> {
+  const nameParts = name.trim().split(/\s+/)
+  const { data } = await admin
+    .from('contacts')
+    .select('id, first_name, last_name')
+    .eq('tenant_id', tenantId)
+    .or(`first_name.ilike.%${nameParts[0]}%,last_name.ilike.%${nameParts[0]}%`)
+    .limit(5)
+  return { matches: (data ?? []) as ContactMatch[] }
+}
+
+function contactLabel(c: ContactMatch): string {
+  return [c.first_name, c.last_name].filter(Boolean).join(' ')
+}
+
+// Two-step reasoning loop: fetch a broad snapshot of REAL numbers first,
+// then hand them to the model as data (not as something it has to
+// recall or guess) and ask it to answer the actual question. This is
+// what lets QBot answer "why is revenue down" or "compare this month to
+// last" instead of only ever restating one fixed metric — the model
+// reasons over real figures, it never invents one not in the snapshot.
+async function runBusinessAnalysis(admin: AdminClient, tenantId: string, question: string): Promise<string> {
+  const now = new Date()
+  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+
+  const [thisMonthPaid, lastMonthPaid, unpaid, leads, active, expensesThis, expensesLast, upcoming] = await Promise.all([
+    admin.from('orders').select('total_amount').eq('tenant_id', tenantId).eq('payment_status', 'paid').gte('updated_at', startOfThisMonth.toISOString()),
+    admin.from('orders').select('total_amount').eq('tenant_id', tenantId).eq('payment_status', 'paid').gte('updated_at', startOfLastMonth.toISOString()).lt('updated_at', startOfThisMonth.toISOString()),
+    admin.from('orders').select('total_amount').eq('tenant_id', tenantId).eq('payment_status', 'pending'),
+    admin.from('contacts').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'lead'),
+    admin.from('contacts').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'active'),
+    admin.from('expenses').select('amount').eq('tenant_id', tenantId).gte('date', startOfThisMonth.toISOString().slice(0, 10)),
+    admin.from('expenses').select('amount').eq('tenant_id', tenantId).gte('date', startOfLastMonth.toISOString().slice(0, 10)).lt('date', startOfThisMonth.toISOString().slice(0, 10)),
+    admin.from('events').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).gte('starts_at', now.toISOString()),
+  ])
+
+  const sum = (rows: { total_amount?: number; amount?: number }[] | null) => (rows ?? []).reduce((s, r) => s + (r.total_amount ?? r.amount ?? 0), 0)
+  const unpaidRows = unpaid.data ?? []
+
+  const snapshot = [
+    `Revenue this month so far (paid orders): ${money(sum(thisMonthPaid.data))}`,
+    `Revenue last month (paid orders, full month): ${money(sum(lastMonthPaid.data))}`,
+    `Unpaid invoices: ${unpaidRows.length}, totaling ${money(sum(unpaidRows))}`,
+    `Leads: ${leads.count ?? 0}`,
+    `Active customers: ${active.count ?? 0}`,
+    `Expenses this month so far: ${money(sum(expensesThis.data))}`,
+    `Expenses last month (full month): ${money(sum(expensesLast.data))}`,
+    `Upcoming calendar events: ${upcoming.count ?? 0}`,
+    `Today's date: ${now.toLocaleDateString('en-US', { dateStyle: 'long' })} — note "this month" is partial, "last month" is a complete month, so a same-number comparison isn't apples-to-apples unless you say so.`,
+  ].join('\n')
+
+  try {
+    const { callDeepSeekChat } = await import('@/lib/deepseek')
+    const answer = await callDeepSeekChat([
+      { role: 'system', content: 'You answer questions about a business using ONLY the real numbers given below — never invent or estimate a figure that is not there. If the data does not answer the question, say so plainly. Keep it to 2-4 sentences, no markdown.' },
+      { role: 'user', content: `Real numbers:\n${snapshot}\n\nQuestion: ${question}` },
+    ], { maxTokens: 250 })
+    return answer
+  } catch {
+    return `Here's what I have: ${snapshot.replace(/\n/g, ' ')}`
+  }
+}
+
 export async function startCrmBotConversation(): Promise<CrmBotResult<string>> {
   let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string, userId: string
   try {
@@ -350,9 +448,9 @@ export async function startCrmBotConversation(): Promise<CrmBotResult<string>> {
 }
 
 export async function sendCrmBotMessage(conversationId: string, message: string): Promise<CrmBotResult<CrmBotReply>> {
-  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string, role: 'owner' | 'member' | 'read_only'
+  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string, role: 'owner' | 'member' | 'read_only', userId: string
   try {
-    ;({ admin, tenantId, role } = await requireTenantWriter())
+    ;({ admin, tenantId, role, userId } = await requireTenantWriter())
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
   }
@@ -385,8 +483,39 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
   const now = new Date()
   const currentDateLine = `Current date/time: ${now.toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}. Resolve "today"/"tomorrow"/"next week" etc. against this, not any other date.`
 
+  // Cross-conversation memory: every new conversation used to start
+  // completely cold, with no idea what was discussed last time. Only
+  // fetched on this conversation's first turn (not every message) —
+  // the tail of the immediately-prior conversation is enough to let
+  // "did that invite go through?" or "back to what we were doing" work
+  // without re-explaining, without paying this query on every turn.
+  let memoryLine = ''
+  if (!history || history.length === 0) {
+    const { data: priorConvo } = await admin
+      .from('chatbot_conversations')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('user_id', userId)
+      .neq('id', conversationId)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (priorConvo) {
+      const { data: priorMessages } = await admin
+        .from('chatbot_messages')
+        .select('role, content')
+        .eq('conversation_id', priorConvo.id)
+        .order('created_at', { ascending: false })
+        .limit(8)
+      if (priorMessages && priorMessages.length > 0) {
+        const transcript = priorMessages.reverse().map(m => `${m.role === 'user' ? 'User' : 'You'}: ${m.content}`).join('\n')
+        memoryLine = `\n\nContext from your most recent previous conversation with this user (for continuity only — don't assume it's still relevant unless the user references it):\n${transcript}`
+      }
+    }
+  }
+
   const messages: ChatMessage[] = [
-    { role: 'system', content: `${CRM_BOT_SYSTEM_PROMPT}\n\n${currentDateLine}` },
+    { role: 'system', content: `${CRM_BOT_SYSTEM_PROMPT}\n\n${currentDateLine}${memoryLine}` },
     ...(history ?? []).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     { role: 'user', content: trimmed },
   ]
@@ -431,7 +560,59 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
     navigateLinks.push(...links)
   }
 
+  const analyzeCall = toolCalls.find(c => c.name === 'analyze_business_data')
+  if (analyzeCall) {
+    const answer = await runBusinessAnalysis(admin, tenantId, String(analyzeCall.arguments.question ?? message))
+    dataAnswer = dataAnswer ? `${dataAnswer} ${answer}` : answer
+  }
+
   const navigate = navigateLinks.length ? navigateLinks : null
+
+  // undo_last_action needs to resolve WHICH action it's undoing before a
+  // pending row can even be created — handled separately from the
+  // generic mutation-batch path below, which assumes the tool call's
+  // own arguments are already everything needed to summarize it.
+  const undoCall = toolCalls.find(c => c.name === 'undo_last_action')
+  if (undoCall) {
+    const { data: target } = await admin
+      .from('crm_bot_actions')
+      .select('id, action_type, action_data, result_data')
+      .eq('conversation_id', conversationId)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!target || !UNDOABLE_ACTIONS.has(target.action_type as CrmBotActionType)) {
+      const reply = target
+        ? "That last action can't be undone here — you'll need to fix it from its own page."
+        : "There's nothing in this conversation for me to undo."
+      await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
+      return { ok: true, data: { conversationId, reply, proposedAction: null, navigate } }
+    }
+    if (OWNER_ONLY_ACTIONS.has(target.action_type as CrmBotActionType) && role !== 'owner') {
+      const reply = "Only the account owner can undo that."
+      await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
+      return { ok: true, data: { conversationId, reply, proposedAction: null, navigate } }
+    }
+
+    const targetSummary = summarizeAction(target.action_type, target.action_data as Record<string, unknown>)
+    const { data: actionRow, error } = await admin
+      .from('crm_bot_actions')
+      .insert({
+        conversation_id: conversationId,
+        tenant_id: tenantId,
+        action_type: 'undo_last_action',
+        action_data: { target_id: target.id, target_type: target.action_type, target_summary: targetSummary, target_result: target.result_data } as Json,
+      })
+      .select('id')
+      .single()
+    if (error || !actionRow) return { ok: false, error: 'Could not save proposed action' }
+
+    const reply = `Undo: ${targetSummary} — confirm below to proceed.`
+    await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
+    return { ok: true, data: { conversationId, reply, proposedAction: { id: actionRow.id, actionType: 'undo_last_action', summary: reply.replace(' — confirm below to proceed.', '') }, navigate } }
+  }
 
   const MUTATION_TOOL_NAMES = new Set([
     'create_contact', 'schedule_event', 'create_invoice', 'mark_order_paid',
@@ -541,6 +722,10 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
 
   const data = action.action_data as Record<string, unknown>
   let reply: string
+  // Filled in per action type below, then persisted as result_data —
+  // undo_last_action reads this back to know exactly what to reverse
+  // (the created row's id, or the values overwritten by an update).
+  let resultData: Record<string, unknown> = {}
   try {
     if (action.action_type === 'create_contact') {
       const { data: contact, error } = await admin
@@ -557,6 +742,7 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
         .select('id, first_name, last_name')
         .single()
       if (error || !contact) throw new Error(error?.message ?? 'Insert failed')
+      resultData = { contact_id: contact.id }
       reply = `✓ Created contact: ${[contact.first_name, contact.last_name].filter(Boolean).join(' ')}`
       revalidatePath('/contacts')
     } else if (action.action_type === 'schedule_event') {
@@ -568,38 +754,35 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
 
       let contactId: string | null = null
       if (data.contact_name) {
-        const nameParts = String(data.contact_name).trim().split(/\s+/)
-        const { data: matches } = await admin
-          .from('contacts')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .ilike('first_name', `%${nameParts[0]}%`)
-          .limit(1)
-        contactId = matches?.[0]?.id ?? null
+        const { matches } = await matchContactByName(admin, tenantId, String(data.contact_name))
+        if (matches.length > 1) {
+          throw new Error(`AMBIGUOUS:Multiple contacts match "${data.contact_name}": ${matches.map(contactLabel).join(', ')}. Try again with a fuller name to pick one.`)
+        }
+        contactId = matches[0]?.id ?? null
       }
 
-      const { error } = await admin.from('events').insert({
+      const { data: event, error } = await admin.from('events').insert({
         tenant_id: tenantId,
         contact_id: contactId,
         title: String(data.title ?? 'Untitled').slice(0, 200),
         description: data.description ? String(data.description).slice(0, 2000) : null,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
-      })
-      if (error) throw new Error(error.message)
+      }).select('id').single()
+      if (error || !event) throw new Error(error?.message ?? 'Insert failed')
+      resultData = { event_id: event.id }
       reply = `✓ Scheduled "${data.title}" for ${startsAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`
       revalidatePath('/calendar')
     } else if (action.action_type === 'create_invoice') {
       let customerId: string | null = null
+      let ambiguousNote = ''
       if (data.customer_name) {
-        const nameParts = String(data.customer_name).trim().split(/\s+/)
-        const { data: matches } = await admin
-          .from('contacts')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .ilike('first_name', `%${nameParts[0]}%`)
-          .limit(1)
-        customerId = matches?.[0]?.id ?? null
+        const { matches } = await matchContactByName(admin, tenantId, String(data.customer_name))
+        if (matches.length > 1) {
+          throw new Error(`AMBIGUOUS:Multiple contacts match "${data.customer_name}": ${matches.map(contactLabel).join(', ')}. Try again with a fuller name to pick one.`)
+        }
+        customerId = matches[0]?.id ?? null
+        if (!customerId) ambiguousNote = ' (customer not linked — no matching contact found)'
       }
 
       const { data: order, error: orderErr } = await admin
@@ -621,18 +804,20 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
       })))
       if (linesErr) throw new Error(linesErr.message)
 
-      reply = `✓ Created invoice #${order.order_number}${data.customer_name && !customerId ? ' (customer not linked — no matching contact found)' : ''}`
+      resultData = { order_id: order.id }
+      reply = `✓ Created invoice #${order.order_number}${ambiguousNote}`
       revalidatePath('/orders')
     } else if (action.action_type === 'mark_order_paid') {
-      const { data: order } = await admin.from('orders').select('id, order_number').eq('tenant_id', tenantId).eq('order_number', Number(data.order_number)).single()
+      const { data: order } = await admin.from('orders').select('id, order_number, payment_status').eq('tenant_id', tenantId).eq('order_number', Number(data.order_number)).single()
       if (!order) throw new Error(`Order #${data.order_number} not found`)
       const { error } = await admin.from('orders').update({ payment_status: 'paid' }).eq('id', order.id)
       if (error) throw new Error(error.message)
+      resultData = { order_id: order.id, previous_payment_status: order.payment_status }
       reply = `✓ Marked order #${order.order_number} as paid`
       revalidatePath('/orders')
       revalidatePath(`/orders/${order.id}`)
     } else if (action.action_type === 'add_order_discount') {
-      const { data: order } = await admin.from('orders').select('id, order_number').eq('tenant_id', tenantId).eq('order_number', Number(data.order_number)).single()
+      const { data: order } = await admin.from('orders').select('id, order_number, discount_type, discount_value, show_discount').eq('tenant_id', tenantId).eq('order_number', Number(data.order_number)).single()
       if (!order) throw new Error(`Order #${data.order_number} not found`)
       const discountType = data.discount_type === 'flat' ? 'flat' : 'percent'
       const discountValue = Number(data.discount_value)
@@ -644,6 +829,12 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
         show_discount: data.show_discount !== false,
       }).eq('id', order.id)
       if (error) throw new Error(error.message)
+      resultData = {
+        order_id: order.id,
+        previous_discount_type: order.discount_type,
+        previous_discount_value: order.discount_value,
+        previous_show_discount: order.show_discount,
+      }
       reply = `✓ Applied a ${discountType === 'percent' ? `${discountValue}%` : `$${discountValue}`} discount to order #${order.order_number}`
       revalidatePath('/orders')
       revalidatePath(`/orders/${order.id}`)
@@ -652,9 +843,11 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
       const settingsKey = `show_${moduleKey}` as keyof TenantSettings
       if (!(settingsKey in DEFAULT_SETTINGS)) throw new Error(`Unknown module: ${moduleKey}`)
       const { data: tenant } = await admin.from('tenants').select('settings').eq('id', tenantId).single()
-      const merged = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}), [settingsKey]: data.enabled === true }
+      const currentSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}) }
+      const merged = { ...currentSettings, [settingsKey]: data.enabled === true }
       const { error } = await admin.from('tenants').update({ settings: merged }).eq('id', tenantId)
       if (error) throw new Error(error.message)
+      resultData = { settings_key: settingsKey, previous_value: currentSettings[settingsKey] }
       reply = `✓ ${data.enabled ? 'Enabled' : 'Disabled'} the ${moduleKey} module`
       revalidatePath('/settings', 'layout')
       revalidatePath('/dashboard', 'layout')
@@ -688,17 +881,61 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
           app_metadata: { tenant_id: tenantId, role: inviteRole, provider: 'email', providers: ['email'] },
         })
       }
+      resultData = { invited_user_id: invited?.id ?? null, invite_token: token.token }
       reply = `✓ Invited ${email} as ${inviteRole}`
       revalidatePath('/settings')
+    } else if (action.action_type === 'undo_last_action') {
+      const targetId = String(data.target_id ?? '')
+      const targetType = String(data.target_type ?? '') as CrmBotActionType
+      const targetResult = (data.target_result ?? {}) as Record<string, unknown>
+
+      const { data: targetRow } = await admin.from('crm_bot_actions').select('status').eq('id', targetId).eq('tenant_id', tenantId).single()
+      if (!targetRow || targetRow.status !== 'completed') throw new Error('That action is no longer available to undo')
+
+      if (targetType === 'create_contact') {
+        const { error } = await admin.from('contacts').delete().eq('id', String(targetResult.contact_id))
+        if (error) throw new Error(`Could not undo — ${error.message}`)
+        revalidatePath('/contacts')
+      } else if (targetType === 'schedule_event') {
+        const { error } = await admin.from('events').delete().eq('id', String(targetResult.event_id))
+        if (error) throw new Error(`Could not undo — ${error.message}`)
+        revalidatePath('/calendar')
+      } else if (targetType === 'mark_order_paid') {
+        const { error } = await admin.from('orders').update({ payment_status: targetResult.previous_payment_status ?? 'pending' }).eq('id', String(targetResult.order_id))
+        if (error) throw new Error(error.message)
+        revalidatePath('/orders')
+      } else if (targetType === 'add_order_discount') {
+        const { error } = await admin.from('orders').update({
+          discount_type: targetResult.previous_discount_type ?? null,
+          discount_value: targetResult.previous_discount_value ?? null,
+          show_discount: targetResult.previous_show_discount ?? true,
+        }).eq('id', String(targetResult.order_id))
+        if (error) throw new Error(error.message)
+        revalidatePath('/orders')
+      } else if (targetType === 'toggle_module') {
+        const { data: tenant } = await admin.from('tenants').select('settings').eq('id', tenantId).single()
+        const merged = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}), [String(targetResult.settings_key)]: targetResult.previous_value }
+        const { error } = await admin.from('tenants').update({ settings: merged }).eq('id', tenantId)
+        if (error) throw new Error(error.message)
+        revalidatePath('/settings', 'layout')
+        revalidatePath('/dashboard', 'layout')
+      } else {
+        throw new Error("That action type can't be undone")
+      }
+
+      await admin.from('crm_bot_actions').update({ status: 'undone', completed_at: new Date().toISOString() }).eq('id', targetId)
+      reply = `✓ Undone: ${data.target_summary}`
     } else {
       throw new Error(`Unknown action type: ${action.action_type}`)
     }
 
-    await admin.from('crm_bot_actions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', actionId)
+    await admin.from('crm_bot_actions').update({ status: 'completed', completed_at: new Date().toISOString(), result_data: resultData as Json }).eq('id', actionId)
   } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'Unknown error'
+    const rawMessage = e instanceof Error ? e.message : 'Unknown error'
+    const ambiguous = rawMessage.startsWith('AMBIGUOUS:')
+    const errorMessage = ambiguous ? rawMessage.slice('AMBIGUOUS:'.length) : rawMessage
     await admin.from('crm_bot_actions').update({ status: 'failed', error_message: errorMessage, completed_at: new Date().toISOString() }).eq('id', actionId)
-    reply = `Sorry, that didn't work: ${errorMessage}`
+    reply = ambiguous ? errorMessage : `Sorry, that didn't work: ${errorMessage}`
   }
 
   await admin.from('chatbot_messages').insert({ conversation_id: action.conversation_id, role: 'assistant', content: reply })

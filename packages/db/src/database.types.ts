@@ -840,6 +840,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          result_data: Json | null
           status: string
           tenant_id: string
         }
@@ -853,6 +854,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          result_data?: Json | null
           status?: string
           tenant_id: string
         }
@@ -866,6 +868,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          result_data?: Json | null
           status?: string
           tenant_id?: string
         }
