@@ -14,8 +14,9 @@ export function AnalyticsDashboardClient({ initialSnapshot }: { initialSnapshot:
     setError(null)
     startTransition(async () => {
       try {
-        const fresh = await refreshMyAnalytics()
-        setSnapshot(fresh)
+        const result = await refreshMyAnalytics()
+        if (result.ok) setSnapshot(result.snapshot)
+        else setError(result.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Refresh failed')
       }

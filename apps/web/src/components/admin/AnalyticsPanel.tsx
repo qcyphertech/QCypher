@@ -28,8 +28,9 @@ export function AnalyticsPanel({ tenants }: { tenants: TenantSummary[] }) {
     setError(null)
     startTransition(async () => {
       try {
-        const fresh = await refreshAnalyticsForTenant(tenantId)
-        setSnapshot(fresh)
+        const result = await refreshAnalyticsForTenant(tenantId)
+        if (result.ok) setSnapshot(result.snapshot)
+        else setError(result.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Refresh failed')
       }
