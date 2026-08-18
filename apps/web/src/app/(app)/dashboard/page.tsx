@@ -46,87 +46,54 @@ function StatCard({ label, value, sub, icon: Icon, accent, glow }: StatCardProps
   )
 }
 
-/* ─── Revenue Bar Chart ─────────────────────────────────────────────── */
-function RevenueBarChart({ data }: { data: { month: string; revenue: number }[] }) {
-  const max = Math.max(...data.map(d => d.revenue), 1)
-  const accents = [BLUE, TEAL, '#7b68b0', TEAL, BLUE, '#4a9db5']
-  return (
-    <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px', padding: '24px', height: '100%', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${TEAL}88, transparent)` }} />
-      <div style={{ marginBottom: '20px' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEAL, marginBottom: '4px' }}>Monthly Revenue</p>
-        <p style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--foreground))' }}>Paid Orders</p>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '120px' }}>
-        {data.map(({ month, revenue }, i) => {
-          const col = accents[i % accents.length]
-          const pct = Math.max((revenue / max) * 100, revenue > 0 ? 8 : 3)
-          return (
-            <div key={month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: revenue > 0 ? 'hsl(var(--foreground))' : 'transparent' }}>
-                {revenue > 0 ? (revenue >= 1000 ? `$${(revenue/1000).toFixed(1)}k` : `$${revenue}`) : ''}
-              </span>
-              <div style={{
-                width: '100%', borderRadius: '6px 6px 3px 3px',
-                height: `${pct}%`, minHeight: '4px',
-                background: revenue > 0 ? `linear-gradient(180deg, ${col}, ${col}88)` : 'hsl(var(--muted))',
-                boxShadow: revenue > 0 ? `0 0 10px ${col}44` : 'none',
-              }} />
-              <span style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--muted-foreground))', letterSpacing: '0.05em' }}>{month}</span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-/* ─── Contact Status Donut ──────────────────────────────────────────── */
-function ContactStatusChart({ lead, active, inactive }: { lead: number; active: number; inactive: number }) {
+/* ─── Contact Status Bar ──────────────────────────────────────────────
+ * A slim status bar, not a full donut+list card — the deeper active/new/
+ * at-risk cut of the same contacts data now lives on /overview, so this
+ * only needs to answer "what's my lead/active/inactive split" at a glance. */
+function ContactStatusBar({ lead, active, inactive }: { lead: number; active: number; inactive: number }) {
   const total = lead + active + inactive || 1
   const segments = [
     { label: 'Leads',    value: lead,     color: '#f59e0b' },
     { label: 'Active',   value: active,   color: '#10b981' },
     { label: 'Inactive', value: inactive, color: BLUE },
   ]
-  let offset = 0
-  const r = 40, circ = 2 * Math.PI * r
   return (
-    <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px', padding: '24px', height: '100%', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${BLUE}88, transparent)` }} />
-      <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEAL, marginBottom: '4px' }}>Contact Status</p>
-      <p style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--foreground))', marginBottom: '16px' }}>Breakdown</p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <svg viewBox="0 0 100 100" style={{ width: '80px', height: '80px', flexShrink: 0, transform: 'rotate(-90deg)' }}>
-          <circle cx="50" cy="50" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="14" />
-          {segments.map(seg => {
-            const pct = seg.value / total
-            const dash = pct * circ
-            const gap = circ - dash
-            const el = (
-              <circle key={seg.label} cx="50" cy="50" r={r} fill="none"
-                stroke={seg.color} strokeWidth="14"
-                strokeDasharray={`${dash} ${gap}`}
-                strokeDashoffset={-offset * circ}
-                strokeLinecap="round"
-                style={{ filter: `drop-shadow(0 0 3px ${seg.color}66)` }}
-              />
-            )
-            offset += pct
-            return el
-          })}
-        </svg>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {segments.map(s => (
-            <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: `${s.color}10`, border: `1px solid ${s.color}28`, borderRadius: '10px', padding: '7px 12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-                <span style={{ fontSize: '15px', fontWeight: 700, color: s.color }}>{s.label}</span>
-              </div>
-              <span style={{ fontSize: '15px', fontWeight: 900, color: 'hsl(var(--foreground))' }}>{s.value}</span>
-            </div>
-          ))}
-        </div>
+    <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px', padding: '16px 18px', height: '100%', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+      <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEAL, marginBottom: '10px' }}>Contact Status</p>
+      <div style={{ display: 'flex', height: '8px', borderRadius: '999px', overflow: 'hidden', marginBottom: '10px', background: 'hsl(var(--muted))' }}>
+        {segments.map(s => s.value > 0 && (
+          <div key={s.label} style={{ width: `${(s.value / total) * 100}%`, background: s.color }} />
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+        {segments.map(s => (
+          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '2px', background: s.color, flexShrink: 0 }} />
+            {s.label} <strong style={{ color: 'hsl(var(--foreground))' }}>{s.value}</strong>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Needs Attention ─────────────────────────────────────────────────
+ * Combines what used to be two separate full panels (Invoice Escalations,
+ * Review Requests) into one compact card of two stat pairs — the detail
+ * lists moved to Settings, since a dashboard glance only needs the count. */
+function NeedsAttentionCard({ escalationCount, reviewRequestCount }: { escalationCount: number; reviewRequestCount: number }) {
+  return (
+    <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px', padding: '16px 18px', height: '100%', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+      <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEAL, marginBottom: '10px' }}>Needs Attention</p>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <Link href="/settings" style={{ flex: 1, textDecoration: 'none', borderRadius: '10px', padding: '10px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)' }}>
+          <p style={{ fontSize: '20px', fontWeight: 900, color: '#ef4444', lineHeight: 1 }}>{escalationCount}</p>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444', opacity: 0.85, marginTop: '4px' }}>Invoice Escalations</p>
+        </Link>
+        <Link href="/settings" style={{ flex: 1, textDecoration: 'none', borderRadius: '10px', padding: '10px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.22)' }}>
+          <p style={{ fontSize: '20px', fontWeight: 900, color: '#f59e0b', lineHeight: 1 }}>{reviewRequestCount}</p>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', opacity: 0.85, marginTop: '4px' }}>Review Requests</p>
+        </Link>
       </div>
     </div>
   )
@@ -257,19 +224,17 @@ export default async function DashboardPage() {
   const showWelcome = (profile as { has_seen_welcome?: boolean } | null)?.has_seen_welcome === false
   const isAdmin = user?.app_metadata?.role === 'owner'
   const recentActivity = isAdmin ? await getRecentAuditLogs(5) : []
-  let recentEscalations: { id: string; stage: string; sent_at: string }[] = []
+  // Detail rows for these no longer render here (Needs Attention is just
+  // the two counts) — Settings has the real list for each.
   let escalationCount = 0
-  let recentReviewRequests: { id: string; stage: string; sent_at: string }[] = []
   let reviewRequestCount = 0
   if (isAdmin) {
     try {
       const [escalations, reviewRequests] = await Promise.all([
-        supabase.from('invoice_escalations').select('id, stage, sent_at', { count: 'exact' }).order('sent_at', { ascending: false }).limit(5),
-        supabase.from('review_requests').select('id, stage, sent_at', { count: 'exact' }).order('sent_at', { ascending: false }).limit(5),
+        supabase.from('invoice_escalations').select('id', { count: 'exact', head: true }),
+        supabase.from('review_requests').select('id', { count: 'exact', head: true }),
       ])
-      recentEscalations = (escalations.data ?? []) as typeof recentEscalations
       escalationCount = escalations.count ?? 0
-      recentReviewRequests = (reviewRequests.data ?? []) as typeof recentReviewRequests
       reviewRequestCount = reviewRequests.count ?? 0
     } catch { /* tables not migrated yet */ }
   }
@@ -283,7 +248,6 @@ export default async function DashboardPage() {
     { data: paidOrders },
     { data: recentOrders },
     { count: openDeals },
-    { data: monthlyOrders },
   ] = await Promise.all([
     supabase.from('contacts').select('*', { count: 'exact', head: true }),
     supabase.from('contacts').select('*', { count: 'exact', head: true }).gte('created_at', startOfMonth),
@@ -293,23 +257,12 @@ export default async function DashboardPage() {
     supabase.from('orders').select('total_amount').eq('payment_status', 'paid').gte('created_at', startOfMonth),
     supabase.from('orders').select('id, total_amount, payment_status, created_at, contact:contacts(first_name, last_name)').order('created_at', { ascending: false }).limit(5),
     supabase.from('pipeline_deals').select('*', { count: 'exact', head: true }).then(r => r, () => ({ count: 0, data: null, error: null })),
-    supabase.from('orders').select('total_amount, created_at').eq('payment_status', 'paid'),
   ])
 
   const revenueThisMonth = (paidOrders ?? []).reduce((s, o) => s + (Number(o.total_amount) || 0), 0)
   const statusCounts = { lead: 0, active: 0, inactive: 0 }
   for (const row of (byStatus ?? []) as { status: string }[]) {
     if (row.status in statusCounts) statusCounts[row.status as keyof typeof statusCounts]++
-  }
-  const months: { month: string; revenue: number }[] = []
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const label = d.toLocaleString('default', { month: 'short' })
-    const y = d.getFullYear(), m = d.getMonth()
-    const revenue = ((monthlyOrders ?? []) as { total_amount: number; created_at: string }[])
-      .filter(r => { const rd = new Date(r.created_at); return rd.getFullYear() === y && rd.getMonth() === m })
-      .reduce((s, r) => s + (Number(r.total_amount) || 0), 0)
-    months.push({ month: label, revenue })
   }
   const fmtRevenue = revenueThisMonth >= 1000 ? `$${(revenueThisMonth/1000).toFixed(1)}k` : `$${revenueThisMonth.toFixed(0)}`
 
@@ -339,12 +292,12 @@ export default async function DashboardPage() {
         <StatCard label="Upcoming Events" value={upcomingEvents ?? 0} sub="on calendar" icon={Calendar} accent={TEAL} glow={`${TEAL}44`} />
       </div>
 
-      {/* Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }} className="lg:grid-cols-3">
-        <div className="lg:col-span-2" style={{ minHeight: '220px' }}>
-          <RevenueBarChart data={months} />
-        </div>
-        <ContactStatusChart lead={statusCounts.lead} active={statusCounts.active} inactive={statusCounts.inactive} />
+      {/* Contact status + needs attention — the revenue trend chart and
+          deeper active/new/at-risk cut of contacts now live on /overview,
+          so this row stays a quick glance, not a duplicate of that page. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }} className={isAdmin ? 'lg:grid-cols-2' : ''}>
+        <ContactStatusBar lead={statusCounts.lead} active={statusCounts.active} inactive={statusCounts.inactive} />
+        {isAdmin && <NeedsAttentionCard escalationCount={escalationCount} reviewRequestCount={reviewRequestCount} />}
       </div>
 
       {/* Recent lists */}
@@ -366,36 +319,6 @@ export default async function DashboardPage() {
           }
         </Panel>
       </div>
-
-      {/* Automation widgets (admin only) */}
-      {isAdmin && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }} className="lg:grid-cols-2">
-          <Panel title="Invoice Escalations" href="/settings" linkLabel="Payments">
-            <p style={{ fontSize: '24px', fontWeight: 900, color: 'hsl(var(--foreground))', marginBottom: '8px' }}>{escalationCount ?? 0}</p>
-            {(recentEscalations ?? []).length === 0
-              ? <p style={{ fontSize: '15px', textAlign: 'center', padding: '16px 0', color: 'hsl(var(--muted-foreground))' }}>No escalations sent yet.</p>
-              : (recentEscalations as { id: string; stage: string; sent_at: string }[]).map(e => (
-                  <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', fontSize: '13px', color: 'hsl(var(--foreground))' }}>
-                    <span style={{ textTransform: 'capitalize' }}>{e.stage}</span>
-                    <span style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(e.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                  </div>
-                ))
-            }
-          </Panel>
-          <Panel title="Review Requests" href="/settings" linkLabel="Automation">
-            <p style={{ fontSize: '24px', fontWeight: 900, color: 'hsl(var(--foreground))', marginBottom: '8px' }}>{reviewRequestCount ?? 0}</p>
-            {(recentReviewRequests ?? []).length === 0
-              ? <p style={{ fontSize: '15px', textAlign: 'center', padding: '16px 0', color: 'hsl(var(--muted-foreground))' }}>No review requests sent yet.</p>
-              : (recentReviewRequests as { id: string; stage: string; sent_at: string }[]).map(r => (
-                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', fontSize: '13px', color: 'hsl(var(--foreground))' }}>
-                    <span style={{ textTransform: 'capitalize' }}>{r.stage}</span>
-                    <span style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(r.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                  </div>
-                ))
-            }
-          </Panel>
-        </div>
-      )}
 
       {/* Recent activity (admin only) */}
       {isAdmin && (
