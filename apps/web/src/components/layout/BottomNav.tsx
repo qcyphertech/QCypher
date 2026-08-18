@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, ShoppingBag, Calendar } from 'lucide-react'
+import { LayoutDashboard, Users, ShoppingBag, Calendar, BarChart2 } from 'lucide-react'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 
 const ALL_TABS = [
@@ -10,6 +10,7 @@ const ALL_TABS = [
   { href: '/contacts',  icon: Users,            label: 'Contacts', color: '#10b981', flag: null                    },
   { href: '/orders',    icon: ShoppingBag,      label: 'Orders',   color: '#f97316', flag: 'show_orders' as const },
   { href: '/calendar',  icon: Calendar,         label: 'Calendar', color: '#0ea5e9', flag: 'show_calendar' as const },
+  { href: '/overview',  icon: BarChart2,        label: 'Overview', color: '#22c55e', flag: 'show_overview' as const },
 ]
 
 export function BottomNav({ settings = DEFAULT_SETTINGS }: { settings?: TenantSettings }) {
