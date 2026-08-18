@@ -39,6 +39,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_snapshots: {
+        Row: {
+          created_at: string
+          customer_summary: string | null
+          customers_active: number
+          customers_inactive_30d: number
+          customers_new_month: number
+          id: string
+          job_summary: string | null
+          jobs_completed_month: number
+          refresh_type: string
+          retention_rate_percent: number | null
+          revenue_by_service: Json
+          revenue_growth_percent: number | null
+          revenue_monthly_trend: Json
+          revenue_mtd: number
+          revenue_summary: string | null
+          revenue_ytd: number
+          snapshot_date: string
+          tenant_id: string
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_summary?: string | null
+          customers_active?: number
+          customers_inactive_30d?: number
+          customers_new_month?: number
+          id?: string
+          job_summary?: string | null
+          jobs_completed_month?: number
+          refresh_type?: string
+          retention_rate_percent?: number | null
+          revenue_by_service?: Json
+          revenue_growth_percent?: number | null
+          revenue_monthly_trend?: Json
+          revenue_mtd?: number
+          revenue_summary?: string | null
+          revenue_ytd?: number
+          snapshot_date?: string
+          tenant_id: string
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_summary?: string | null
+          customers_active?: number
+          customers_inactive_30d?: number
+          customers_new_month?: number
+          id?: string
+          job_summary?: string | null
+          jobs_completed_month?: number
+          refresh_type?: string
+          retention_rate_percent?: number | null
+          revenue_by_service?: Json
+          revenue_growth_percent?: number | null
+          revenue_monthly_trend?: Json
+          revenue_mtd?: number
+          revenue_summary?: string | null
+          revenue_ytd?: number
+          snapshot_date?: string
+          tenant_id?: string
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_requests: {
         Row: {
           approval_reason: string | null
@@ -79,80 +153,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "approval_requests_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      analytics_snapshots: {
-        Row: {
-          id: string
-          tenant_id: string
-          snapshot_date: string
-          revenue_mtd: number
-          revenue_ytd: number
-          revenue_growth_percent: number | null
-          revenue_monthly_trend: Json
-          revenue_by_service: Json
-          customers_active: number
-          customers_new_month: number
-          customers_inactive_30d: number
-          retention_rate_percent: number | null
-          jobs_completed_month: number
-          revenue_summary: string | null
-          customer_summary: string | null
-          job_summary: string | null
-          refresh_type: string
-          triggered_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          snapshot_date?: string
-          revenue_mtd?: number
-          revenue_ytd?: number
-          revenue_growth_percent?: number | null
-          revenue_monthly_trend?: Json
-          revenue_by_service?: Json
-          customers_active?: number
-          customers_new_month?: number
-          customers_inactive_30d?: number
-          retention_rate_percent?: number | null
-          jobs_completed_month?: number
-          revenue_summary?: string | null
-          customer_summary?: string | null
-          job_summary?: string | null
-          refresh_type?: string
-          triggered_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          tenant_id?: string
-          snapshot_date?: string
-          revenue_mtd?: number
-          revenue_ytd?: number
-          revenue_growth_percent?: number | null
-          revenue_monthly_trend?: Json
-          revenue_by_service?: Json
-          customers_active?: number
-          customers_new_month?: number
-          customers_inactive_30d?: number
-          retention_rate_percent?: number | null
-          jobs_completed_month?: number
-          revenue_summary?: string | null
-          customer_summary?: string | null
-          job_summary?: string | null
-          refresh_type?: string
-          triggered_by?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "analytics_snapshots_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1749,6 +1749,8 @@ export type Database = {
           catalog_item_id: string | null
           created_at: string
           description_snapshot: string | null
+          discount_type: string | null
+          discount_value: number | null
           id: string
           item_name_snapshot: string
           order_id: string
@@ -1756,6 +1758,7 @@ export type Database = {
           rental_end_date: string | null
           rental_start_date: string | null
           rental_status: Database["public"]["Enums"]["rental_status"] | null
+          show_discount: boolean
           tenant_id: string
           unit_price: number
           updated_at: string
@@ -1766,6 +1769,8 @@ export type Database = {
           catalog_item_id?: string | null
           created_at?: string
           description_snapshot?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
           item_name_snapshot: string
           order_id: string
@@ -1773,6 +1778,7 @@ export type Database = {
           rental_end_date?: string | null
           rental_start_date?: string | null
           rental_status?: Database["public"]["Enums"]["rental_status"] | null
+          show_discount?: boolean
           tenant_id: string
           unit_price: number
           updated_at?: string
@@ -1783,6 +1789,8 @@ export type Database = {
           catalog_item_id?: string | null
           created_at?: string
           description_snapshot?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
           item_name_snapshot?: string
           order_id?: string
@@ -1790,6 +1798,7 @@ export type Database = {
           rental_end_date?: string | null
           rental_start_date?: string | null
           rental_status?: Database["public"]["Enums"]["rental_status"] | null
+          show_discount?: boolean
           tenant_id?: string
           unit_price?: number
           updated_at?: string
@@ -1851,6 +1860,8 @@ export type Database = {
           customer_id: string | null
           customer_response: string | null
           customer_response_at: string | null
+          discount_type: string | null
+          discount_value: number | null
           helcim_transaction_id: string | null
           id: string
           job_status: Database["public"]["Enums"]["job_status"] | null
@@ -1864,6 +1875,7 @@ export type Database = {
           reschedule_to_date: string | null
           scheduled_date: string | null
           scheduled_time: string | null
+          show_discount: boolean
           signed_at: string | null
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -1880,6 +1892,8 @@ export type Database = {
           customer_id?: string | null
           customer_response?: string | null
           customer_response_at?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
           helcim_transaction_id?: string | null
           id?: string
           job_status?: Database["public"]["Enums"]["job_status"] | null
@@ -1893,6 +1907,7 @@ export type Database = {
           reschedule_to_date?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
+          show_discount?: boolean
           signed_at?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -1909,6 +1924,8 @@ export type Database = {
           customer_id?: string | null
           customer_response?: string | null
           customer_response_at?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
           helcim_transaction_id?: string | null
           id?: string
           job_status?: Database["public"]["Enums"]["job_status"] | null
@@ -1922,6 +1939,7 @@ export type Database = {
           reschedule_to_date?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
+          show_discount?: boolean
           signed_at?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -3532,6 +3550,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_discount: {
+        Args: { amount: number; discount_type: string; discount_value: number }
+        Returns: number
+      }
       can_view_location_row: {
         Args: { row_location_id: string }
         Returns: boolean

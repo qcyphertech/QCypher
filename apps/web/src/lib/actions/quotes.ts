@@ -182,6 +182,9 @@ export async function getQuoteByToken(token: string): Promise<{
     id: string
     order_number: number | null
     total_amount: number
+    discount_type: 'percent' | 'flat' | null
+    discount_value: number | null
+    show_discount: boolean
     created_at: string
     business_name: string
     tenant_id: string
@@ -193,6 +196,9 @@ export async function getQuoteByToken(token: string): Promise<{
     description_snapshot: string | null
     quantity: number
     unit_price: number
+    discount_type: 'percent' | 'flat' | null
+    discount_value: number | null
+    show_discount: boolean
     billing_unit_snapshot: string
   }>
 } | null> {
@@ -221,11 +227,11 @@ export async function getQuoteByToken(token: string): Promise<{
 
   const [{ data: order }, { data: lines }, { data: tenant }] = await Promise.all([
     admin.from('orders')
-      .select('id, order_number, total_amount, created_at, signed_at, contact:contacts(first_name, last_name)')
+      .select('id, order_number, total_amount, discount_type, discount_value, show_discount, created_at, signed_at, contact:contacts(first_name, last_name)')
       .eq('id', qt.order_id)
       .single(),
     admin.from('order_line_items')
-      .select('id, item_name_snapshot, description_snapshot, quantity, unit_price, billing_unit_snapshot')
+      .select('id, item_name_snapshot, description_snapshot, quantity, unit_price, discount_type, discount_value, show_discount, billing_unit_snapshot')
       .eq('order_id', qt.order_id)
       .order('created_at'),
     admin.from('tenants').select('name').eq('id', qt.tenant_id).single(),
@@ -242,6 +248,9 @@ export async function getQuoteByToken(token: string): Promise<{
       id: order.id,
       order_number: order.order_number,
       total_amount: order.total_amount,
+      discount_type: order.discount_type as 'percent' | 'flat' | null,
+      discount_value: order.discount_value,
+      show_discount: order.show_discount,
       created_at: order.created_at,
       business_name: (tenant as { name?: string } | null)?.name ?? 'Your service provider',
       tenant_id: qt.tenant_id,

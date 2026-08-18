@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { OrderDetail } from '@/components/orders/OrderDetail'
+import type { Order, OrderLineItem } from '@/lib/actions/orders'
 import { getJobPhotos } from '@/lib/actions/photos'
 import { getQuoteSignature } from '@/lib/actions/quotes'
 
@@ -47,8 +48,8 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const sig = signature as { signed_by_name: string; signed_at: string } | null
   return (
     <OrderDetail
-      order={order}
-      lines={lines ?? []}
+      order={order as unknown as Order}
+      lines={(lines ?? []) as unknown as OrderLineItem[]}
       catalogItems={catalogItems ?? []}
       contacts={contacts ?? []}
       businessName={t?.name ?? ''}

@@ -24,7 +24,7 @@ export default async function PortalInvoicePage({
   )
   const { data: order } = await db
     .from('orders')
-    .select('id, order_number, total_amount, created_at, payment_status, paid_at, helcim_transaction_id, notes, job_status')
+    .select('id, order_number, total_amount, discount_type, discount_value, show_discount, created_at, payment_status, paid_at, helcim_transaction_id, notes, job_status')
     .eq('id', params.id)
     .single()
 

@@ -29,7 +29,7 @@ export default async function PortalQuotePage({
   )
   const { data: order } = await db
     .from('orders')
-    .select('id, order_number, total_amount, created_at, payment_status, signed_at')
+    .select('id, order_number, total_amount, discount_type, discount_value, show_discount, created_at, payment_status, signed_at')
     .eq('id', params.id)
     .single()
 
@@ -61,6 +61,9 @@ export default async function PortalQuotePage({
         id: order.id,
         order_number: order.order_number,
         total_amount: order.total_amount,
+        discount_type: order.discount_type,
+        discount_value: order.discount_value,
+        show_discount: order.show_discount,
         created_at: order.created_at,
         business_name: session.businessName,
         tenant_id: session.tenantId,

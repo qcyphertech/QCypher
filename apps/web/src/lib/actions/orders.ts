@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+export type DiscountType = 'percent' | 'flat'
+
 export type Order = {
   id: string
   tenant_id: string
@@ -11,6 +13,9 @@ export type Order = {
   payment_status: 'draft' | 'pending' | 'paid' | 'refunded'
   job_status: 'en_route' | 'in_progress' | 'completed' | null
   total_amount: number
+  discount_type: DiscountType | null
+  discount_value: number | null
+  show_discount: boolean
   notes: string | null
   created_at: string
   updated_at: string
@@ -26,6 +31,9 @@ export type OrderLineItem = {
   description_snapshot: string | null
   quantity: number
   unit_price: number
+  discount_type: DiscountType | null
+  discount_value: number | null
+  show_discount: boolean
   billing_unit_snapshot: 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly'
   rental_status: 'reserved' | 'active' | 'returned' | 'overdue' | null
   rental_start_date: string | null
@@ -123,6 +131,9 @@ export async function addLineItem(input: {
   description_snapshot?: string
   quantity: number
   unit_price: number
+  discount_type?: DiscountType | null
+  discount_value?: number | null
+  show_discount?: boolean
   billing_unit_snapshot: OrderLineItem['billing_unit_snapshot']
   rental_status?: OrderLineItem['rental_status']
   rental_start_date?: string
@@ -145,6 +156,64 @@ export async function addLineItem(input: {
     .insert({ ...input, tenant_id })
   if (error) return { ok: false, error: error.message }
   revalidatePath(`/orders/${input.order_id}`)
+  return { ok: true }
+}
+
+function validateDiscount(discount_type: DiscountType | null, discount_value: number | null): string | null {
+  if (!discount_type) return null
+  if (discount_value == null || discount_value < 0) return 'Discount amount is required'
+  if (discount_type === 'percent' && discount_value > 100) return 'Percentage discount can\'t exceed 100%'
+  return null
+}
+
+export async function updateLineItemDiscount(input: {
+  id: string
+  order_id: string
+  discount_type: DiscountType | null
+  discount_value: number | null
+  show_discount: boolean
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient()
+  const { data: order } = await supabase.from('orders').select('signed_at').eq('id', input.order_id).single()
+  if (order?.signed_at) return { ok: false, error: 'Quote is signed and locked — line items cannot be modified' }
+
+  const validationError = validateDiscount(input.discount_type, input.discount_value)
+  if (validationError) return { ok: false, error: validationError }
+
+  const { error } = await supabase
+    .from('order_line_items')
+    .update({
+      discount_type: input.discount_type,
+      discount_value: input.discount_type ? input.discount_value : null,
+      show_discount: input.show_discount,
+    })
+    .eq('id', input.id)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/orders/${input.order_id}`)
+  return { ok: true }
+}
+
+export async function updateOrderDiscount(input: {
+  id: string
+  discount_type: DiscountType | null
+  discount_value: number | null
+  show_discount: boolean
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient()
+
+  const validationError = validateDiscount(input.discount_type, input.discount_value)
+  if (validationError) return { ok: false, error: validationError }
+
+  const { error } = await supabase
+    .from('orders')
+    .update({
+      discount_type: input.discount_type,
+      discount_value: input.discount_type ? input.discount_value : null,
+      show_discount: input.show_discount,
+    })
+    .eq('id', input.id)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/orders/${input.id}`)
   return { ok: true }
 }
 

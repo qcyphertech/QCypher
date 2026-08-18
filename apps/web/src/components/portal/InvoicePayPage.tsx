@@ -9,6 +9,7 @@ import { initHelcimCheckout, validateAndRecordPayment, initStripeCheckout, confi
 import { getLoyaltyCheckoutInfo, redeemLoyaltyAtCheckout } from '@/lib/actions/loyalty'
 import { getUpsellSuggestion, addPortalUpsellLineItem, type UpsellSuggestion } from '@/lib/actions/upsells'
 import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
+import { lineItemPricing, orderPricing, hasDiscount } from '@/lib/order-discounts'
 
 const UNIT_LABELS: Record<string, string> = {
   flat: '', hourly: '/hr', daily: '/day', weekly: '/wk', monthly: '/mo',
@@ -20,6 +21,9 @@ type Line = {
   description_snapshot: string | null
   quantity: number
   unit_price: number
+  discount_type: 'percent' | 'flat' | null
+  discount_value: number | null
+  show_discount: boolean
   billing_unit_snapshot: string
 }
 
@@ -27,6 +31,9 @@ type Order = {
   id: string
   order_number: number | null
   total_amount: number
+  discount_type: 'percent' | 'flat' | null
+  discount_value: number | null
+  show_discount: boolean
   created_at: string
   payment_status: string
   paid_at: string | null
@@ -347,28 +354,66 @@ export function InvoicePayPage({
             <p className="px-6 py-8 text-center text-gray-400">No items</p>
           ) : (
             <div className="divide-y divide-gray-100">
-              {lines.map(line => (
-                <div key={line.id} className="flex items-start justify-between px-6 py-4 gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-medium text-gray-900">{line.item_name_snapshot}</p>
-                    {line.description_snapshot && (
-                      <p className="text-[13px] text-gray-500 mt-0.5">{line.description_snapshot}</p>
-                    )}
-                    <p className="text-[13px] text-gray-400 mt-0.5">
-                      Qty {Number(line.quantity)} × ${Number(line.unit_price).toFixed(2)}{UNIT_LABELS[line.billing_unit_snapshot]}
-                    </p>
+              {lines.map(line => {
+                const lp = lineItemPricing(line)
+                const showLineDiscount = hasDiscount(line) && line.show_discount
+                return (
+                  <div key={line.id} className="flex items-start justify-between px-6 py-4 gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-medium text-gray-900">{line.item_name_snapshot}</p>
+                      {line.description_snapshot && (
+                        <p className="text-[13px] text-gray-500 mt-0.5">{line.description_snapshot}</p>
+                      )}
+                      <p className="text-[13px] text-gray-400 mt-0.5">
+                        Qty {Number(line.quantity)} × ${Number(line.unit_price).toFixed(2)}{UNIT_LABELS[line.billing_unit_snapshot]}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {showLineDiscount && (
+                        <p className="text-[13px] text-gray-400 line-through">${lp.original.toFixed(2)}</p>
+                      )}
+                      <p className="text-[15px] font-semibold text-gray-900">${lp.discounted.toFixed(2)}</p>
+                    </div>
                   </div>
-                  <p className="text-[15px] font-semibold text-gray-900 flex-shrink-0">
-                    ${(Number(line.quantity) * Number(line.unit_price)).toFixed(2)}
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
-          <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-100">
-            <p className="text-[15px] font-semibold text-gray-700">Total due</p>
-            <p className="text-xl font-bold text-gray-900">${Number(order.total_amount).toFixed(2)}</p>
-          </div>
+          {(() => {
+            const pricing = orderPricing(lines, order)
+            const orderDiscountVisible = !hasDiscount(order) || order.show_discount
+            const allLineDiscountsVisible = lines.every(l => !hasDiscount(l) || l.show_discount)
+            const showBreakdown = orderDiscountVisible && allLineDiscountsVisible
+              && (pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0)
+            return (
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-1.5">
+                {showBreakdown && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <p className="text-[13px] text-gray-500">Subtotal</p>
+                      <p className="text-[13px] text-gray-700">${pricing.subtotalOriginal.toFixed(2)}</p>
+                    </div>
+                    {pricing.lineDiscountTotal > 0 && (
+                      <div className="flex justify-between items-center">
+                        <p className="text-[13px] text-gray-500">Discount</p>
+                        <p className="text-[13px] text-green-700">−${pricing.lineDiscountTotal.toFixed(2)}</p>
+                      </div>
+                    )}
+                    {pricing.orderDiscountAmount > 0 && (
+                      <div className="flex justify-between items-center">
+                        <p className="text-[13px] text-gray-500">Order discount</p>
+                        <p className="text-[13px] text-green-700">−${pricing.orderDiscountAmount.toFixed(2)}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className="flex justify-between items-center pt-0.5">
+                  <p className="text-[15px] font-semibold text-gray-700">Total due</p>
+                  <p className="text-xl font-bold text-gray-900">${Number(order.total_amount).toFixed(2)}</p>
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {hasLoyaltyBenefit && (

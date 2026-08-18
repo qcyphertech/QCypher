@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet } from 'lucide-react'
+import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet, Tag } from 'lucide-react'
 import {
   addLineItem, removeLineItem, updateOrderStatus, updateOrderCustomer, updateJobStatus, returnRental, extendRental,
-  type Order, type OrderLineItem,
+  updateLineItemDiscount, updateOrderDiscount,
+  type Order, type OrderLineItem, type DiscountType,
 } from '@/lib/actions/orders'
 import { getUpsellSuggestion, acceptUpsellSuggestion, type UpsellSuggestion } from '@/lib/actions/upsells'
+import { lineItemPricing, orderPricing, formatDiscount, hasDiscount } from '@/lib/order-discounts'
 import { JobPhotos } from './JobPhotos'
 import type { JobPhoto } from '@/lib/actions/photos'
 import { SendQuoteButton } from './SendQuoteButton'
@@ -90,7 +92,11 @@ export function OrderDetail({
   const [pending, startTransition] = useTransition()
   const [showAddLine, setShowAddLine] = useState(false)
   const [extendLine, setExtendLine] = useState<OrderLineItem | null>(null)
+  const [discountLine, setDiscountLine] = useState<OrderLineItem | null>(null)
+  const [showOrderDiscount, setShowOrderDiscount] = useState(false)
   const [jobStatus, setJobStatus] = useState<Order['job_status']>(order.job_status)
+
+  const pricing = orderPricing(lines, order)
 
   const contact = order.contact as { id: string; first_name: string; last_name: string | null; email: string | null; phone?: string | null } | null
   const statusStyle = STATUS_COLORS[order.payment_status] ?? STATUS_COLORS.draft
@@ -316,7 +322,7 @@ export function OrderDetail({
           <table className="w-full">
             <thead>
               <tr style={{ background: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--border))' }}>
-                {['Item', 'Qty', 'Unit price', 'Subtotal', ''].map(h => (
+                {['Item', 'Qty', 'Unit price', 'Discount', 'Subtotal', ''].map(h => (
                   <th key={h} className="px-5 py-2.5 text-left text-[15px] font-bold uppercase tracking-wide"
                     style={{ color: 'hsl(var(--muted-foreground))' }}>{h}</th>
                 ))}
@@ -327,6 +333,8 @@ export function OrderDetail({
                 const overdue = isOverdue(line)
                 const effectiveStatus = overdue && line.rental_status !== 'returned' ? 'overdue' : line.rental_status
                 const rs = effectiveStatus ? RENTAL_COLORS[effectiveStatus] : null
+                const linePricing = lineItemPricing(line)
+                const lineHasDiscount = hasDiscount(line)
                 return (
                   <tr key={line.id}
                     className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--muted))] transition-colors">
@@ -354,8 +362,32 @@ export function OrderDetail({
                         {UNIT_LABELS[line.billing_unit_snapshot]}
                       </span>
                     </td>
+                    <td className="px-5 py-3.5">
+                      {!isLocked ? (
+                        <button onClick={() => setDiscountLine(line)}
+                          className="flex items-center gap-1 text-[15px] font-semibold px-2 py-1 rounded-lg"
+                          style={lineHasDiscount
+                            ? { color: '#059669', background: 'rgba(16,185,129,0.10)' }
+                            : { color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--muted))' }}>
+                          <Tag className="w-3 h-3" />
+                          {lineHasDiscount ? formatDiscount(line) : 'Add'}
+                        </button>
+                      ) : lineHasDiscount ? (
+                        <span className="text-[15px] font-semibold" style={{ color: '#059669' }}>{formatDiscount(line)}</span>
+                      ) : (
+                        <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>
+                      )}
+                      {lineHasDiscount && !line.show_discount && (
+                        <p className="text-[15px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Hidden from customer</p>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5 text-[15px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-                      ${(Number(line.quantity) * Number(line.unit_price)).toFixed(2)}
+                      {lineHasDiscount && (
+                        <p className="text-[15px] font-normal line-through" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                          ${linePricing.original.toFixed(2)}
+                        </p>
+                      )}
+                      ${linePricing.discounted.toFixed(2)}
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5 justify-end">
@@ -393,9 +425,57 @@ export function OrderDetail({
           </div>
         )}
 
+        {/* Order-level discount */}
+        <div className="px-6 py-4 border-t border-[hsl(var(--border))] no-print">
+          {hasDiscount(order) ? (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-[15px] font-semibold px-2 py-1 rounded-lg"
+                  style={{ color: '#059669', background: 'rgba(16,185,129,0.10)' }}>
+                  <Tag className="w-3 h-3" /> Order discount: {formatDiscount(order)}
+                </span>
+                {!order.show_discount && (
+                  <span className="text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Hidden from customer</span>
+                )}
+              </div>
+              {!isLocked && (
+                <button onClick={() => setShowOrderDiscount(true)}
+                  className="text-[15px] font-semibold hover:underline" style={{ color: '#2a52a0' }}>
+                  Edit
+                </button>
+              )}
+            </div>
+          ) : !isLocked && (
+            <button onClick={() => setShowOrderDiscount(true)}
+              className="flex items-center gap-1.5 text-[15px] font-semibold" style={{ color: '#2a52a0' }}>
+              <Tag className="w-3.5 h-3.5" /> Add order discount
+            </button>
+          )}
+        </div>
+
         {/* Total */}
         <div className="flex justify-end px-6 py-4 border-t border-[hsl(var(--border))]">
-          <div className="text-right">
+          <div className="text-right space-y-1">
+            {(pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0) && (
+              <>
+                <div className="flex justify-between gap-8 text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span>Subtotal</span>
+                  <span>${pricing.subtotalOriginal.toFixed(2)}</span>
+                </div>
+                {pricing.lineDiscountTotal > 0 && (
+                  <div className="flex justify-between gap-8 text-[15px]" style={{ color: '#059669' }}>
+                    <span>Line discounts</span>
+                    <span>−${pricing.lineDiscountTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {pricing.orderDiscountAmount > 0 && (
+                  <div className="flex justify-between gap-8 text-[15px]" style={{ color: '#059669' }}>
+                    <span>Order discount</span>
+                    <span>−${pricing.orderDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+              </>
+            )}
             <p className="text-[15px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Total</p>
             <p className="text-2xl font-black mt-0.5" style={{ color: 'hsl(var(--foreground))' }}>
               ${Number(order.total_amount).toFixed(2)}
@@ -429,6 +509,175 @@ export function OrderDetail({
           onClose={() => setExtendLine(null)}
         />
       )}
+      {discountLine && (
+        <LineDiscountModal
+          line={discountLine}
+          orderId={order.id}
+          onClose={() => setDiscountLine(null)}
+        />
+      )}
+      {showOrderDiscount && (
+        <OrderDiscountModal
+          order={order}
+          onClose={() => setShowOrderDiscount(false)}
+        />
+      )}
+      </div>
+    </div>
+  )
+}
+
+function DiscountFields({ discountType, discountValue, showDiscount, onDiscountTypeChange, onDiscountValueChange, onShowDiscountChange }: {
+  discountType: DiscountType | null
+  discountValue: number | null
+  showDiscount: boolean
+  onDiscountTypeChange: (v: DiscountType | null) => void
+  onDiscountValueChange: (v: number | null) => void
+  onShowDiscountChange: (v: boolean) => void
+}) {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Discount type</label>
+          <select
+            value={discountType ?? ''}
+            onChange={e => onDiscountTypeChange((e.target.value || null) as DiscountType | null)}
+            className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+            style={{ color: 'hsl(var(--foreground))' }}>
+            <option value="">No discount</option>
+            <option value="percent">Percent off</option>
+            <option value="flat">Flat amount off</option>
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            {discountType === 'percent' ? 'Percent (%)' : 'Amount ($)'}
+          </label>
+          <input
+            type="number" step="0.01" min="0" max={discountType === 'percent' ? 100 : undefined}
+            disabled={!discountType}
+            value={discountValue ?? ''}
+            onChange={e => onDiscountValueChange(e.target.value === '' ? null : parseFloat(e.target.value))}
+            className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px] disabled:opacity-50"
+            style={{ color: 'hsl(var(--foreground))' }} />
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-[15px] font-semibold cursor-pointer" style={{ color: 'hsl(var(--foreground))' }}>
+        <input type="checkbox" checked={showDiscount} onChange={e => onShowDiscountChange(e.target.checked)} className="w-4 h-4" />
+        Show discount and original price to customer
+      </label>
+      <p className="text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        {showDiscount
+          ? 'Customer will see the original price, the discount, and the final price.'
+          : 'Customer will only see the final price — no mention of a discount.'}
+      </p>
+    </>
+  )
+}
+
+function LineDiscountModal({ line, orderId, onClose }: {
+  line: OrderLineItem; orderId: string; onClose: () => void
+}) {
+  const [pending, startTransition] = useTransition()
+  const [discountType, setDiscountType] = useState<DiscountType | null>(line.discount_type)
+  const [discountValue, setDiscountValue] = useState<number | null>(line.discount_value)
+  const [showDiscount, setShowDiscount] = useState(line.show_discount)
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    startTransition(async () => {
+      const result = await updateLineItemDiscount({
+        id: line.id, order_id: orderId,
+        discount_type: discountType, discount_value: discountValue, show_discount: showDiscount,
+      })
+      if (result.ok) onClose()
+      else setError(result.error)
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
+      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
+          <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>
+            Discount — {line.item_name_snapshot}
+          </h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <DiscountFields
+            discountType={discountType} discountValue={discountValue} showDiscount={showDiscount}
+            onDiscountTypeChange={setDiscountType} onDiscountValueChange={setDiscountValue} onShowDiscountChange={setShowDiscount}
+          />
+          {error && <p className="text-[15px] text-red-600">{error}</p>}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-[hsl(var(--border))] text-[15px] font-semibold"
+              style={{ color: 'hsl(var(--muted-foreground))' }}>Cancel</button>
+            <button type="submit" disabled={pending}
+              className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', opacity: pending ? 0.6 : 1 }}>
+              {pending ? 'Saving…' : 'Save discount'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function OrderDiscountModal({ order, onClose }: {
+  order: Order; onClose: () => void
+}) {
+  const [pending, startTransition] = useTransition()
+  const [discountType, setDiscountType] = useState<DiscountType | null>(order.discount_type)
+  const [discountValue, setDiscountValue] = useState<number | null>(order.discount_value)
+  const [showDiscount, setShowDiscount] = useState(order.show_discount)
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    startTransition(async () => {
+      const result = await updateOrderDiscount({
+        id: order.id,
+        discount_type: discountType, discount_value: discountValue, show_discount: showDiscount,
+      })
+      if (result.ok) onClose()
+      else setError(result.error)
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
+      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
+          <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>Order discount</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <p className="text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            Applies on top of any per-item discounts, to the whole order.
+          </p>
+          <DiscountFields
+            discountType={discountType} discountValue={discountValue} showDiscount={showDiscount}
+            onDiscountTypeChange={setDiscountType} onDiscountValueChange={setDiscountValue} onShowDiscountChange={setShowDiscount}
+          />
+          {error && <p className="text-[15px] text-red-600">{error}</p>}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-[hsl(var(--border))] text-[15px] font-semibold"
+              style={{ color: 'hsl(var(--muted-foreground))' }}>Cancel</button>
+            <button type="submit" disabled={pending}
+              className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', opacity: pending ? 0.6 : 1 }}>
+              {pending ? 'Saving…' : 'Save discount'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
@@ -441,6 +690,10 @@ function AddLineModal({ orderId, catalogItems, onClose }: {
   const [selected, setSelected] = useState<CatalogItem | null>(null)
   const [isRental, setIsRental] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showDiscountFields, setShowDiscountFields] = useState(false)
+  const [discountType, setDiscountType] = useState<DiscountType | null>(null)
+  const [discountValue, setDiscountValue] = useState<number | null>(null)
+  const [showDiscount, setShowDiscount] = useState(true)
 
   function handleCatalogSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const item = catalogItems.find(i => i.id === e.target.value) ?? null
@@ -461,6 +714,9 @@ function AddLineModal({ orderId, catalogItems, onClose }: {
           description_snapshot: fd.get('description') as string || undefined,
           quantity: parseFloat(fd.get('quantity') as string) || 1,
           unit_price: parseFloat(fd.get('unit_price') as string) || 0,
+          discount_type: discountType,
+          discount_value: discountValue,
+          show_discount: showDiscount,
           billing_unit_snapshot: (fd.get('billing_unit') as OrderLineItem['billing_unit_snapshot']) ?? 'flat',
           rental_status: isRental ? 'reserved' : undefined,
           rental_start_date: isRental ? (fd.get('rental_start') as string) || undefined : undefined,
@@ -548,6 +804,18 @@ function AddLineModal({ orderId, catalogItems, onClose }: {
                   style={{ color: 'hsl(var(--foreground))' }} />
               </div>
             </div>
+          )}
+
+          {showDiscountFields ? (
+            <DiscountFields
+              discountType={discountType} discountValue={discountValue} showDiscount={showDiscount}
+              onDiscountTypeChange={setDiscountType} onDiscountValueChange={setDiscountValue} onShowDiscountChange={setShowDiscount}
+            />
+          ) : (
+            <button type="button" onClick={() => setShowDiscountFields(true)}
+              className="flex items-center gap-1.5 text-[15px] font-semibold" style={{ color: '#2a52a0' }}>
+              <Tag className="w-3.5 h-3.5" /> Add a discount
+            </button>
           )}
 
           {error && <p className="text-[15px] text-red-600">{error}</p>}

@@ -259,7 +259,7 @@ export async function getPortalOrderLines(
 
   const { data: lines } = await db
     .from('order_line_items')
-    .select('id, item_name_snapshot, description_snapshot, quantity, unit_price, billing_unit_snapshot')
+    .select('id, item_name_snapshot, description_snapshot, quantity, unit_price, discount_type, discount_value, show_discount, billing_unit_snapshot')
     .eq('order_id', orderId)
     .eq('tenant_id', tenantId)
     .order('created_at')
