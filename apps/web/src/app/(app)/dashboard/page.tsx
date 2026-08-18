@@ -295,13 +295,13 @@ export default async function DashboardPage() {
       {/* Contact status + needs attention — the revenue trend chart and
           deeper active/new/at-risk cut of contacts now live on /overview,
           so this row stays a quick glance, not a duplicate of that page. */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }} className={isAdmin ? 'lg:grid-cols-2' : ''}>
+      <div style={{ display: 'grid', gap: '16px' }} className={isAdmin ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}>
         <ContactStatusBar lead={statusCounts.lead} active={statusCounts.active} inactive={statusCounts.inactive} />
         {isAdmin && <NeedsAttentionCard escalationCount={escalationCount} reviewRequestCount={reviewRequestCount} />}
       </div>
 
       {/* Recent lists */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }} className="lg:grid-cols-2">
+      <div style={{ display: 'grid', gap: '16px' }} className="grid-cols-1 lg:grid-cols-2">
         <Panel title="Recent Contacts" href="/contacts" linkLabel="View all">
           {(recentContacts ?? []).length === 0
             ? <p style={{ fontSize: '15px', textAlign: 'center', padding: '24px 0', color: 'hsl(var(--muted-foreground))' }}>No contacts yet.</p>
