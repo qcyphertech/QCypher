@@ -339,26 +339,8 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
         </p>
       )}
 
-      {/* Disclaimer — prominent, above range filter */}
-      <div style={{
-        margin: '16px 20px 0',
-        padding: '12px 16px',
-        borderRadius: '14px',
-        background: 'linear-gradient(135deg, rgba(42,82,160,0.12) 0%, rgba(124,58,237,0.1) 100%)',
-        border: '1px solid rgba(42,82,160,0.25)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '10px',
-      }}>
-        <span style={{ fontSize: '17px', lineHeight: 1, flexShrink: 0, marginTop: '1px' }}>⚠️</span>
-        <p style={{ fontSize: '15px', lineHeight: 1.5, color: 'hsl(var(--foreground))', margin: 0 }}>
-          <strong>Reference only</strong> — not accounting, bookkeeping, or tax advice.
-          Consult a licensed accountant for financial decisions.
-        </p>
-      </div>
-
-      {/* Range pills */}
-      <div style={{ display: 'flex', gap: '6px', padding: '12px 20px 0', overflowX: 'auto' }}>
+      {/* Range pills — control the money section right below */}
+      <div style={{ display: 'flex', gap: '6px', padding: '16px 20px 0', overflowX: 'auto' }}>
         {RANGES.map(r => (
           <button key={r.key} onClick={() => setRange(r.key)}
             style={{
@@ -468,14 +450,7 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
           <RevenueChart data={chartData} showSample={showSample} />
         </div>
 
-        {/* Business health — revenue by service, customers, jobs */}
-        {snapshot && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
-            <AnalyticsView snapshot={snapshot} />
-          </div>
-        )}
-
-        {/* Expense breakdown */}
+        {/* Expense breakdown — still part of the money section, same range filter */}
         {byCategory.length > 0 && (
           <div style={{ marginBottom: '12px' }}>
             <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', marginBottom: '10px' }}>
@@ -504,6 +479,40 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Disclaimer — caps off the money section, right next to the figures it qualifies */}
+        <div style={{
+          marginBottom: '20px',
+          padding: '10px 14px',
+          borderRadius: '12px',
+          background: 'rgba(42,82,160,0.06)',
+          border: '1px solid rgba(42,82,160,0.16)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px',
+        }}>
+          <span style={{ fontSize: '14px', lineHeight: 1.3, flexShrink: 0 }}>⚠️</span>
+          <p style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'hsl(var(--muted-foreground))', margin: 0 }}>
+            <strong style={{ color: 'hsl(var(--foreground))' }}>Reference only</strong> — not accounting, bookkeeping, or tax advice. Consult a licensed accountant for financial decisions.
+          </p>
+        </div>
+
+        {/* Business health — always this month, not affected by the range filter above */}
+        {snapshot && (
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '10px' }}>
+              <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
+                Business Health
+              </p>
+              <p style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>
+                This month — updates weekly, or anytime you hit Refresh above
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <AnalyticsView snapshot={snapshot} />
             </div>
           </div>
         )}
