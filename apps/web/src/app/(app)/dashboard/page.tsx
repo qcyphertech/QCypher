@@ -284,8 +284,20 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Stat grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }} className="lg:grid-cols-4">
+      {/* Stat grid — hardcoded media query instead of a Tailwind responsive
+          class: the lg:grid-cols-4 utility was intermittently not making it
+          into the rendered className on this specific div in production
+          (confirmed via the live DOM — class read back as "lg:grid-cols-4"
+          alone, missing the base "grid-cols-2"), stuck at 2 columns on
+          desktop with no code-level cause found. Inline critical CSS can't
+          be purged or dropped, so it can't silently regress the same way. */}
+      <style>{`
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (min-width: 1024px) {
+          .stat-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+      `}</style>
+      <div className="stat-grid">
         <StatCard label="Total Contacts" value={totalContacts ?? 0} sub={`+${newThisMonth ?? 0} this month`} icon={Users} accent={BLUE} glow={`${BLUE}44`} />
         <StatCard label="Revenue (Month)" value={fmtRevenue} sub="paid orders" icon={DollarSign} accent="#10b981" glow="rgba(16,185,129,0.35)" />
         <StatCard label="Pipeline Deals" value={openDeals ?? 0} sub="open deals" icon={LayoutGrid} accent="#f97316" glow="rgba(249,115,22,0.35)" />
