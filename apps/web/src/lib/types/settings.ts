@@ -6,6 +6,7 @@ export type TenantSettings = {
   show_orders:    boolean
   show_overview:  boolean
   show_crm_bot:   boolean
+  show_analytics: boolean
 }
 
 export const DEFAULT_SETTINGS: TenantSettings = {
@@ -16,4 +17,5 @@ export const DEFAULT_SETTINGS: TenantSettings = {
   show_orders:    true,
   show_overview:  true,
   show_crm_bot:   true,
+  show_analytics: true,
 }

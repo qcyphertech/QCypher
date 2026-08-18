@@ -86,6 +86,80 @@ export type Database = {
           },
         ]
       }
+      analytics_snapshots: {
+        Row: {
+          id: string
+          tenant_id: string
+          snapshot_date: string
+          revenue_mtd: number
+          revenue_ytd: number
+          revenue_growth_percent: number | null
+          revenue_monthly_trend: Json
+          revenue_by_service: Json
+          customers_active: number
+          customers_new_month: number
+          customers_inactive_30d: number
+          retention_rate_percent: number | null
+          jobs_completed_month: number
+          revenue_summary: string | null
+          customer_summary: string | null
+          job_summary: string | null
+          refresh_type: string
+          triggered_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          snapshot_date?: string
+          revenue_mtd?: number
+          revenue_ytd?: number
+          revenue_growth_percent?: number | null
+          revenue_monthly_trend?: Json
+          revenue_by_service?: Json
+          customers_active?: number
+          customers_new_month?: number
+          customers_inactive_30d?: number
+          retention_rate_percent?: number | null
+          jobs_completed_month?: number
+          revenue_summary?: string | null
+          customer_summary?: string | null
+          job_summary?: string | null
+          refresh_type?: string
+          triggered_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          snapshot_date?: string
+          revenue_mtd?: number
+          revenue_ytd?: number
+          revenue_growth_percent?: number | null
+          revenue_monthly_trend?: Json
+          revenue_by_service?: Json
+          customers_active?: number
+          customers_new_month?: number
+          customers_inactive_30d?: number
+          retention_rate_percent?: number | null
+          jobs_completed_month?: number
+          revenue_summary?: string | null
+          customer_summary?: string | null
+          job_summary?: string | null
+          refresh_type?: string
+          triggered_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string

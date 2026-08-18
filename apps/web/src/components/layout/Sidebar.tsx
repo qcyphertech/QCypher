@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, GitBranch, Calendar, FileText, Settings, ShieldCheck, Package, ShoppingBag, Wallet } from 'lucide-react'
+import { LayoutDashboard, Users, GitBranch, Calendar, FileText, Settings, ShieldCheck, Package, ShoppingBag, Wallet, BarChart3 } from 'lucide-react'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 
 const ALL_NAV = [
@@ -14,6 +14,7 @@ const ALL_NAV = [
   { href: '/orders',    icon: ShoppingBag,      label: 'Orders',    color: '#10b981', flag: 'show_orders' as const },
   { href: '/payments',  icon: Wallet,           label: 'Payments',  color: '#818cf8', flag: 'show_orders' as const },
   { href: '/templates', icon: FileText,         label: 'Templates', color: '#c084fc', flag: 'show_templates' as const },
+  { href: '/dashboard/analytics', icon: BarChart3, label: 'Analytics', color: '#0d6dff', flag: 'show_analytics' as const },
   { href: '/settings',  icon: Settings,         label: 'Settings',  color: '#94a3b8', flag: null },
 ]
 
@@ -25,7 +26,10 @@ export function Sidebar({
   settings?: TenantSettings
 }) {
   const pathname = usePathname()
-  const active = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  // '/dashboard' is an exact-match-only prefix of its own '/dashboard/analytics'
+  // sibling — without this, both would highlight as active on the analytics page.
+  const active = (href: string) =>
+    pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
 
   const nav = ALL_NAV.filter(item => item.flag === null || settings[item.flag])
 
