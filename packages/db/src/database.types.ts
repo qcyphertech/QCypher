@@ -524,6 +524,51 @@ export type Database = {
           },
         ]
       }
+      chatbot_interaction_logs: {
+        Row: {
+          action: string
+          conversation_id: string | null
+          created_at: string
+          id: string
+          label_shown: boolean
+          message_count: number
+          tenant_id: string | null
+        }
+        Insert: {
+          action?: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          label_shown?: boolean
+          message_count: number
+          tenant_id?: string | null
+        }
+        Update: {
+          action?: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          label_shown?: boolean
+          message_count?: number
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_interaction_logs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chatbot_interaction_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chatbot_leads: {
         Row: {
           conversation_id: string | null

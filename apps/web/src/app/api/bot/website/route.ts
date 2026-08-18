@@ -70,6 +70,15 @@ export async function POST(request: NextRequest) {
 
   await admin.from('chatbot_messages').insert({ conversation_id: convoId, role: 'assistant', content: reply })
 
+  // Anonymous interaction log — no visitor identity captured (see
+  // migration comment). Best-effort: not gated on success, same as this
+  // route's other non-critical writes.
+  await admin.from('chatbot_interaction_logs').insert({
+    conversation_id: convoId,
+    message_count: (count ?? 0) + 1,
+    label_shown: true,
+  })
+
   const lower = message.toLowerCase()
   const showLeadForm = BOOKING_KEYWORDS.some((kw) => lower.includes(kw))
 
