@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Sparkles, X, Send, ArrowRight } from 'lucide-react'
 import { startCrmBotConversation, sendCrmBotMessage, confirmCrmBotAction, type CrmBotProposedAction, type CrmBotNavigate } from '@/lib/actions/crm-bot'
 
-type Msg = { role: 'user' | 'assistant'; content: string; navigate?: CrmBotNavigate | null }
+type Msg = { role: 'user' | 'assistant'; content: string; navigate?: CrmBotNavigate[] | null }
 
 export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -138,22 +138,27 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
                   border: m.role === 'user' ? 'none' : assistantBubbleBorder,
                   color: m.role === 'user' ? '#fff' : assistantText,
                 }}>{m.content}</p>
-                {m.navigate && (
-                  <Link
-                    href={m.navigate.path}
-                    onClick={() => setIsOpen(false)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px',
-                      fontSize: '13px', fontWeight: 700, textDecoration: 'none',
-                      color: dark ? '#5eead4' : '#0d6dff',
-                      padding: '7px 10px', borderRadius: '8px',
-                      background: dark ? 'rgba(94,234,212,0.1)' : 'rgba(13,109,255,0.08)',
-                      border: dark ? '1px solid rgba(94,234,212,0.25)' : '1px solid rgba(13,109,255,0.18)',
-                      width: 'fit-content',
-                    }}
-                  >
-                    {m.navigate.label} <ArrowRight size={13} />
-                  </Link>
+                {m.navigate && m.navigate.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', alignItems: 'flex-start' }}>
+                    {m.navigate.map((nav, ni) => (
+                      <Link
+                        key={ni}
+                        href={nav.path}
+                        onClick={() => setIsOpen(false)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          fontSize: '13px', fontWeight: 700, textDecoration: 'none',
+                          color: dark ? '#5eead4' : '#0d6dff',
+                          padding: '7px 10px', borderRadius: '8px',
+                          background: dark ? 'rgba(94,234,212,0.1)' : 'rgba(13,109,255,0.08)',
+                          border: dark ? '1px solid rgba(94,234,212,0.25)' : '1px solid rgba(13,109,255,0.18)',
+                          width: 'fit-content',
+                        }}
+                      >
+                        {nav.label} <ArrowRight size={13} />
+                      </Link>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}

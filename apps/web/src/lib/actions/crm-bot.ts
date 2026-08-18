@@ -10,7 +10,7 @@ import type { Json } from '@qcypher/db'
 
 export type CrmBotProposedAction = {
   id: string
-  actionType: 'create_contact' | 'schedule_event'
+  actionType: 'create_contact' | 'schedule_event' | 'create_invoice' | 'mark_order_paid' | 'add_order_discount'
   summary: string
 }
 
@@ -20,7 +20,7 @@ export type CrmBotReply = {
   conversationId: string
   reply: string
   proposedAction: CrmBotProposedAction | null
-  navigate: CrmBotNavigate | null
+  navigate: CrmBotNavigate[] | null
 }
 
 // Next.js redacts thrown Server Action error messages in production —
@@ -89,6 +89,82 @@ const CRM_BOT_TOOLS: ChatTool[] = [
       required: ['label', 'path'],
     },
   },
+  {
+    name: 'query_business_data',
+    description: 'Answer a question about the tenant\'s real business numbers by fetching one live metric. Call this instead of guessing or making up a number whenever the user asks about revenue, unpaid invoices, leads, customers, upcoming events, or expenses.',
+    parameters: {
+      type: 'object',
+      properties: {
+        metric: {
+          type: 'string',
+          enum: ['revenue_this_month', 'unpaid_invoices', 'lead_count', 'active_customer_count', 'upcoming_events_count', 'expenses_this_month'],
+          description: 'Which metric to fetch',
+        },
+      },
+      required: ['metric'],
+    },
+  },
+  {
+    name: 'search_records',
+    description: 'Find a specific contact or order by name/number and get a direct link to it. Call this whenever the user asks to find, pull up, or look up a specific customer or order.',
+    parameters: {
+      type: 'object',
+      properties: {
+        record_type: { type: 'string', enum: ['contact', 'order'] },
+        query: { type: 'string', description: 'Name to search for (contact), or an order number (order)' },
+      },
+      required: ['record_type', 'query'],
+    },
+  },
+  {
+    name: 'create_invoice',
+    description: 'Propose creating a new order/invoice with one or more line items. Only call once you have at least one line item with a name, quantity, and price.',
+    parameters: {
+      type: 'object',
+      properties: {
+        customer_name: { type: 'string', description: 'Free-text name of the customer this is for, if any' },
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              quantity: { type: 'number' },
+              unit_price: { type: 'number' },
+            },
+            required: ['name', 'quantity', 'unit_price'],
+          },
+        },
+        notes: { type: 'string' },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'mark_order_paid',
+    description: 'Propose marking an existing order/invoice as paid. Only call once you have the order number.',
+    parameters: {
+      type: 'object',
+      properties: {
+        order_number: { type: 'number' },
+      },
+      required: ['order_number'],
+    },
+  },
+  {
+    name: 'add_order_discount',
+    description: 'Propose adding or updating a whole-order discount on an existing order. Only call once you have the order number and discount amount.',
+    parameters: {
+      type: 'object',
+      properties: {
+        order_number: { type: 'number' },
+        discount_type: { type: 'string', enum: ['percent', 'flat'] },
+        discount_value: { type: 'number' },
+        show_discount: { type: 'boolean', description: 'Whether the customer can see the discount was applied; defaults to true' },
+      },
+      required: ['order_number', 'discount_type', 'discount_value'],
+    },
+  },
 ]
 
 // Only paths this bot's own knowledge base actually documents — a
@@ -109,7 +185,110 @@ function summarizeAction(type: string, data: Record<string, unknown>): string {
     const when = data.starts_at ? new Date(String(data.starts_at)).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'unknown time'
     return `Schedule "${data.title}"${data.contact_name ? ` with ${data.contact_name}` : ''} — ${when}`
   }
+  if (type === 'create_invoice') {
+    const items = Array.isArray(data.items) ? data.items as Array<{ name: string; quantity: number; unit_price: number }> : []
+    const total = items.reduce((sum, i) => sum + (Number(i.quantity) || 0) * (Number(i.unit_price) || 0), 0)
+    const itemsText = items.map(i => `${i.quantity}x ${i.name} @ $${i.unit_price}`).join(', ')
+    return `Create invoice${data.customer_name ? ` for ${data.customer_name}` : ''}: ${itemsText} — total $${total.toFixed(2)}`
+  }
+  if (type === 'mark_order_paid') {
+    return `Mark order #${data.order_number} as paid`
+  }
+  if (type === 'add_order_discount') {
+    const amount = data.discount_type === 'percent' ? `${data.discount_value}%` : `$${data.discount_value}`
+    return `Apply a ${amount} discount to order #${data.order_number}${data.show_discount === false ? ' (hidden from customer)' : ''}`
+  }
   return `${type}: ${JSON.stringify(data)}`
+}
+
+type AdminClient = ReturnType<typeof createAdminClient>
+
+const money = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+
+// Fixed, whitelisted metrics only — a free-text/SQL query tool would let
+// the model construct arbitrary reads; this keeps every possible answer
+// to a query the tenant is actually scoped to and the reply text
+// deterministic (built from the real number, never phrased by the model).
+async function runBusinessQuery(admin: AdminClient, tenantId: string, metric: string): Promise<string> {
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+  const startOfMonthIso = startOfMonth.toISOString()
+
+  switch (metric) {
+    case 'revenue_this_month': {
+      const { data } = await admin.from('orders').select('total_amount').eq('tenant_id', tenantId).eq('payment_status', 'paid').gte('updated_at', startOfMonthIso)
+      const total = (data ?? []).reduce((s, o) => s + (o.total_amount ?? 0), 0)
+      return `Revenue this month so far: ${money(total)}.`
+    }
+    case 'unpaid_invoices': {
+      const { data } = await admin.from('orders').select('total_amount').eq('tenant_id', tenantId).eq('payment_status', 'pending')
+      const rows = data ?? []
+      const total = rows.reduce((s, o) => s + (o.total_amount ?? 0), 0)
+      return `${rows.length} unpaid invoice${rows.length === 1 ? '' : 's'} totaling ${money(total)}.`
+    }
+    case 'lead_count': {
+      const { count } = await admin.from('contacts').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'lead')
+      return `${count ?? 0} lead${count === 1 ? '' : 's'} right now.`
+    }
+    case 'active_customer_count': {
+      const { count } = await admin.from('contacts').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'active')
+      return `${count ?? 0} active customer${count === 1 ? '' : 's'}.`
+    }
+    case 'upcoming_events_count': {
+      const { count } = await admin.from('events').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).gte('starts_at', new Date().toISOString())
+      return `${count ?? 0} upcoming event${count === 1 ? '' : 's'} on the calendar.`
+    }
+    case 'expenses_this_month': {
+      const { data } = await admin.from('expenses').select('amount').eq('tenant_id', tenantId).gte('date', startOfMonthIso.slice(0, 10))
+      const total = (data ?? []).reduce((s, e) => s + (e.amount ?? 0), 0)
+      return `Expenses this month so far: ${money(total)}.`
+    }
+    default:
+      return "I don't have that metric available."
+  }
+}
+
+async function runSearch(admin: AdminClient, tenantId: string, recordType: string, query: string): Promise<{ text: string; links: CrmBotNavigate[] }> {
+  const q = query.trim()
+  if (!q) return { text: "I need a name or number to search for.", links: [] }
+
+  if (recordType === 'contact') {
+    const { data } = await admin
+      .from('contacts')
+      .select('id, first_name, last_name')
+      .eq('tenant_id', tenantId)
+      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
+      .limit(3)
+    if (!data || data.length === 0) return { text: `No contacts matched "${q}".`, links: [] }
+    const links = data.map(c => ({ label: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Contact', path: `/contacts/${c.id}` }))
+    return { text: `Found ${data.length} contact${data.length === 1 ? '' : 's'} matching "${q}".`, links }
+  }
+
+  if (recordType === 'order') {
+    const asNumber = parseInt(q.replace(/\D/g, ''), 10)
+    let rows: Array<{ id: string; order_number: number | null }> = []
+    if (!isNaN(asNumber)) {
+      const { data } = await admin.from('orders').select('id, order_number').eq('tenant_id', tenantId).eq('order_number', asNumber).limit(3)
+      rows = data ?? []
+    } else {
+      const { data } = await admin
+        .from('orders')
+        .select('id, order_number, contact:contacts(first_name, last_name)')
+        .eq('tenant_id', tenantId)
+        .limit(50)
+      rows = (data ?? []).filter((o) => {
+        const contact = o.contact as { first_name: string; last_name: string | null } | null
+        const name = [contact?.first_name, contact?.last_name].filter(Boolean).join(' ').toLowerCase()
+        return name.includes(q.toLowerCase())
+      }).slice(0, 3)
+    }
+    if (rows.length === 0) return { text: `No orders matched "${q}".`, links: [] }
+    const links = rows.map(o => ({ label: `Order #${o.order_number ?? '—'}`, path: `/orders/${o.id}` }))
+    return { text: `Found ${rows.length} order${rows.length === 1 ? '' : 's'} matching "${q}".`, links }
+  }
+
+  return { text: "I can only search contacts or orders.", links: [] }
 }
 
 export async function startCrmBotConversation(): Promise<CrmBotResult<string>> {
@@ -173,22 +352,39 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
     return { ok: true, data: { conversationId, reply: fallback, proposedAction: null, navigate: null } }
   }
 
-  // navigate_to is informational (a link, not a mutation) — apply it
-  // immediately rather than routing it through the propose/confirm flow
-  // create_contact and schedule_event use. A reply can carry both: text
-  // plus a link, e.g. explaining discounts and linking straight to the
-  // order that prompted the question.
+  // navigate_to, query_business_data, and search_records are all
+  // read-only/informational — applied immediately, never routed through
+  // the propose/confirm flow the mutation tools use. A reply can carry
+  // several: text plus one or more links (e.g. two matching contacts).
   const navigateCall = toolCalls.find(c => c.name === 'navigate_to')
-  let navigate: CrmBotNavigate | null = null
+  const navigateLinks: CrmBotNavigate[] = []
   if (navigateCall) {
     const path = String(navigateCall.arguments.path ?? '')
     const label = String(navigateCall.arguments.label ?? 'Open')
-    if (ALLOWED_NAVIGATE_PATHS.has(path)) navigate = { label, path }
+    if (ALLOWED_NAVIGATE_PATHS.has(path)) navigateLinks.push({ label, path })
   }
 
-  const mutationCall = toolCalls.find(c => c.name === 'create_contact' || c.name === 'schedule_event')
+  let dataAnswer: string | null = null
+
+  const queryCall = toolCalls.find(c => c.name === 'query_business_data')
+  if (queryCall) {
+    dataAnswer = await runBusinessQuery(admin, tenantId, String(queryCall.arguments.metric ?? ''))
+  }
+
+  const searchCall = toolCalls.find(c => c.name === 'search_records')
+  if (searchCall) {
+    const { text, links } = await runSearch(admin, tenantId, String(searchCall.arguments.record_type ?? ''), String(searchCall.arguments.query ?? ''))
+    dataAnswer = dataAnswer ? `${dataAnswer} ${text}` : text
+    navigateLinks.push(...links)
+  }
+
+  const navigate = navigateLinks.length ? navigateLinks : null
+
+  const mutationCall = toolCalls.find(c =>
+    c.name === 'create_contact' || c.name === 'schedule_event' ||
+    c.name === 'create_invoice' || c.name === 'mark_order_paid' || c.name === 'add_order_discount')
   if (mutationCall) {
-    const actionType = mutationCall.name as 'create_contact' | 'schedule_event'
+    const actionType = mutationCall.name as CrmBotProposedAction['actionType']
     const summary = summarizeAction(actionType, mutationCall.arguments)
 
     const { data: actionRow, error } = await admin
@@ -203,7 +399,7 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
     return { ok: true, data: { conversationId, reply, proposedAction: { id: actionRow.id, actionType, summary }, navigate } }
   }
 
-  const reply = content ?? (navigate ? `Here's where to find that.` : "I'm not sure how to help with that — try rephrasing?")
+  const reply = dataAnswer ?? content ?? (navigate ? `Here's where to find that.` : "I'm not sure how to help with that — try rephrasing?")
   await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
   return { ok: true, data: { conversationId, reply, proposedAction: null, navigate } }
 }
@@ -277,6 +473,64 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
       if (error) throw new Error(error.message)
       reply = `✓ Scheduled "${data.title}" for ${startsAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`
       revalidatePath('/calendar')
+    } else if (action.action_type === 'create_invoice') {
+      let customerId: string | null = null
+      if (data.customer_name) {
+        const nameParts = String(data.customer_name).trim().split(/\s+/)
+        const { data: matches } = await admin
+          .from('contacts')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .ilike('first_name', `%${nameParts[0]}%`)
+          .limit(1)
+        customerId = matches?.[0]?.id ?? null
+      }
+
+      const { data: order, error: orderErr } = await admin
+        .from('orders')
+        .insert({ tenant_id: tenantId, customer_id: customerId, notes: data.notes ? String(data.notes).slice(0, 2000) : null })
+        .select('id, order_number')
+        .single()
+      if (orderErr || !order) throw new Error(orderErr?.message ?? 'Could not create order')
+
+      const items = Array.isArray(data.items) ? data.items as Array<{ name: string; quantity: number; unit_price: number }> : []
+      if (items.length === 0) throw new Error('No line items given')
+      const { error: linesErr } = await admin.from('order_line_items').insert(items.map(i => ({
+        tenant_id: tenantId,
+        order_id: order.id,
+        item_name_snapshot: String(i.name).slice(0, 200),
+        quantity: Number(i.quantity) || 1,
+        unit_price: Number(i.unit_price) || 0,
+        billing_unit_snapshot: 'flat' as const,
+      })))
+      if (linesErr) throw new Error(linesErr.message)
+
+      reply = `✓ Created invoice #${order.order_number}${data.customer_name && !customerId ? ' (customer not linked — no matching contact found)' : ''}`
+      revalidatePath('/orders')
+    } else if (action.action_type === 'mark_order_paid') {
+      const { data: order } = await admin.from('orders').select('id, order_number').eq('tenant_id', tenantId).eq('order_number', Number(data.order_number)).single()
+      if (!order) throw new Error(`Order #${data.order_number} not found`)
+      const { error } = await admin.from('orders').update({ payment_status: 'paid' }).eq('id', order.id)
+      if (error) throw new Error(error.message)
+      reply = `✓ Marked order #${order.order_number} as paid`
+      revalidatePath('/orders')
+      revalidatePath(`/orders/${order.id}`)
+    } else if (action.action_type === 'add_order_discount') {
+      const { data: order } = await admin.from('orders').select('id, order_number').eq('tenant_id', tenantId).eq('order_number', Number(data.order_number)).single()
+      if (!order) throw new Error(`Order #${data.order_number} not found`)
+      const discountType = data.discount_type === 'flat' ? 'flat' : 'percent'
+      const discountValue = Number(data.discount_value)
+      if (!discountValue || discountValue < 0) throw new Error('Invalid discount amount')
+      if (discountType === 'percent' && discountValue > 100) throw new Error("Percentage discount can't exceed 100%")
+      const { error } = await admin.from('orders').update({
+        discount_type: discountType,
+        discount_value: discountValue,
+        show_discount: data.show_discount !== false,
+      }).eq('id', order.id)
+      if (error) throw new Error(error.message)
+      reply = `✓ Applied a ${discountType === 'percent' ? `${discountValue}%` : `$${discountValue}`} discount to order #${order.order_number}`
+      revalidatePath('/orders')
+      revalidatePath(`/orders/${order.id}`)
     } else {
       throw new Error(`Unknown action type: ${action.action_type}`)
     }
