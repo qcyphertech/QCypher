@@ -147,11 +147,12 @@ function IncidentCard({ incident, expanded, onToggle, isPending, onRefresh, star
     setError(null)
     startTransition(async () => {
       try {
-        await sendInitialCustomerNotification(incident.id, {
+        const result = await sendInitialCustomerNotification(incident.id, {
           incidentTypeLabel: TYPE_LABEL[incident.incident_type].toLowerCase(),
           affectedData, actionsTaken,
         })
-        onRefresh()
+        if (result.ok) onRefresh()
+        else setError(result.error)
       } catch (e) { setError(e instanceof Error ? e.message : 'Failed') }
     })
   }
@@ -160,8 +161,9 @@ function IncidentCard({ incident, expanded, onToggle, isPending, onRefresh, star
     setError(null)
     startTransition(async () => {
       try {
-        await sendRootCauseSummary(incident.id)
-        onRefresh()
+        const result = await sendRootCauseSummary(incident.id)
+        if (result.ok) onRefresh()
+        else setError(result.error)
       } catch (e) { setError(e instanceof Error ? e.message : 'Failed') }
     })
   }

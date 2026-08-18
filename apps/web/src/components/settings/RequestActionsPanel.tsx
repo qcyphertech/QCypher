@@ -19,9 +19,9 @@ export function RequestActionsPanel() {
     setError(null)
     startTransition(async () => {
       try {
-        await createApprovalRequest(type, details)
-        setPlan('')
-        load()
+        const result = await createApprovalRequest(type, details)
+        if (result.ok) { setPlan(''); load() }
+        else setError(result.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
       }

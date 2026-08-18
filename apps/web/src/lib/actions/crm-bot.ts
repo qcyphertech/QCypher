@@ -20,6 +20,12 @@ export type CrmBotReply = {
   proposedAction: CrmBotProposedAction | null
 }
 
+// Next.js redacts thrown Server Action error messages in production —
+// these chat-facing functions return a result instead so a real message
+// ("Read-only accounts cannot use the assistant", "message limit reached",
+// etc.) actually reaches the widget instead of a generic redacted string.
+export type CrmBotResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
 // Same pattern as requireTenantWriter() in lib/actions/blog.ts — any
 // tenant member except read_only can use the bot, scoped to their own
 // tenant via a fresh (non-JWT-cached) role/tenant read.
@@ -82,28 +88,38 @@ function summarizeAction(type: string, data: Record<string, unknown>): string {
   return `${type}: ${JSON.stringify(data)}`
 }
 
-export async function startCrmBotConversation(): Promise<string> {
-  const { admin, tenantId, userId } = await requireTenantWriter()
+export async function startCrmBotConversation(): Promise<CrmBotResult<string>> {
+  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string, userId: string
+  try {
+    ;({ admin, tenantId, userId } = await requireTenantWriter())
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
+  }
   const { data, error } = await admin
     .from('chatbot_conversations')
     .insert({ bot_type: 'crm', tenant_id: tenantId, user_id: userId })
     .select('id')
     .single()
-  if (error || !data) throw new Error('Could not start conversation')
-  return data.id
+  if (error || !data) return { ok: false, error: 'Could not start conversation' }
+  return { ok: true, data: data.id }
 }
 
-export async function sendCrmBotMessage(conversationId: string, message: string): Promise<CrmBotReply> {
-  const { admin, tenantId } = await requireTenantWriter()
+export async function sendCrmBotMessage(conversationId: string, message: string): Promise<CrmBotResult<CrmBotReply>> {
+  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string
+  try {
+    ;({ admin, tenantId } = await requireTenantWriter())
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
+  }
   const trimmed = message.trim().slice(0, 2000)
-  if (!trimmed) throw new Error('Empty message')
+  if (!trimmed) return { ok: false, error: 'Empty message' }
 
   // Verify the conversation is actually this tenant's before reading/writing it.
   const { data: convo } = await admin.from('chatbot_conversations').select('tenant_id').eq('id', conversationId).single()
-  if (!convo || convo.tenant_id !== tenantId) throw new Error('Conversation not found')
+  if (!convo || convo.tenant_id !== tenantId) return { ok: false, error: 'Conversation not found' }
 
   const { count } = await admin.from('chatbot_messages').select('id', { count: 'exact', head: true }).eq('conversation_id', conversationId)
-  if ((count ?? 0) >= 60) throw new Error('This conversation has reached its message limit')
+  if ((count ?? 0) >= 60) return { ok: false, error: 'This conversation has reached its message limit' }
 
   const { data: history } = await admin
     .from('chatbot_messages')
@@ -130,7 +146,7 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
   } catch {
     const fallback = "Sorry, I'm having trouble responding right now — try again in a moment."
     await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: fallback })
-    return { conversationId, reply: fallback, proposedAction: null }
+    return { ok: true, data: { conversationId, reply: fallback, proposedAction: null } }
   }
 
   if (toolCalls.length > 0) {
@@ -143,30 +159,35 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
       .insert({ conversation_id: conversationId, tenant_id: tenantId, action_type: actionType, action_data: call.arguments as Json })
       .select('id')
       .single()
-    if (error || !actionRow) throw new Error('Could not save proposed action')
+    if (error || !actionRow) return { ok: false, error: 'Could not save proposed action' }
 
     const reply = `${summary} — confirm below to proceed.`
     await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
-    return { conversationId, reply, proposedAction: { id: actionRow.id, actionType, summary } }
+    return { ok: true, data: { conversationId, reply, proposedAction: { id: actionRow.id, actionType, summary } } }
   }
 
   const reply = content ?? "I'm not sure how to help with that — try rephrasing?"
   await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
-  return { conversationId, reply, proposedAction: null }
+  return { ok: true, data: { conversationId, reply, proposedAction: null } }
 }
 
-export async function confirmCrmBotAction(actionId: string, approve: boolean): Promise<{ reply: string }> {
-  const { admin, tenantId } = await requireTenantWriter()
+export async function confirmCrmBotAction(actionId: string, approve: boolean): Promise<CrmBotResult<{ reply: string }>> {
+  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string
+  try {
+    ;({ admin, tenantId } = await requireTenantWriter())
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
+  }
 
   const { data: action } = await admin.from('crm_bot_actions').select('*').eq('id', actionId).single()
-  if (!action || action.tenant_id !== tenantId) throw new Error('Action not found')
-  if (action.status !== 'pending') throw new Error('This action was already resolved')
+  if (!action || action.tenant_id !== tenantId) return { ok: false, error: 'Action not found' }
+  if (action.status !== 'pending') return { ok: false, error: 'This action was already resolved' }
 
   if (!approve) {
     await admin.from('crm_bot_actions').update({ status: 'failed', error_message: 'Rejected by user', completed_at: new Date().toISOString() }).eq('id', actionId)
     const reply = "Okay, I won't do that."
     await admin.from('chatbot_messages').insert({ conversation_id: action.conversation_id, role: 'assistant', content: reply })
-    return { reply }
+    return { ok: true, data: { reply } }
   }
 
   const data = action.action_data as Record<string, unknown>
@@ -231,5 +252,5 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
   }
 
   await admin.from('chatbot_messages').insert({ conversation_id: action.conversation_id, role: 'assistant', content: reply })
-  return { reply }
+  return { ok: true, data: { reply } }
 }

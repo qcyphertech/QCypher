@@ -50,17 +50,22 @@ const REQUEST_LABEL: Record<ApprovalRequestType, string> = {
   disable_integration: 'Disable integration',
 }
 
+export type CreateApprovalRequestResult = { ok: true; id: string } | { ok: false; error: string }
+
+// Returns a result instead of throwing — Next.js redacts thrown Server
+// Action error messages in production, so "Only admins can request this
+// action" (which the panel actually shows) has to travel back as data.
 export async function createApprovalRequest(
   request_type: ApprovalRequestType,
   details?: Record<string, unknown>,
-) {
+): Promise<CreateApprovalRequestResult> {
   const { user, supabase } = await getCallerContext()
   const tenant_id = await getTenantId(user.id, user.app_metadata)
 
   const admin = createAdminClient()
   const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
   if (fresh?.app_metadata?.role !== 'owner') {
-    throw new Error('Only admins can request this action')
+    return { ok: false, error: 'Only admins can request this action' }
   }
 
   const { data: tenant } = await supabase.from('tenants').select('name').single()
@@ -71,7 +76,7 @@ export async function createApprovalRequest(
     .select('id')
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) return { ok: false, error: error.message }
 
   const tenantName = (tenant as { name?: string } | null)?.name ?? 'A tenant'
   const superAdminEmails = await listSuperAdminEmails()
@@ -90,7 +95,7 @@ export async function createApprovalRequest(
     }),
   })
 
-  return req.id as string
+  return { ok: true, id: req.id as string }
 }
 
 export async function listApprovalRequests(status?: ApprovalStatus): Promise<ApprovalRequest[]> {

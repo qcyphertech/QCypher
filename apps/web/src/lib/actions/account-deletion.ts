@@ -44,8 +44,21 @@ export async function getDeletionStatus(): Promise<DeletionStatus> {
   }
 }
 
-export async function requestAccountDeletion() {
-  const { userId, email, tenantId, admin } = await requireOwner()
+export type DeletionActionResult =
+  | { ok: true; deletionScheduledAt: string }
+  | { ok: false; error: string }
+
+// Returns a result instead of throwing — Next.js redacts thrown Server
+// Action error messages in production, so the "only account admins" /
+// "no request is pending" messages this panel actually shows have to
+// travel back as data.
+export async function requestAccountDeletion(): Promise<DeletionActionResult> {
+  let userId: string, email: string, tenantId: string, admin: Awaited<ReturnType<typeof requireOwner>>['admin']
+  try {
+    ;({ userId, email, tenantId, admin } = await requireOwner())
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
+  }
 
   const { data: tenant } = await admin.from('tenants').select('name').eq('id', tenantId).single()
   const tenantName = (tenant as { name?: string } | null)?.name ?? 'your workspace'
@@ -62,7 +75,7 @@ export async function requestAccountDeletion() {
       deletion_reason: 'customer_requested',
     })
     .eq('id', tenantId)
-  if (error) throw new Error(error.message)
+  if (error) return { ok: false, error: error.message }
 
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
   const scheduledLabel = scheduledAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -91,21 +104,26 @@ export async function requestAccountDeletion() {
   })
 
   revalidatePath('/settings')
-  return { deletionScheduledAt: scheduledAt.toISOString() }
+  return { ok: true, deletionScheduledAt: scheduledAt.toISOString() }
 }
 
-export async function cancelAccountDeletion() {
-  const { userId, email, tenantId, admin } = await requireOwner()
+export async function cancelAccountDeletion(): Promise<{ ok: true } | { ok: false; error: string }> {
+  let userId: string, email: string, tenantId: string, admin: Awaited<ReturnType<typeof requireOwner>>['admin']
+  try {
+    ;({ userId, email, tenantId, admin } = await requireOwner())
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
+  }
 
   const { data: tenant } = await admin.from('tenants').select('name, status').eq('id', tenantId).single()
   const t = tenant as { name?: string; status?: string } | null
-  if (t?.status !== 'pending_deletion') throw new Error('No deletion request is pending for this account')
+  if (t?.status !== 'pending_deletion') return { ok: false, error: 'No deletion request is pending for this account' }
 
   const { error } = await admin
     .from('tenants')
     .update({ status: 'active', deletion_requested_at: null, deletion_scheduled_at: null, deletion_reason: null })
     .eq('id', tenantId)
-  if (error) throw new Error(error.message)
+  if (error) return { ok: false, error: error.message }
 
   await sendEmail({
     to: email,
@@ -128,5 +146,5 @@ export async function cancelAccountDeletion() {
   })
 
   revalidatePath('/settings')
-  return {}
+  return { ok: true }
 }

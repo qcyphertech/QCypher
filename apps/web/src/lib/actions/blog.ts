@@ -214,7 +214,12 @@ export async function listMyBlogArticles(): Promise<BlogArticle[]> {
  * directly against the DB instead: at most one new draft per catalog
  * item per rolling 24 hours.
  */
-export async function generateMyBlogDraft(catalogItemId: string): Promise<{ id: string }> {
+export type GenerateBlogDraftResult = { ok: true; id: string } | { ok: false; error: string }
+
+// Returns a result instead of throwing for the two conditions a tenant can
+// actually hit (missing service, daily cap) — Next.js redacts thrown Server
+// Action error messages in production, so these have to travel back as data.
+export async function generateMyBlogDraft(catalogItemId: string): Promise<GenerateBlogDraftResult> {
   const { admin, tenantId } = await requireTenantWriter()
 
   const [{ data: tenant }, { data: item }, { data: recent }] = await Promise.all([
@@ -222,8 +227,8 @@ export async function generateMyBlogDraft(catalogItemId: string): Promise<{ id: 
     admin.from('catalog_items').select('id, name, description, base_price').eq('id', catalogItemId).eq('tenant_id', tenantId).single(),
     admin.from('blog_articles').select('id').eq('tenant_id', tenantId).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
   ])
-  if (!tenant || !item) throw new Error('Service not found')
-  if ((recent?.length ?? 0) >= 3) throw new Error('You can generate up to 3 blog drafts per day — try again tomorrow')
+  if (!tenant || !item) return { ok: false, error: 'Service not found' }
+  if ((recent?.length ?? 0) >= 3) return { ok: false, error: 'You can generate up to 3 blog drafts per day — try again tomorrow' }
 
   const html = await callDeepSeek(blogPrompt({
     businessName: tenant.name,
@@ -254,7 +259,7 @@ export async function generateMyBlogDraft(catalogItemId: string): Promise<{ id: 
 
   if (error || !data) throw new Error(error?.message ?? 'Failed to save draft')
   revalidatePath('/settings')
-  return { id: data.id }
+  return { ok: true, id: data.id }
 }
 
 export async function publishMyBlogArticle(articleId: string): Promise<void> {

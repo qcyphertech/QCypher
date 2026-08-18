@@ -134,7 +134,11 @@ export async function markInvoicePaidManually(invoiceId: string) {
 // already used for order payments in lib/actions/portal.ts) and emails the
 // customer a link to the public pay page — no separate "payment link" API
 // call, since Helcim's v2 checkout-session flow already produces one.
-export async function sendInvoice(invoiceId: string, recipientEmail: string) {
+// Returns a result instead of throwing for the conditions an admin can
+// actually hit ("already paid", "voided") — Next.js redacts thrown Server
+// Action error messages in production, so the panel's message has to
+// travel back as data.
+export async function sendInvoice(invoiceId: string, recipientEmail: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const { userId, admin } = await requireSuperAdminCaller()
 
   const { data: invoice } = await admin
@@ -142,9 +146,9 @@ export async function sendInvoice(invoiceId: string, recipientEmail: string) {
     .select('id, invoice_number, tenant_id, amount, description, status, tenants(name)')
     .eq('id', invoiceId)
     .single()
-  if (!invoice) throw new Error('Invoice not found')
-  if (invoice.status === 'paid') throw new Error('Invoice is already paid')
-  if (invoice.status === 'void') throw new Error('Cannot send a voided invoice')
+  if (!invoice) return { ok: false, error: 'Invoice not found' }
+  if (invoice.status === 'paid') return { ok: false, error: 'Invoice is already paid' }
+  if (invoice.status === 'void') return { ok: false, error: 'Cannot send a voided invoice' }
 
   const tenantName = (invoice as unknown as { tenants: { name: string } | null }).tenants?.name ?? 'your account'
 
@@ -152,7 +156,7 @@ export async function sendInvoice(invoiceId: string, recipientEmail: string) {
     .from('invoices')
     .update({ status: 'sent', sent_to_email: recipientEmail, sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq('id', invoiceId)
-  if (error) throw new Error(error.message)
+  if (error) return { ok: false, error: error.message }
 
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
   const payUrl = `${appUrl}/invoice/${invoice.id}/pay`
@@ -176,6 +180,7 @@ export async function sendInvoice(invoiceId: string, recipientEmail: string) {
 
   await logInvoiceAudit(admin, invoice.tenant_id, userId, 'invoice_sent', invoiceId, invoice.invoice_number, { sent_to_email: recipientEmail })
   revalidatePath('/admin')
+  return { ok: true }
 }
 
 // ─── Helcim checkout — public pay page, no auth required ──────────────────

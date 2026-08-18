@@ -16,7 +16,8 @@ export function AiDetectionPanel() {
     startTransition(async () => {
       try {
         const r = await detectAiContent(content)
-        setResult(r)
+        if (r.ok) setResult({ confidence: r.confidence, reasoning: r.reasoning })
+        else setError(r.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
       }

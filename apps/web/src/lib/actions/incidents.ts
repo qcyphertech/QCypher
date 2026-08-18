@@ -119,18 +119,21 @@ async function getTenantAdminEmails(admin: ReturnType<typeof createAdminClient>,
     .filter(Boolean)
 }
 
+// Returns a result instead of throwing for the conditions an admin can
+// actually hit — Next.js redacts thrown Server Action error messages in
+// production, so the panel's message has to travel back as data.
 export async function sendInitialCustomerNotification(incidentId: string, opts: {
   incidentTypeLabel: string
   affectedData: string
   actionsTaken: string
-}) {
+}): Promise<{ ok: true } | { ok: false; error: string }> {
   const { admin } = await requireSuperAdmin()
   const { data: incident, error } = await admin.from('incidents').select('*').eq('id', incidentId).single()
-  if (error || !incident) throw new Error(error?.message ?? 'Incident not found')
-  if (!incident.tenant_id) throw new Error('This incident has no tenant to notify — it is system-wide')
+  if (error || !incident) return { ok: false, error: error?.message ?? 'Incident not found' }
+  if (!incident.tenant_id) return { ok: false, error: 'This incident has no tenant to notify — it is system-wide' }
 
   const emails = await getTenantAdminEmails(admin, incident.tenant_id)
-  if (!emails.length) throw new Error('No admin emails found for this tenant')
+  if (!emails.length) return { ok: false, error: 'No admin emails found for this tenant' }
 
   const detectedDate = new Date(incident.detected_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })
 
@@ -160,20 +163,21 @@ export async function sendInitialCustomerNotification(incidentId: string, opts: 
     timeline: timeline as Json,
     updated_at: new Date().toISOString(),
   }).eq('id', incidentId)
+  return { ok: true }
 }
 
-export async function sendRootCauseSummary(incidentId: string) {
+export async function sendRootCauseSummary(incidentId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const { admin } = await requireSuperAdmin()
   const { data: incident, error } = await admin.from('incidents').select('*').eq('id', incidentId).single()
-  if (error || !incident) throw new Error(error?.message ?? 'Incident not found')
-  if (!incident.tenant_id) throw new Error('This incident has no tenant to notify — it is system-wide')
-  if (!incident.root_cause) throw new Error('Fill in the root cause before sending the summary')
+  if (error || !incident) return { ok: false, error: error?.message ?? 'Incident not found' }
+  if (!incident.tenant_id) return { ok: false, error: 'This incident has no tenant to notify — it is system-wide' }
+  if (!incident.root_cause) return { ok: false, error: 'Fill in the root cause before sending the summary' }
   if (incident.root_cause.startsWith('[DRAFT')) {
-    throw new Error('Root cause is still an auto-drafted placeholder — review and edit it before sending to a customer')
+    return { ok: false, error: 'Root cause is still an auto-drafted placeholder — review and edit it before sending to a customer' }
   }
 
   const emails = await getTenantAdminEmails(admin, incident.tenant_id)
-  if (!emails.length) throw new Error('No admin emails found for this tenant')
+  if (!emails.length) return { ok: false, error: 'No admin emails found for this tenant' }
 
   const fmt = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }) : '—'
   const timeline = (incident.timeline as IncidentTimeline) ?? {}
@@ -202,4 +206,5 @@ export async function sendRootCauseSummary(incidentId: string) {
     timeline: { ...timeline, summary_sent_at: new Date().toISOString() } as Json,
     updated_at: new Date().toISOString(),
   }).eq('id', incidentId)
+  return { ok: true }
 }

@@ -48,8 +48,9 @@ export function BlogSettingsPanel({ tenantSlug }: { tenantSlug: string }) {
     setError(null)
     startTransition(async () => {
       try {
-        await generateMyBlogDraft(catalogItemId)
-        load()
+        const result = await generateMyBlogDraft(catalogItemId)
+        if (result.ok) load()
+        else setError(result.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to generate')
       }

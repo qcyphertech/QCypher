@@ -454,7 +454,7 @@ function AddLineModal({ orderId, catalogItems, onClose }: {
     setError(null)
     startTransition(async () => {
       try {
-        await addLineItem({
+        const result = await addLineItem({
           order_id: orderId,
           catalog_item_id: selected?.id,
           item_name_snapshot: fd.get('name') as string,
@@ -466,7 +466,8 @@ function AddLineModal({ orderId, catalogItems, onClose }: {
           rental_start_date: isRental ? (fd.get('rental_start') as string) || undefined : undefined,
           rental_end_date:   isRental ? (fd.get('rental_end')   as string) || undefined : undefined,
         })
-        onClose()
+        if (result.ok) onClose()
+        else setError(result.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
       }

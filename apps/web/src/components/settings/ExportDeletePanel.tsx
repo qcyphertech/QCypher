@@ -23,9 +23,13 @@ export function ExportDeletePanel({ initial }: { initial: DeletionStatus }) {
     startTransition(async () => {
       try {
         const result = await requestAccountDeletion()
-        setStatus(s => ({ ...s, status: 'pending_deletion', deletionScheduledAt: result.deletionScheduledAt }))
-        setConfirmDelete(false)
-        setAcknowledged(false)
+        if (result.ok) {
+          setStatus(s => ({ ...s, status: 'pending_deletion', deletionScheduledAt: result.deletionScheduledAt }))
+          setConfirmDelete(false)
+          setAcknowledged(false)
+        } else {
+          setError(result.error)
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
       }
@@ -36,8 +40,9 @@ export function ExportDeletePanel({ initial }: { initial: DeletionStatus }) {
     setError(null)
     startTransition(async () => {
       try {
-        await cancelAccountDeletion()
-        setStatus(s => ({ ...s, status: 'active', deletionRequestedAt: null, deletionScheduledAt: null }))
+        const result = await cancelAccountDeletion()
+        if (result.ok) setStatus(s => ({ ...s, status: 'active', deletionRequestedAt: null, deletionScheduledAt: null }))
+        else setError(result.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
       }

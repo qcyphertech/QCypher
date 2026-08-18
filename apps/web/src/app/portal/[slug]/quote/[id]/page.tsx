@@ -49,13 +49,14 @@ export default async function PortalQuotePage({
   // Generate a portal-scoped quote token for the signQuote() action
   const { generateQuoteToken } = await import('@/lib/actions/quotes')
   const tokenResult = await generateQuoteToken(params.id)
+  if (!tokenResult.ok) notFound()
 
   const headersList = await headers()
   const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
 
   return (
     <QuoteSignaturePage
-      token={tokenResult.token!}
+      token={tokenResult.token}
       order={{
         id: order.id,
         order_number: order.order_number,

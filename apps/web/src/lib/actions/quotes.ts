@@ -34,8 +34,15 @@ export type SignatureRecord = {
   ip_address: string | null
 }
 
+export type GenerateQuoteTokenResult =
+  | { ok: true; token: string; url: string }
+  | { ok: false; error: string }
+
 // Generate (or regenerate) a quote token for an order. Tenant-scoped.
-export async function generateQuoteToken(orderId: string): Promise<{ token: string; url: string }> {
+// Returns a result instead of throwing for "already signed" — Next.js
+// redacts thrown Server Action error messages in production, so that
+// message (shown directly in SendQuoteButton) has to travel back as data.
+export async function generateQuoteToken(orderId: string): Promise<GenerateQuoteTokenResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -48,8 +55,8 @@ export async function generateQuoteToken(orderId: string): Promise<{ token: stri
     .select('id, signed_at, payment_status')
     .eq('id', orderId)
     .single()
-  if (oErr || !order) throw new Error('Order not found')
-  if (order.signed_at) throw new Error('This quote has already been signed and cannot be re-sent')
+  if (oErr || !order) return { ok: false, error: 'Order not found' }
+  if (order.signed_at) return { ok: false, error: 'This quote has already been signed and cannot be re-sent' }
 
   const token = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
@@ -59,10 +66,10 @@ export async function generateQuoteToken(orderId: string): Promise<{ token: stri
   const { error } = await supabase.from('quote_tokens').insert(
     { tenant_id: tenantId, order_id: orderId, access_token: token, token_expires_at: expiresAt },
   )
-  if (error) throw error
+  if (error) return { ok: false, error: error.message }
 
   revalidatePath(`/orders/${orderId}`)
-  return { token, url: `${APP_URL}/q/${token}` }
+  return { ok: true, token, url: `${APP_URL}/q/${token}` }
 }
 
 // Fetch the active token for an order (if any), for display in OrderDetail
@@ -100,8 +107,8 @@ export async function sendQuoteEmail(input: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { url: null, emailSent: false, emailError: 'Not authenticated' }
 
-  const tokenResult = await generateQuoteToken(input.orderId).catch((e: unknown) => ({ token: null as string | null, url: null as string | null, _err: e instanceof Error ? e.message : 'Failed to generate token' }))
-  if (!tokenResult.url) return { url: null, emailSent: false, emailError: (tokenResult as { _err?: string })._err ?? 'Failed to generate link' }
+  const tokenResult = await generateQuoteToken(input.orderId)
+  if (!tokenResult.ok) return { url: null, emailSent: false, emailError: tokenResult.error }
   const { url } = tokenResult
 
   const body = `Hi ${input.recipientName},

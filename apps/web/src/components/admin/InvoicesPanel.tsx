@@ -111,9 +111,9 @@ function InvoiceRow({ invoice, onChanged }: { invoice: Invoice; onChanged: () =>
     setError(null)
     startTransition(async () => {
       try {
-        await sendInvoice(invoice.id, email.trim())
-        setShowSend(false)
-        onChanged()
+        const result = await sendInvoice(invoice.id, email.trim())
+        if (result.ok) { setShowSend(false); onChanged() }
+        else setError(result.error)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to send')
       }

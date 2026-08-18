@@ -80,8 +80,9 @@ export function SendQuoteButton({
           }
         } else {
           // No email — just generate link
-          const { url } = await generateQuoteToken(orderId)
-          setQuoteUrl(url)
+          const result = await generateQuoteToken(orderId)
+          if (result.ok) setQuoteUrl(result.url)
+          else setError(result.error)
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to generate quote link')

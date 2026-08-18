@@ -61,7 +61,21 @@ export async function analyzeAiConfidence(content: string): Promise<{ confidence
   return { confidence: Math.max(0, Math.min(100, Math.round(confidence))), reasoning }
 }
 
-export async function detectAiContent(content: string): Promise<{ confidence: number; reasoning: string }> {
+// Returns a result instead of throwing for the "too short"/malformed-response
+// cases — Next.js redacts thrown Server Action error messages in production,
+// replacing them with a generic string, so a message the admin tool actually
+// needs to show (e.g. "paste at least 100 characters") has to travel back as
+// data, not as a thrown Error.
+export type DetectAiContentResult =
+  | { ok: true; confidence: number; reasoning: string }
+  | { ok: false; error: string }
+
+export async function detectAiContent(content: string): Promise<DetectAiContentResult> {
   await requireSuperAdmin()
-  return analyzeAiConfidence(content)
+  try {
+    const { confidence, reasoning } = await analyzeAiConfidence(content)
+    return { ok: true, confidence, reasoning }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Detection failed' }
+  }
 }

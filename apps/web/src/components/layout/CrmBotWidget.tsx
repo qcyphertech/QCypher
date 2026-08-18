@@ -24,9 +24,10 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
 
   async function ensureConversation(): Promise<string> {
     if (conversationId) return conversationId
-    const id = await startCrmBotConversation()
-    setConversationId(id)
-    return id
+    const result = await startCrmBotConversation()
+    if (!result.ok) throw new Error(result.error)
+    setConversationId(result.data)
+    return result.data
   }
 
   async function send() {
@@ -38,8 +39,9 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
     try {
       const id = await ensureConversation()
       const result = await sendCrmBotMessage(id, text)
-      setMessages((prev) => [...prev, { role: 'assistant', content: result.reply }])
-      setPendingAction(result.proposedAction)
+      if (!result.ok) throw new Error(result.error)
+      setMessages((prev) => [...prev, { role: 'assistant', content: result.data.reply }])
+      setPendingAction(result.data.proposedAction)
     } catch (e) {
       setMessages((prev) => [...prev, { role: 'assistant', content: e instanceof Error ? e.message : 'Something went wrong.' }])
     } finally {
@@ -51,8 +53,9 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
     if (!pendingAction || resolvingAction) return
     setResolvingAction(true)
     try {
-      const { reply } = await confirmCrmBotAction(pendingAction.id, approve)
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+      const result = await confirmCrmBotAction(pendingAction.id, approve)
+      if (!result.ok) throw new Error(result.error)
+      setMessages((prev) => [...prev, { role: 'assistant', content: result.data.reply }])
     } catch (e) {
       setMessages((prev) => [...prev, { role: 'assistant', content: e instanceof Error ? e.message : 'Something went wrong.' }])
     } finally {

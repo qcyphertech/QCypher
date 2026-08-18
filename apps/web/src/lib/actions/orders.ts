@@ -127,7 +127,7 @@ export async function addLineItem(input: {
   rental_status?: OrderLineItem['rental_status']
   rental_start_date?: string
   rental_end_date?: string
-}) {
+}): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -135,13 +135,17 @@ export async function addLineItem(input: {
   if (!tenant_id) throw new Error('No tenant')
 
   const { data: order } = await supabase.from('orders').select('signed_at').eq('id', input.order_id).single()
-  if (order?.signed_at) throw new Error('Quote is signed and locked — line items cannot be modified')
+  // Next.js redacts thrown Server Action error messages in production — this
+  // one is shown directly to the user (AddLineItemModal), so it returns as
+  // data instead of throwing.
+  if (order?.signed_at) return { ok: false, error: 'Quote is signed and locked — line items cannot be modified' }
 
   const { error } = await supabase
     .from('order_line_items')
     .insert({ ...input, tenant_id })
-  if (error) throw error
+  if (error) return { ok: false, error: error.message }
   revalidatePath(`/orders/${input.order_id}`)
+  return { ok: true }
 }
 
 export async function removeLineItem(id: string, order_id: string) {
