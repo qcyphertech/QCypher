@@ -66,7 +66,12 @@ export function LoginForm() {
 
   useEffect(() => {
     if (searchParams.get('error') === 'auth_failed') {
-      setError('That link is invalid or has expired. Please request a new one.')
+      const linkType = searchParams.get('type')
+      setError(
+        linkType === 'invite' || linkType === 'signup'
+          ? 'This invite link has expired. Please contact the business that invited you and ask them to resend it.'
+          : 'That link is invalid or has expired. Please request a new one.',
+      )
     }
   }, [searchParams])
 

@@ -59,7 +59,7 @@ export default function ConfirmPage() {
         } else if (!error) {
           router.replace('/dashboard')
         } else {
-          router.replace('/auth/login?error=auth_failed')
+          router.replace(`/auth/login?error=auth_failed${hashType ? `&type=${hashType}` : ''}`)
         }
         return
       }
@@ -73,7 +73,7 @@ export default function ConfirmPage() {
         if (!error) {
           router.replace(queryType === 'recovery' ? '/auth/reset-password' : '/dashboard')
         } else {
-          router.replace('/auth/login?error=auth_failed')
+          router.replace(`/auth/login?error=auth_failed&type=${queryType}`)
         }
         return
       }
@@ -84,7 +84,7 @@ export default function ConfirmPage() {
         if (!error) {
           router.replace(queryType === 'recovery' ? '/auth/reset-password' : '/dashboard')
         } else {
-          router.replace('/auth/login?error=auth_failed')
+          router.replace(`/auth/login?error=auth_failed${queryType ? `&type=${queryType}` : ''}`)
         }
         return
       }

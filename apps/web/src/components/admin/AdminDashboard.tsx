@@ -201,6 +201,8 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [alreadyInvited, setAlreadyInvited] = useState(false)
+  const [resent, setResent] = useState(false)
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({ name: '', slug: '', email: '', referredByTenantId: '' })
   const [referrerOptions, setReferrerOptions] = useState<TenantSummary[]>([])
@@ -210,8 +212,10 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   }, [])
 
   function set(field: string) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setForm(prev => ({ ...prev, [field]: e.target.value }))
+      setAlreadyInvited(false)
+    }
   }
 
   function autoSlug(name: string) {
@@ -221,6 +225,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setAlreadyInvited(false)
     startTransition(async () => {
       const res = await fetch('/api/admin/invite', {
         method: 'POST',
@@ -228,9 +233,31 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({ ...form, referredByTenantId: form.referredByTenantId || undefined }),
       })
       const json = await res.json()
-      if (!res.ok) { setError(json.error ?? 'Failed'); return }
+      if (!res.ok) {
+        setError(json.error ?? 'Failed')
+        if (res.status === 409) setAlreadyInvited(true)
+        return
+      }
       setSuccess(true)
       router.refresh()
+      setTimeout(onClose, 1500)
+    })
+  }
+
+  // For an email that already has an unconfirmed account — e.g. the client
+  // says their original link expired — this re-sends to that same account
+  // instead of erroring out with no path forward.
+  async function handleResend() {
+    setError(null)
+    startTransition(async () => {
+      const res = await fetch('/api/admin/resend-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error ?? 'Failed'); return }
+      setResent(true)
       setTimeout(onClose, 1500)
     })
   }
@@ -243,10 +270,10 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         <div className="px-5 py-4 border-b border-[hsl(var(--border))]">
           <h2 className="text-[15px] font-semibold">Invite new client</h2>
         </div>
-        {success ? (
+        {success || resent ? (
           <div className="p-8 text-center">
             <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
-            <p className="text-[15px] font-medium">Invite sent!</p>
+            <p className="text-[15px] font-medium">{resent ? 'Invite re-sent!' : 'Invite sent!'}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
@@ -277,7 +304,20 @@ function InviteModal({ onClose }: { onClose: () => void }) {
                 {referrerOptions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
-            {error && <p className="text-[15px] text-red-500">{error}</p>}
+            {error && (
+              <div className="space-y-2">
+                <p className="text-[15px] text-red-500">{error}</p>
+                {alreadyInvited && (
+                  <p className="text-[15px] text-[hsl(var(--muted-foreground))]">
+                    If their original invite link expired, you can{' '}
+                    <button type="button" onClick={handleResend} disabled={isPending}
+                      className="text-accent font-medium underline disabled:opacity-50">
+                      resend it to the same email
+                    </button> instead.
+                  </p>
+                )}
+              </div>
+            )}
             <div className="flex gap-3">
               <button type="submit" disabled={isPending} className="bg-accent text-white text-[15px] font-medium px-5 py-2 rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-50">
                 {isPending ? 'Sending…' : 'Send invite'}
