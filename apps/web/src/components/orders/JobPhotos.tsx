@@ -17,6 +17,24 @@ type Props = {
   tenantId: string
 }
 
+// iPhones default to saving camera captures as HEIC/HEIF (the file
+// input's `capture="environment"` triggers this), which browsers can't
+// decode via <img>/canvas — compressImage below would fail every single
+// one with "Image load failed" before any upload was even attempted.
+// Convert to JPEG first so the rest of the pipeline never sees HEIC.
+async function maybeConvertHeic(file: File): Promise<File> {
+  const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || /\.hei[cf]$/i.test(file.name)
+  if (!isHeic) return file
+  try {
+    const heic2any = (await import('heic2any')).default
+    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
+    const blob = Array.isArray(result) ? result[0] : result
+    return new File([blob], file.name.replace(/\.hei[cf]$/i, '.jpg'), { type: 'image/jpeg' })
+  } catch {
+    throw new Error('This photo format isn\'t supported. In your camera settings, set photos to save as "Most Compatible" (JPEG), then try again.')
+  }
+}
+
 async function compressImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -39,7 +57,7 @@ async function compressImage(file: File): Promise<Blob> {
         JPEG_QUALITY,
       )
     }
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Image load failed')) }
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read this photo — it may be corrupted or in an unsupported format.')) }
     img.src = objectUrl
   })
 }
@@ -72,7 +90,8 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
       for (const file of Array.from(files)) {
         if (!file.type.startsWith('image/')) continue
 
-        const compressed = await compressImage(file)
+        const normalized = await maybeConvertHeic(file)
+        const compressed = await compressImage(normalized)
         console.info(`[job-photos] compression: ${(file.size / 1024).toFixed(1)} KB → ${(compressed.size / 1024).toFixed(1)} KB (${Math.round((1 - compressed.size / file.size) * 100)}% reduction)`)
         const ext        = 'jpg'
         const filename   = `${crypto.randomUUID()}.${ext}`
