@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { UserPlus, X, Clock, Crown, User, Eye, ChevronDown, MapPin } from 'lucide-react'
+import { UserPlus, X, Clock, Crown, User, Eye, ChevronDown, MapPin, RotateCw, Check } from 'lucide-react'
 import type { TeamMember, PendingInvite, Role } from '@/lib/actions/team'
 import { revokeInvite, updateMemberRole, removeMember } from '@/lib/actions/team'
 import { setStaffLocationAssignment, removeStaffLocationAssignment, type StaffLocationAssignment } from '@/lib/actions/staff-locations'
@@ -172,6 +172,31 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
     })
   }
 
+  const [resendingId, setResendingId] = useState<string | null>(null)
+  const [resentId, setResentId] = useState<string | null>(null)
+  const [resendError, setResendError] = useState<string | null>(null)
+
+  // Re-sends the client's original account-creation invite — for when their
+  // link expired before they clicked it. Only makes sense from the
+  // super-admin's view of a specific client's team, same as the invite form
+  // this panel already hides in that mode.
+  function handleResendInvite(email: string) {
+    setResendingId(email)
+    setResendError(null)
+    startTransition(async () => {
+      const res = await fetch('/api/admin/resend-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const json = await res.json()
+      setResendingId(null)
+      if (!res.ok) { setResendError(json.error ?? 'Failed to resend'); return }
+      setResentId(email)
+      setTimeout(() => setResentId(null), 3000)
+    })
+  }
+
   const card: React.CSSProperties = {
     borderRadius: '16px',
     background: 'hsl(var(--card))',
@@ -181,6 +206,9 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
 
   return (
     <div>
+      {resendError && (
+        <p style={{ fontSize: '13px', color: '#dc2626', marginBottom: '10px' }}>{resendError}</p>
+      )}
       {/* Members list */}
       <div style={card}>
         {members.map((m, i) => (
@@ -214,6 +242,25 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
                   >
                     <MapPin style={{ width: '12px', height: '12px' }} />
                     {assignments.filter(a => a.user_id === m.id).length || ''}
+                  </button>
+                )}
+                {tenantId && m.id !== currentUserId && (
+                  <button
+                    onClick={() => handleResendInvite(m.email)}
+                    disabled={resendingId === m.email}
+                    title="Resend their account-creation invite"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      padding: '3px 8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                      border: '1px solid hsl(var(--border))',
+                      background: 'transparent', color: resentId === m.email ? '#059669' : 'hsl(var(--muted-foreground))',
+                      cursor: resendingId === m.email ? 'default' : 'pointer',
+                      opacity: resendingId === m.email ? 0.6 : 1,
+                    }}
+                  >
+                    {resentId === m.email
+                      ? <><Check style={{ width: '12px', height: '12px' }} /> Resent</>
+                      : <><RotateCw style={{ width: '12px', height: '12px' }} /> {resendingId === m.email ? 'Resending…' : 'Resend invite'}</>}
                   </button>
                 )}
                 {m.id === currentUserId ? (
