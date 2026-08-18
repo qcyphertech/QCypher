@@ -901,20 +901,26 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
         if (error) throw new Error(`Could not undo — ${error.message}`)
         revalidatePath('/calendar')
       } else if (targetType === 'mark_order_paid') {
-        const { error } = await admin.from('orders').update({ payment_status: targetResult.previous_payment_status ?? 'pending' }).eq('id', String(targetResult.order_id))
+        const previousStatus = (targetResult.previous_payment_status as 'draft' | 'pending' | 'paid' | 'refunded' | undefined) ?? 'pending'
+        const { error } = await admin.from('orders').update({ payment_status: previousStatus }).eq('id', String(targetResult.order_id))
         if (error) throw new Error(error.message)
         revalidatePath('/orders')
       } else if (targetType === 'add_order_discount') {
+        const previousDiscountType = (targetResult.previous_discount_type as 'percent' | 'flat' | null | undefined) ?? null
+        const previousDiscountValue = (targetResult.previous_discount_value as number | null | undefined) ?? null
+        const previousShowDiscount = (targetResult.previous_show_discount as boolean | undefined) ?? true
         const { error } = await admin.from('orders').update({
-          discount_type: targetResult.previous_discount_type ?? null,
-          discount_value: targetResult.previous_discount_value ?? null,
-          show_discount: targetResult.previous_show_discount ?? true,
+          discount_type: previousDiscountType,
+          discount_value: previousDiscountValue,
+          show_discount: previousShowDiscount,
         }).eq('id', String(targetResult.order_id))
         if (error) throw new Error(error.message)
         revalidatePath('/orders')
       } else if (targetType === 'toggle_module') {
         const { data: tenant } = await admin.from('tenants').select('settings').eq('id', tenantId).single()
-        const merged = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}), [String(targetResult.settings_key)]: targetResult.previous_value }
+        const settingsKey = String(targetResult.settings_key)
+        const previousValue = targetResult.previous_value as boolean
+        const merged = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}), [settingsKey]: previousValue }
         const { error } = await admin.from('tenants').update({ settings: merged }).eq('id', tenantId)
         if (error) throw new Error(error.message)
         revalidatePath('/settings', 'layout')
