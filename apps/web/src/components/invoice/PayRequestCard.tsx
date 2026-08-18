@@ -178,7 +178,17 @@ export function PayRequestCard({ request, lines }: { request: Req; lines: Line[]
           )}
         </div>
 
-        {lines.length > 0 && (
+        {/* A payment request's amount is captured once, at link-creation
+            time, and nothing re-syncs it if the order's line items are
+            edited afterward (e.g. a line item added/removed after the
+            link was already sent). If that ever drifts, showing the
+            CURRENT line items/subtotal next to a STALE "Total due" would
+            visibly contradict itself — safer to fall back to the bare
+            amount (the pre-existing behavior) than show line items that
+            may not actually match what's being charged. */}
+        {lines.length > 0 && Math.abs(orderPricing(lines, {
+          discount_type: request.orderDiscountType, discount_value: request.orderDiscountValue,
+        }).finalTotal - request.amount) < 0.01 && (
           <InvoiceDetails
             lines={lines}
             order={{ discount_type: request.orderDiscountType, discount_value: request.orderDiscountValue, show_discount: request.orderShowDiscount }}
