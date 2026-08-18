@@ -45,7 +45,7 @@ None of these are functional bugs — the actual behavior is correct and, in a f
 ## 2. Policy document (Part 1)
 
 - `docs/ai-disclosure-policy.md` and its evidence mirrors exist and are committed. Content structure (sections 1–8) matches what the checklist expects.
-- **Not verified, still open**: the FTC/EU/California citations and the $53,088/€15M penalty figures were supplied by the business owner and published as requested, but were never checked against a primary legal source by me — flagged in the original implementation evidence doc and unchanged since. Checklist item "1.3 All compliance citations are accurate" is **unverified**, not confirmed.
+- **Update (same day, after this report was first published):** the FTC/EU/California citations and the $53,088/€15M figures have since been independently checked against public sources and corrected where wrong — see `evidence/ai-disclosure/2026-08-18-legal-citation-verification.md`. Two of five claims required correction (the FTC date/finality, and SB 942's actual scope/applicability); the policy document has been updated accordingly. This is AI-performed research verification, not attorney review — qualified counsel review is still recommended before relying on this in an actual regulatory or audit context, but "unverified" is no longer accurate as a description of these citations.
 
 ## 3. Audit trail (Part 3)
 

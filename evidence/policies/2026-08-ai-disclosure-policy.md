@@ -1,8 +1,8 @@
 # QCypher AI Disclosure Policy
 
-**Last Updated:** August 2026
+**Last Updated:** August 2026 (citations independently verified and corrected August 18, 2026 — see `evidence/ai-disclosure/2026-08-18-legal-citation-verification.md`)
 **Review Cadence:** Quarterly (SOC 2 evidence requirement)
-**Compliance Basis:** FTC March 2026 AI policy, EU AI Act Article 50, California SB 942
+**Compliance Basis:** FTC's proposed July 2026 AI accuracy/disclosure policy statement (not yet finalized), EU AI Act Article 50, California AI Transparency Act (SB 942 as amended by AB 853)
 
 ---
 
@@ -45,7 +45,7 @@ QCypher Technologies ("QCypher") uses AI systems (specifically DeepSeek V4 Flash
 - Label: **"Powered by AI"** visible above chat input (always present)
 - Applies to: Growth and All-In tenant websites + QCypher.com
 
-**Compliance:** FTC requires clear, visible label before chatbot interaction: "You are chatting with an AI assistant." A human-sounding name alone does not meet FTC standard.
+**Compliance:** Designed to align with the FTC's proposed (not yet finalized) July 2026 standard for clear, visible disclosure before AI interaction — see §4.1. QCypher's label is "Powered by AI," shown above the chat input.
 
 ### 2.3 Phase 37b: AI CRM In-App Assistant
 **What:** Sidebar AI assistant helping tenants with "how do I...?" questions
@@ -95,6 +95,8 @@ QCypher Technologies ("QCypher") uses AI systems (specifically DeepSeek V4 Flash
 ## 4. Compliance & Legal Basis
 
 ### 4.1 FTC Requirements (US)
+⚠️ **Status:** The FTC issued a *proposed* policy statement on AI accuracy and output steering on July 1, 2026 (public comment period ran through July 31, 2026) — using "clear, conspicuous, and made before or at the point of interaction" language. As of this writing it has not been finalized/adopted. QCypher's disclosure practices below are designed to align with this proposed standard as a matter of good practice, not because it is yet a binding legal requirement.
+
 ✅ **Clear and Conspicuous Disclosure**
 - Badges placed at point of interaction (blog, chat, CRM)
 - Not buried in Terms of Service
@@ -118,9 +120,9 @@ QCypher Technologies ("QCypher") uses AI systems (specifically DeepSeek V4 Flash
 - Blog badge: "⚡ AI-Assisted" (visible, not deceptive)
 - Chatbot label: "Powered by AI" (not misleading)
 
-### 4.3 California SB 942 (Effective 2026)
-✅ **AI-Generated Text Labeling**
-- QCypher labels all AI-generated blog posts
+### 4.3 California SB 942 / AI Transparency Act (Effective August 2, 2026)
+⚠️ **Scope note:** SB 942 (as amended by AB 853, which moved its effective date from January 1, 2026 to August 2, 2026 to align with the EU AI Act) applies to covered providers with over 1,000,000 monthly California users, and requires a free public AI-content-detection tool plus manifest/latent disclosure for AI-generated **image, video, and audio** content specifically — it is not primarily a text-labeling law. QCypher is well under the 1,000,000-MAU threshold and is not a "covered provider" under this law's own scope. QCypher labels its AI-generated blog text anyway, as a voluntary practice consistent with the spirit of AI-content transparency laws generally, not because SB 942 itself requires text labeling or currently applies to QCypher's scale.
+- QCypher labels all AI-generated blog posts (voluntary, exceeds what SB 942 requires at QCypher's current scale)
 - Applies to tenant sites in California + QCypher.com
 
 ---
@@ -168,11 +170,11 @@ QCypher Technologies ("QCypher") uses AI systems (specifically DeepSeek V4 Flash
 
 ## 7. Enforcement & Penalty Risk
 
-**FTC Penalty per Violation (2026):** $53,088 per violation
-- Example: 100 AI blogs without disclosure = $5.3M potential exposure
+**FTC Penalty (2026):** $53,088 per violation is the current, verified maximum civil penalty under FTC Act §§5(l)/5(m)(1) for knowing violations of an FTC rule, final order, or unfair-or-deceptive-practices determination. This is a general Section 5 civil-penalty ceiling — it is not a figure specific to AI disclosure, and it only applies once the FTC has actually made a rule or issued an order/determination QCypher could knowingly violate (the July 2026 proposed statement, per §4.1, is not yet such a rule). Kept here as a reference point for the scale of exposure if the proposed standard is later finalized and enforced, not as an active, currently-applicable penalty.
+- Illustrative only: 100 AI blogs without disclosure × $53,088 = $5.3M potential exposure if a future final rule were violated
 - Mitigation: Consistent, verifiable disclosure + audit trail
 
-**EU Penalty:** Up to €15M for transparency violations (Article 50)
+**EU Penalty:** Up to €15M or 3% of global annual turnover (whichever is higher) for Article 50 transparency violations — verified against the AI Act's Article 99 penalty tiers. This one is real and currently applicable given Article 50's August 2, 2026 effective date.
 
 **Mitigation Strategy:**
 1. Disclose every AI-generated piece of content (no exceptions)
