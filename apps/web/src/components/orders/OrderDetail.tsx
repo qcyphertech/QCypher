@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet, Tag } from 'lucide-react'
+import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet, Tag, Pencil, Save, Check } from 'lucide-react'
 import {
   addLineItem, removeLineItem, updateOrderStatus, updateOrderCustomer, updateJobStatus, returnRental, extendRental,
-  updateLineItemDiscount, updateOrderDiscount,
+  updateLineItemDiscount, updateOrderDiscount, updateLineItem, saveOrderDraft,
   type Order, type OrderLineItem, type DiscountType,
 } from '@/lib/actions/orders'
 import { getUpsellSuggestion, acceptUpsellSuggestion, type UpsellSuggestion } from '@/lib/actions/upsells'
@@ -93,8 +93,11 @@ export function OrderDetail({
   const [showAddLine, setShowAddLine] = useState(false)
   const [extendLine, setExtendLine] = useState<OrderLineItem | null>(null)
   const [discountLine, setDiscountLine] = useState<OrderLineItem | null>(null)
+  const [editLine, setEditLine] = useState<OrderLineItem | null>(null)
   const [showOrderDiscount, setShowOrderDiscount] = useState(false)
   const [jobStatus, setJobStatus] = useState<Order['job_status']>(order.job_status)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const [draftSaved, setDraftSaved] = useState(false)
 
   const pricing = orderPricing(lines, order)
 
@@ -131,6 +134,17 @@ export function OrderDetail({
 
   function handleReturn(lineId: string) {
     startTransition(() => returnRental(lineId, order.id))
+  }
+
+  function handleSaveDraft() {
+    setSavingDraft(true)
+    setDraftSaved(false)
+    startTransition(async () => {
+      await saveOrderDraft(order.id)
+      setSavingDraft(false)
+      setDraftSaved(true)
+      setTimeout(() => setDraftSaved(false), 2000)
+    })
   }
 
   return (
@@ -251,6 +265,15 @@ export function OrderDetail({
 
         {/* Actions row */}
         <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={handleSaveDraft} disabled={savingDraft}
+            className="no-print flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold transition-colors"
+            style={draftSaved
+              ? { background: 'rgba(16,185,129,0.12)', color: '#059669' }
+              : { background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))', opacity: savingDraft ? 0.6 : 1 }}>
+            {draftSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+            {draftSaved ? 'Draft saved' : savingDraft ? 'Saving…' : 'Save draft'}
+          </button>
+
           {contact && (
             <Link href={`/contacts/${contact.id}#payments`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold transition-colors no-print"
@@ -404,10 +427,16 @@ export function OrderDetail({
                           </>
                         )}
                         {!isLocked && (
-                          <button onClick={() => handleRemoveLine(line.id)} title="Remove"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
-                          </button>
+                          <>
+                            <button onClick={() => setEditLine(line)} title="Edit"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[hsl(var(--muted))] transition-colors">
+                              <Pencil className="w-3.5 h-3.5" style={{ color: '#2a52a0' }} />
+                            </button>
+                            <button onClick={() => handleRemoveLine(line.id)} title="Remove"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
+                            </button>
+                          </>
                         )}
                         {isLocked && line.rental_status && line.rental_status !== 'returned' && (
                           <button onClick={() => handleReturn(line.id)} title="Mark returned"
@@ -509,6 +538,13 @@ export function OrderDetail({
           onClose={() => setExtendLine(null)}
         />
       )}
+      {editLine && (
+        <EditLineModal
+          line={editLine}
+          orderId={order.id}
+          onClose={() => setEditLine(null)}
+        />
+      )}
       {discountLine && (
         <LineDiscountModal
           line={discountLine}
@@ -573,6 +609,99 @@ function DiscountFields({ discountType, discountValue, showDiscount, onDiscountT
           : 'Customer will only see the final price — no mention of a discount.'}
       </p>
     </>
+  )
+}
+
+function EditLineModal({ line, orderId, onClose }: {
+  line: OrderLineItem; orderId: string; onClose: () => void
+}) {
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    setError(null)
+    startTransition(async () => {
+      const result = await updateLineItem({
+        id: line.id,
+        order_id: orderId,
+        item_name_snapshot: fd.get('name') as string,
+        description_snapshot: (fd.get('description') as string) || null,
+        quantity: parseFloat(fd.get('quantity') as string) || 1,
+        unit_price: parseFloat(fd.get('unit_price') as string) || 0,
+        billing_unit_snapshot: fd.get('billing_unit') as OrderLineItem['billing_unit_snapshot'],
+      })
+      if (result.ok) onClose()
+      else setError(result.error)
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
+      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
+          <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>Edit line item</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Name *</label>
+            <input name="name" required defaultValue={line.item_name_snapshot}
+              className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+              style={{ color: 'hsl(var(--foreground))' }} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Description</label>
+            <input name="description" defaultValue={line.description_snapshot ?? ''}
+              className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+              style={{ color: 'hsl(var(--foreground))' }} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Qty *</label>
+              <input name="quantity" type="number" step="1" min="1" required defaultValue={line.quantity}
+                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                style={{ color: 'hsl(var(--foreground))' }} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Unit price ($) *</label>
+              <input name="unit_price" type="number" step="0.01" min="0" required defaultValue={line.unit_price}
+                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                style={{ color: 'hsl(var(--foreground))' }} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Billing unit</label>
+            <select name="billing_unit" defaultValue={line.billing_unit_snapshot}
+              className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+              style={{ color: 'hsl(var(--foreground))' }}>
+              <option value="flat">Flat</option>
+              <option value="hourly">Per hour</option>
+              <option value="daily">Per day</option>
+              <option value="weekly">Per week</option>
+              <option value="monthly">Per month</option>
+            </select>
+          </div>
+
+          {error && <p className="text-[15px] text-red-600">{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-[hsl(var(--border))] text-[15px] font-semibold"
+              style={{ color: 'hsl(var(--muted-foreground))' }}>Cancel</button>
+            <button type="submit" disabled={pending}
+              className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', opacity: pending ? 0.6 : 1 }}>
+              {pending ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 

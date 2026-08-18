@@ -159,6 +159,50 @@ export async function addLineItem(input: {
   return { ok: true }
 }
 
+export async function updateLineItem(input: {
+  id: string
+  order_id: string
+  item_name_snapshot: string
+  description_snapshot?: string | null
+  quantity: number
+  unit_price: number
+  billing_unit_snapshot: OrderLineItem['billing_unit_snapshot']
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient()
+  const { data: order } = await supabase.from('orders').select('signed_at').eq('id', input.order_id).single()
+  if (order?.signed_at) return { ok: false, error: 'Quote is signed and locked — line items cannot be modified' }
+
+  const { error } = await supabase
+    .from('order_line_items')
+    .update({
+      item_name_snapshot: input.item_name_snapshot,
+      description_snapshot: input.description_snapshot ?? null,
+      quantity: input.quantity,
+      unit_price: input.unit_price,
+      billing_unit_snapshot: input.billing_unit_snapshot,
+    })
+    .eq('id', input.id)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/orders/${input.order_id}`)
+  return { ok: true }
+}
+
+// Every field on this page already saves itself the moment it changes —
+// this doesn't persist anything new. It exists because tenants used to
+// explicit "Save" buttons kept asking whether their changes had actually
+// stuck; touching updated_at gives them a real, truthful confirmation
+// instead of a save button that would otherwise have nothing to do.
+export async function saveOrderDraft(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('orders')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/orders/${id}`)
+  return { ok: true }
+}
+
 function validateDiscount(discount_type: DiscountType | null, discount_value: number | null): string | null {
   if (!discount_type) return null
   if (discount_value == null || discount_value < 0) return 'Discount amount is required'
