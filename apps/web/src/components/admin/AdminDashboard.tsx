@@ -203,6 +203,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [alreadyInvited, setAlreadyInvited] = useState(false)
   const [resent, setResent] = useState(false)
+  const [resentKind, setResentKind] = useState<'invite' | 'password_setup' | null>(null)
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({ name: '', slug: '', email: '', referredByTenantId: '' })
   const [referrerOptions, setReferrerOptions] = useState<TenantSummary[]>([])
@@ -258,6 +259,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
       const json = await res.json()
       if (!res.ok) { setError(json.error ?? 'Failed'); return }
       setResent(true)
+      setResentKind(json.kind ?? 'invite')
       setTimeout(onClose, 1500)
     })
   }
@@ -273,7 +275,9 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         {success || resent ? (
           <div className="p-8 text-center">
             <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
-            <p className="text-[15px] font-medium">{resent ? 'Invite re-sent!' : 'Invite sent!'}</p>
+            <p className="text-[15px] font-medium">
+              {resent ? (resentKind === 'password_setup' ? 'Password-setup link sent!' : 'Invite re-sent!') : 'Invite sent!'}
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-5 space-y-4">

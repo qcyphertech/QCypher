@@ -49,18 +49,31 @@ export async function POST(request: NextRequest) {
   if (!existing) {
     return NextResponse.json({ error: 'No pending invite found for that email.' }, { status: 404 })
   }
-  if (existing.email_confirmed_at) {
-    return NextResponse.json({ error: 'This person already confirmed their account — ask them to sign in instead.' }, { status: 409 })
-  }
 
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
-  const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(existing.email!, {
-    redirectTo: `${appUrl}/auth/confirm`,
-    data: existing.app_metadata,
-  })
-  if (inviteErr) return NextResponse.json({ error: inviteErr.message }, { status: 422 })
-
   const tenantId = existing.app_metadata?.tenant_id as string | undefined
+
+  // "Confirmed" only means they clicked the invite link and got a session
+  // from it once — Supabase's invite flow never actually prompts them to
+  // set a password. If they've since lost that session (or never signed in
+  // again), inviteUserByEmail on an already-confirmed user is a no-op, so
+  // the only way to actually get them back in is a password-setup link.
+  let kind: 'invite' | 'password_setup'
+  if (existing.email_confirmed_at) {
+    const { error: resetErr } = await admin.auth.resetPasswordForEmail(existing.email!, {
+      redirectTo: `${appUrl}/auth/confirm`,
+    })
+    if (resetErr) return NextResponse.json({ error: resetErr.message }, { status: 422 })
+    kind = 'password_setup'
+  } else {
+    const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(existing.email!, {
+      redirectTo: `${appUrl}/auth/confirm`,
+      data: existing.app_metadata,
+    })
+    if (inviteErr) return NextResponse.json({ error: inviteErr.message }, { status: 422 })
+    kind = 'invite'
+  }
+
   if (tenantId) {
     await admin.from('audit_logs').insert({
       tenant_id: tenantId,
@@ -69,9 +82,9 @@ export async function POST(request: NextRequest) {
       action: 'invite_sent',
       resource_type: 'team',
       resource_name: existing.email,
-      details: { resend: true },
+      details: { resend: true, kind },
     })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, kind })
 }

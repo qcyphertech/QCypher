@@ -174,12 +174,16 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
 
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [resentId, setResentId] = useState<string | null>(null)
+  const [resentKind, setResentKind] = useState<'invite' | 'password_setup' | null>(null)
   const [resendError, setResendError] = useState<string | null>(null)
 
   // Re-sends the client's original account-creation invite — for when their
-  // link expired before they clicked it. Only makes sense from the
-  // super-admin's view of a specific client's team, same as the invite form
-  // this panel already hides in that mode.
+  // link expired before they clicked it. If they'd already clicked an
+  // earlier link (confirmed) but never actually set a password, the
+  // endpoint sends a password-setup link instead, so this always leaves
+  // them with a real way back in rather than a dead end either way. Only
+  // makes sense from the super-admin's view of a specific client's team,
+  // same as the invite form this panel already hides in that mode.
   function handleResendInvite(email: string) {
     setResendingId(email)
     setResendError(null)
@@ -193,7 +197,8 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
       setResendingId(null)
       if (!res.ok) { setResendError(json.error ?? 'Failed to resend'); return }
       setResentId(email)
-      setTimeout(() => setResentId(null), 3000)
+      setResentKind(json.kind ?? 'invite')
+      setTimeout(() => { setResentId(null); setResentKind(null) }, 4000)
     })
   }
 
@@ -248,7 +253,7 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
                   <button
                     onClick={() => handleResendInvite(m.email)}
                     disabled={resendingId === m.email}
-                    title="Resend their account-creation invite"
+                    title="Resend an invite, or a password-setup link if they already confirmed but never set one"
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       padding: '3px 8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
@@ -259,8 +264,8 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
                     }}
                   >
                     {resentId === m.email
-                      ? <><Check style={{ width: '12px', height: '12px' }} /> Resent</>
-                      : <><RotateCw style={{ width: '12px', height: '12px' }} /> {resendingId === m.email ? 'Resending…' : 'Resend invite'}</>}
+                      ? <><Check style={{ width: '12px', height: '12px' }} /> {resentKind === 'password_setup' ? 'Reset link sent' : 'Resent'}</>
+                      : <><RotateCw style={{ width: '12px', height: '12px' }} /> {resendingId === m.email ? 'Sending…' : 'Resend invite'}</>}
                   </button>
                 )}
                 {m.id === currentUserId ? (
