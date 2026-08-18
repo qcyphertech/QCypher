@@ -6,8 +6,19 @@
  *   - Contacts page (/contacts): stale-while-revalidate for offline read
  */
 
-const SHELL_CACHE  = 'qcypher-shell-v2'
-const PAGES_CACHE  = 'qcypher-pages-v2'
+const SHELL_CACHE  = 'qcypher-shell-v3'
+const PAGES_CACHE  = 'qcypher-pages-v3'
+
+// Only these navigations use stale-while-revalidate (offline reading) —
+// every other page is per-tenant, server-rendered, authenticated content
+// (dashboard, settings, analytics, etc.) that must never be served stale
+// just because a client happened to visit it before. Previously this
+// applied to ALL navigations regardless of path, which meant a tenant's
+// nav/settings toggles (or any other per-request data) could keep showing
+// an old cached page indefinitely, even across hard reloads, until the
+// background revalidation happened to win a race that the user couldn't
+// see or control.
+const OFFLINE_READ_PATHS = ['/', '/contacts']
 
 const SHELL_ASSETS = [
   '/',
@@ -70,17 +81,34 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  // Navigation requests (HTML pages): stale-while-revalidate
+  // Navigation requests (HTML pages)
   if (request.mode === 'navigate') {
+    if (OFFLINE_READ_PATHS.includes(url.pathname)) {
+      // Stale-while-revalidate — intentional for offline reading of these
+      // specific, low-churn pages.
+      event.respondWith(
+        caches.open(PAGES_CACHE).then(async cache => {
+          const cached = await cache.match(request)
+          const networkFetch = fetch(request).then(res => {
+            if (res.ok) cache.put(request, res.clone())
+            return res
+          }).catch(() => cached)
+          return cached ?? networkFetch
+        })
+      )
+      return
+    }
+
+    // Every other page: network-first, always fresh when online. Only
+    // fall back to a cached copy if the network request actually fails
+    // (offline), never as a first choice.
     event.respondWith(
-      caches.open(PAGES_CACHE).then(async cache => {
-        const cached = await cache.match(request)
-        const networkFetch = fetch(request).then(res => {
-          if (res.ok) cache.put(request, res.clone())
+      fetch(request)
+        .then(res => {
+          if (res.ok) caches.open(PAGES_CACHE).then(cache => cache.put(request, res.clone()))
           return res
-        }).catch(() => cached)
-        return cached ?? networkFetch
-      })
+        })
+        .catch(() => caches.open(PAGES_CACHE).then(cache => cache.match(request)))
     )
     return
   }
