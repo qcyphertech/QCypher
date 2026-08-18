@@ -97,8 +97,10 @@ and functioning.*
 - Automated incident detection (`/api/cron/check-incidents`) for bulk
   deletion and self-role-escalation — see
   `docs/INCIDENT_RESPONSE_PLAYBOOK.md` for what is/isn't covered.
-- Monthly super-admin access review
-  (`scripts/review-super-admins.py`), evidenced in
+- Monthly super-admin access review, automated via
+  `/api/cron/review-super-admins` (Vercel Cron, 1st of each month) into
+  the `access_reviews` table as of 2026-08-18; manual runs
+  (`scripts/review-super-admins.py`) remain evidenced in
   `evidence/access-control/`.
 - `audit_logs` table capturing every mutating action, 90-day retention,
   daily automated purge.
@@ -174,13 +176,16 @@ inflated.**
   message; a local build must pass before any deploy; GitHub provides
   an immutable audit trail; database migrations require a manual
   paste-and-confirm step (no auto-apply path).
+- **Fixed 2026-08-18:** branch protection on `main` now requires
+  `TypeScript` and `RLS isolation tests` to pass before a PR can
+  merge (`security-audit` stays `continue-on-error: true` by design —
+  it surfaces secret/dependency issues without gating on them).
 - What's genuinely missing, per `docs/change-management-policy.md`:
-  **no required PR review before merging to `main`**, and **CI checks
-  other than `rls-isolation` don't block merges**
-  (`continue-on-error: true` on `security-audit` and `typecheck`).
-  Branch protection was evaluated and deliberately not enabled — see
-  that policy doc for the reasoning (would block the 2-person team's
-  direct-push workflow).
+  **no required PR review before merging to `main`** — branch
+  protection deliberately stops short of that, since it would block
+  the 2-person team's direct-push workflow, which required status
+  checks alone don't (they only gate PR merges, not direct pushes).
+  See that policy doc for the reasoning.
 - This is the control area most likely to draw direct auditor
   questions. The mitigating argument is documented in
   `docs/change-management-policy.md`'s "Why this isn't 'no change

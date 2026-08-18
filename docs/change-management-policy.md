@@ -16,9 +16,18 @@ consistency against what's written down.
 
 ## Current state (as of 2026-08-16)
 
-- **No branch protection on `main`.** Both Thomas and any AI coding
-  assistant acting on Thomas's direction push commits directly to `main`.
-  There is no mandatory pull request or peer review step today.
+- **Branch protection on `main`, added 2026-08-18.** Requires
+  `TypeScript` and `RLS isolation tests` to pass before a PR can
+  merge — added after a QA re-verification pass found the earlier
+  claim that these jobs were "blocking on PRs" was false (`main` had
+  no protection rule at all; the jobs ran but nothing stopped a
+  failing PR from merging). No required PR review, and no push
+  restriction — both Thomas and any AI coding assistant acting on
+  Thomas's direction still push commits directly to `main`, which
+  required status checks alone don't gate (they only apply to PR
+  merges, not direct pushes). That's why this is real protection for
+  if/when a PR is used, not a change to the actual day-to-day
+  workflow.
 - **CI runs on every push and PR** (`.github/workflows/ci.yml`): secret
   audit, dependency audit (high/critical), TypeScript check, and RLS
   isolation tests (main only). The secret and dependency audits are
@@ -82,7 +91,7 @@ don't block anything.
 | Gap | Why it's not fixed yet | Remediation |
 |---|---|---|
 | No required PR review | 2-person team; mandatory review would block solo iteration, which is how this app has shipped every phase to date | Accept as a documented residual risk for now. If the team grows past 2 engineers, revisit. |
-| `security-audit` and `typecheck` CI jobs don't block | `typecheck` has 135 pre-existing errors (see `docs/typescript-debt-assessment.md`) — flipping it to blocking today would red-X every future push regardless of what changed. `security-audit`'s dependency-audit step also surfaces pre-existing findings that need triage before it can block. | Pay down the TypeScript debt (tracked, root cause suspected), triage `security-audit` findings, then flip both to blocking. `rls-isolation` — the highest-value gate for a multi-tenant app — is **already fixed**: it runs on both `push` to `main` and `pull_request`, and is genuinely blocking (2026-08-16). |
+| `security-audit` CI job doesn't block | Its dependency-audit step surfaces pre-existing findings that need triage before it can gate merges without red-X'ing unrelated pushes. | Triage `security-audit` findings, then add it to the branch protection required-checks list alongside `TypeScript` and `RLS isolation tests`. |
 | Deployment logging relied on a human remembering a manual step | The logging script (`scripts/log-deployment.sh`) was written assuming a manual `vercel --prod` step that turned out not to exist — deploys are actually automatic on push via Vercel's GitHub integration, so there was never a natural moment to trigger the script. Result: zero rows in `deployment_log` despite dozens of real deploys, confirmed 2026-08-16. | **Fixed 2026-08-16.** `.github/workflows/log-deployment.yml` logs every push to `main` automatically — no human step to forget. `scripts/log-deployment.sh` remains available for migrations or notes that need attaching by hand. |
 | No staging environment | Deliberate scope decision made early in the project — see prior phase notes | Not planned; accepted trade-off for a 2-person team's velocity. |
 

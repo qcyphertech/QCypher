@@ -178,12 +178,16 @@ every tenant's data.
 password being sufficient for full cross-tenant access — is closed. MFA
 reset now has a documented (if still manual, not self-service) recovery
 path — see "Lost your MFA device" in `docs/staff-training.md`. A real
-periodic access review process now exists too —
-`scripts/review-super-admins.py`, checking both account list correctness
-and actual per-user MFA enrollment status (via the Auth admin API's
-`/factors` endpoint, not just assumed) — first run completed 2026-08-16,
-see `evidence/access-control/2026-08-16-super-admin-review.md`. Monthly
-cadence going forward. What's still open: if both super admins lose
+periodic access review process now exists too — checking both account
+list correctness and actual per-user MFA enrollment status (via the
+Auth admin API's `/factors` endpoint, not just assumed). First run was
+manual (`scripts/review-super-admins.py`, 2026-08-16,
+`evidence/access-control/2026-08-16-super-admin-review.md`); as of
+2026-08-18 it also runs automatically every month via
+`/api/cron/review-super-admins`, writing a real, unforgeable
+timestamped record to the `access_reviews` table — a QA
+re-verification pass found "monthly cadence" had never actually been
+scheduled anywhere before that. What's still open: if both super admins lose
 their MFA device simultaneously, recovery requires direct Supabase
 support, not anything this app can do itself — an accepted residual risk
 for a 2-person team, not something worth building self-service recovery

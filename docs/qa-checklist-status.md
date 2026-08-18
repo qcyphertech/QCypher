@@ -30,9 +30,19 @@ marked done, even where the supporting infrastructure is ready.
       `/evidence`, structure in `evidence/README.md`.
 - [x] **Audit log retention configured (90+ days)** — `audit_logs` +
       daily `purge_old_audit_logs()` cron.
-- [x] **Access reviews scheduled (monthly)** —
-      `scripts/review-super-admins.py`, first run recorded in
-      `evidence/access-control/2026-08-16-super-admin-review.md`.
+- [x] **Access reviews scheduled (monthly)** — **fixed for real
+      2026-08-18**: a QA re-verification pass found this had never
+      actually been scheduled anywhere (no cron, no workflow — just
+      one manual run recorded 2026-08-16). `/api/cron/review-super-admins`
+      now runs automatically via Vercel Cron on the 1st of each month
+      (`apps/web/vercel.json`), writing every run to the new
+      `access_reviews` table (`supabase/migrations/20260830000006_access_reviews.sql`)
+      with a real, unforgeable timestamp — same pattern as
+      `deployment_log`. `scripts/review-super-admins.py` and the
+      `evidence/access-control/` markdown flow remain for the
+      "does this person still need access" judgment call a human still
+      has to make; the automated run only covers the factual half
+      (who has super-admin, do they have MFA).
 - [x] **Backup verification procedure documented + tested** — same as
       DR item above; both creation and restore verified.
 - [x] **Data classification policy written** —
@@ -53,14 +63,23 @@ marked done, even where the supporting infrastructure is ready.
       zero rows against dozens of real deploys — the manual script was
       paired with a `vercel --prod` step that doesn't actually exist)
       — now automatic via `.github/workflows/log-deployment.yml`,
-      confirmed working. **Still deliberately not enforced:** no
-      required PR review (branch protection was evaluated and rejected
-      because it would block the 2-person team's direct-push
-      workflow — that decision wasn't revisited, since it wasn't part
-      of what was broken), and `security-audit`/`typecheck` CI jobs
-      remain non-blocking pending TypeScript debt paydown. The
-      checklist's word "enforced" still overstates reality here, and
-      that's a stated, deliberate trade-off — not an oversight.
+      confirmed working. **Fixed 2026-08-18:** the previous claim that
+      `rls-isolation` was "blocking on PRs" was checked against live
+      GitHub state during a QA re-verification pass and found false —
+      `main` had no branch protection rule at all (`GET
+      .../branches/main/protection` returned 404), so the job ran on
+      every PR but nothing actually stopped a failing PR from being
+      merged. Branch protection is now enabled on `main` requiring
+      `TypeScript` and `RLS isolation tests` to pass before a PR can
+      merge (`security-audit` stays non-blocking — its steps are
+      `continue-on-error: true` by design, surfacing issues without
+      gating). **Still deliberately not enforced:** no required PR
+      review — this only gates PR merges, not the direct-push workflow
+      the 2-person team actually uses day to day, so it's real
+      protection for if/when a PR is used, not a workflow change. The
+      checklist's word "enforced" still overstates reality for that
+      reason, and that's a stated, deliberate trade-off — not an
+      oversight.
 - [ ] **Vendor assessments completed (SOC 2 reports collected)** —
       `docs/vendor-risk-assessment.md` documents 9 vendors and what
       each *publicly claims* about their own compliance, but **no

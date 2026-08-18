@@ -39,6 +39,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_reviews: {
+        Row: {
+          created_at: string
+          details: Json
+          flagged_count: number
+          id: string
+          run_at: string
+          super_admin_count: number
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          flagged_count?: number
+          id?: string
+          run_at?: string
+          super_admin_count: number
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          flagged_count?: number
+          id?: string
+          run_at?: string
+          super_admin_count?: number
+        }
+        Relationships: []
+      }
       analytics_snapshots: {
         Row: {
           created_at: string
