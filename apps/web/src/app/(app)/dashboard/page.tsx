@@ -219,9 +219,10 @@ export default async function DashboardPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = user
-    ? await supabase.from('users').select('has_seen_welcome').eq('id', user.id).single()
+    ? await supabase.from('users').select('has_seen_welcome, legal_name').eq('id', user.id).single()
     : { data: null }
   const showWelcome = (profile as { has_seen_welcome?: boolean } | null)?.has_seen_welcome === false
+  const firstName = (profile as { legal_name?: string | null } | null)?.legal_name?.trim().split(/\s+/)[0] || null
   const isAdmin = user?.app_metadata?.role === 'owner'
   const recentActivity = isAdmin ? await getRecentAuditLogs(5) : []
   // Detail rows for these no longer render here (Needs Attention is just
@@ -277,7 +278,7 @@ export default async function DashboardPage() {
           CRM
         </p>
         <h1 style={{ fontSize: '26px', fontWeight: 900, color: 'var(--heading)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-          Welcome back
+          Welcome back{firstName ? `, ${firstName}` : ''}
         </h1>
         <p style={{ fontSize: '15px', color: 'hsl(var(--muted-foreground))', marginTop: '4px' }}>
           Here&apos;s your business at a glance
