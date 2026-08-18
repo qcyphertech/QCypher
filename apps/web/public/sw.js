@@ -6,8 +6,8 @@
  *   - Contacts page (/contacts): stale-while-revalidate for offline read
  */
 
-const SHELL_CACHE  = 'qcypher-shell-v3'
-const PAGES_CACHE  = 'qcypher-pages-v3'
+const SHELL_CACHE  = 'qcypher-shell-v4'
+const PAGES_CACHE  = 'qcypher-pages-v4'
 
 // Only these navigations use stale-while-revalidate (offline reading) —
 // every other page is per-tenant, server-rendered, authenticated content
