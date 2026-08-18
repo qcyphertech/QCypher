@@ -301,7 +301,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent lists */}
-      <div style={{ display: 'grid', gap: '16px' }} className="grid-cols-1 lg:grid-cols-2">
+      <div style={{ display: 'grid', gap: '16px', alignItems: 'start' }} className="grid-cols-1 lg:grid-cols-2">
         <Panel title="Recent Contacts" href="/contacts" linkLabel="View all">
           {(recentContacts ?? []).length === 0
             ? <p style={{ fontSize: '15px', textAlign: 'center', padding: '24px 0', color: 'hsl(var(--muted-foreground))' }}>No contacts yet.</p>
