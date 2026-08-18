@@ -128,55 +128,56 @@ const SAMPLE_DATA = [
   { key: 's12', label: 'Dec', income: 11200, expense: 3800 },
 ]
 
+/** Below this width the chart switches from "scale everything to fit" to
+ * fixed-size bars you swipe through horizontally — scaling a month of bars
+ * down to a ~300px screen makes them too thin to read (the problem this
+ * was built to fix), so mobile trades "see it all at once" for "each bar
+ * is actually legible." */
+const MOBILE_CHART_BREAKPOINT = 767
+
+function useIsMobileChart() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_CHART_BREAKPOINT}px)`)
+    setIsMobile(mq.matches)
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return isMobile
+}
+
 function RevenueChart({ data, showSample }: { data: { key: string; label: string; income: number; expense: number }[]; showSample: boolean }) {
   const displayData = showSample ? SAMPLE_DATA : data
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  const isMobile = useIsMobileChart()
 
   const active = displayData.find(d => d.key === hoveredKey) ?? displayData[displayData.length - 1] ?? null
 
-  const W = 600, H = 180, PL = 44, PR = 12, PT = 12, PB = 32
-  const chartW = W - PL - PR
+  const PL = 44, PR = 12, PT = 12, PB = 32
+  const H = isMobile ? 220 : 180
   const chartH = H - PT - PB
+
+  // Desktop: chart width is fixed (600) and bars shrink to fit every point.
+  // Mobile: each bar group gets a fixed pixel width, so total chart width
+  // grows with the data and the container scrolls instead of squeezing bars.
+  const barGroupW = isMobile ? 30 : (600 - PL - PR) / displayData.length
+  const W = isMobile ? PL + PR + barGroupW * displayData.length : 600
+  const chartW = W - PL - PR
+  const barW = isMobile ? 10 : Math.min(barGroupW * 0.32, 18)
+  const gap = barW * 0.4
 
   const maxVal = Math.max(...displayData.map(d => Math.max(d.income, d.expense)), 1)
   const gridLines = 4
 
-  const barGroupW = chartW / displayData.length
-  const barW = Math.min(barGroupW * 0.32, 18)
-  const gap = barW * 0.4
-
   function yPos(v: number) { return PT + chartH - (v / maxVal) * chartH }
 
-  return (
-    <div style={{ position: 'relative', width: '100%' }}>
-
-      {/* Fixed info strip — always in the same place, updates on hover instead of
-          following the cursor, so it never covers the bars it's describing. */}
-      <div style={{
-        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 18px',
-        padding: '10px 12px', marginBottom: '10px', borderRadius: '10px',
-        background: 'hsl(var(--muted) / 0.5)', minHeight: '20px',
-      }}>
-        {active && (
-          <>
-            <span style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>
-              {active.label}
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: 'hsl(var(--foreground))' }}>
-              <span style={{ width: '9px', height: '9px', borderRadius: '2px', background: '#2a52a0', flexShrink: 0 }} />
-              Revenue&nbsp;<strong style={{ fontVariantNumeric: 'tabular-nums' }}>${usd(active.income)}</strong>
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: 'hsl(var(--foreground))' }}>
-              <span style={{ width: '9px', height: '9px', borderRadius: '2px', background: '#f43f5e', flexShrink: 0 }} />
-              Expenses&nbsp;<strong style={{ fontVariantNumeric: 'tabular-nums' }}>${usd(active.expense)}</strong>
-            </span>
-          </>
-        )}
-      </div>
-
+  const chart = (
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
+        style={isMobile
+          ? { width: `${W}px`, height: `${H}px`, overflow: 'visible', display: 'block', flexShrink: 0 }
+          : { width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
         onMouseLeave={() => setHoveredKey(null)}
       >
         <defs>
@@ -262,6 +263,41 @@ function RevenueChart({ data, showSample }: { data: { key: string; label: string
           )
         })}
       </svg>
+  )
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+
+      {/* Fixed info strip — always in the same place, updates on hover/scroll
+          instead of following the cursor, so it never covers the bars it's
+          describing. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 18px',
+        padding: '10px 12px', marginBottom: '10px', borderRadius: '10px',
+        background: 'hsl(var(--muted) / 0.5)', minHeight: '20px',
+      }}>
+        {active && (
+          <>
+            <span style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>
+              {active.label}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: 'hsl(var(--foreground))' }}>
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', background: '#2a52a0', flexShrink: 0 }} />
+              Revenue&nbsp;<strong style={{ fontVariantNumeric: 'tabular-nums' }}>${usd(active.income)}</strong>
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: 'hsl(var(--foreground))' }}>
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', background: '#f43f5e', flexShrink: 0 }} />
+              Expenses&nbsp;<strong style={{ fontVariantNumeric: 'tabular-nums' }}>${usd(active.expense)}</strong>
+            </span>
+          </>
+        )}
+      </div>
+
+      {isMobile ? (
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          {chart}
+        </div>
+      ) : chart}
     </div>
   )
 }
@@ -449,12 +485,19 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-        {/* Revenue vs Expenses chart */}
-        <div style={{
-          borderRadius: '20px',
+        {/* Revenue vs Expenses chart — full-bleed on mobile (hardcoded media
+            query, not a Tailwind class — see the stat-grid comment on
+            dashboard/page.tsx for why) so the wider swipeable bars get the
+            full screen width instead of losing it to the page's own gutter. */}
+        <style>{`
+          .revchart-card { border-radius: 20px; padding: 18px 16px 10px; }
+          @media (max-width: 767px) {
+            .revchart-card { margin: 0 -20px; border-radius: 0; border-left: none; border-right: none; }
+          }
+        `}</style>
+        <div className="revchart-card" style={{
           background: 'hsl(var(--card))',
           border: '1px solid hsl(var(--border))',
-          padding: '18px 16px 10px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
             <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
