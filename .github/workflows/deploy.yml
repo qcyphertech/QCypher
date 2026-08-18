@@ -22,6 +22,15 @@ name: Deploy to production
 # deployed, because the deploy hook doesn't care whether CI passed. Now
 # triggered by CI's own completion instead of push, and only proceeds
 # if CI's conclusion was "success".
+#
+# Third real gap, found 2026-08-18: a successful curl to the deploy hook
+# only means Vercel *accepted the request* — not that the build finished
+# or actually got promoted to www.qcyphertech.com. A commit's deploy
+# silently produced no new production deployment at all while this step
+# still showed green, leaving the live site on a stale build with no
+# error anywhere. Now polls the Vercel API after triggering the hook
+# until a deployment matching this exact commit reaches READY, and fails
+# the job (loudly, in CI) if that doesn't happen within the timeout.
 
 on:
   workflow_run:
@@ -41,3 +50,47 @@ jobs:
           RESPONSE=$(curl -sS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}")
           echo "$RESPONSE"
           echo "$RESPONSE" | grep -q '"state"' || (echo "Deploy hook did not return a job state" && exit 1)
+
+      - name: Wait for this commit to actually go READY in production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          echo "Waiting for commit $SHA to reach READY on production..."
+          for i in $(seq 1 30); do
+            RESPONSE=$(curl -sS "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&teamId=${VERCEL_ORG_ID}&target=production&limit=10" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}")
+
+            STATE=$(echo "$RESPONSE" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          sha = '$SHA'
+          for d in data.get('deployments', []):
+              meta = d.get('meta', {})
+              if meta.get('githubCommitSha') == sha:
+                  print(d.get('readyState', 'UNKNOWN'))
+                  break
+          else:
+              print('NOT_FOUND')
+          ")
+
+            echo "Attempt $i/30: readyState=$STATE"
+
+            if [ "$STATE" = "READY" ]; then
+              echo "Deployment is live."
+              exit 0
+            fi
+
+            if [ "$STATE" = "ERROR" ] || [ "$STATE" = "CANCELED" ]; then
+              echo "Deployment for $SHA failed with state $STATE."
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "Timed out after 5 minutes waiting for $SHA to reach READY. Production may still be on a stale build — check Vercel directly."
+          exit 1
