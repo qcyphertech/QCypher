@@ -82,6 +82,42 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   )
 }
 
+/** Individually exported so callers that need a specific grid placement
+ * (e.g. Overview's three-column layout) can position each card on its
+ * own, instead of always getting the three stacked as one block. */
+export function RevenueByServiceCard({ snapshot }: { snapshot: AnalyticsSnapshot }) {
+  return (
+    <Card title="Revenue by Service">
+      <ServicePieChart data={snapshot.revenue_by_service} />
+      <AiNote text={snapshot.revenue_summary} />
+    </Card>
+  )
+}
+
+export function CustomerHealthCard({ snapshot }: { snapshot: AnalyticsSnapshot }) {
+  return (
+    <Card title="Customer Health">
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <StatChip label="Active Customers" value={snapshot.customers_active} color="#4f46e5" />
+        <StatChip label="New This Month" value={snapshot.customers_new_month} color="#10b981" />
+        <StatChip label="At-Risk (30+ days)" value={snapshot.customers_inactive_30d} color="#ef4444" />
+      </div>
+      <AiNote text={snapshot.customer_summary} />
+    </Card>
+  )
+}
+
+export function JobsCompletedCard({ snapshot }: { snapshot: AnalyticsSnapshot }) {
+  return (
+    <Card title="Jobs Completed">
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <StatChip label="This Month" value={snapshot.jobs_completed_month} color="#f59e0b" />
+      </div>
+      <AiNote text={snapshot.job_summary} />
+    </Card>
+  )
+}
+
 /** Simple, colorful summary of the analytics_snapshots data — revenue by
  * service (pie), customer health, and jobs completed. Deliberately plain:
  * a handful of big numbers and one chart, not a dense dashboard. Shared by
@@ -89,26 +125,9 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 export function AnalyticsView({ snapshot }: { snapshot: AnalyticsSnapshot }) {
   return (
     <>
-      <Card title="Revenue by Service">
-        <ServicePieChart data={snapshot.revenue_by_service} />
-        <AiNote text={snapshot.revenue_summary} />
-      </Card>
-
-      <Card title="Customer Health">
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <StatChip label="Active Customers" value={snapshot.customers_active} color="#4f46e5" />
-          <StatChip label="New This Month" value={snapshot.customers_new_month} color="#10b981" />
-          <StatChip label="At-Risk (30+ days)" value={snapshot.customers_inactive_30d} color="#ef4444" />
-        </div>
-        <AiNote text={snapshot.customer_summary} />
-      </Card>
-
-      <Card title="Jobs Completed">
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <StatChip label="This Month" value={snapshot.jobs_completed_month} color="#f59e0b" />
-        </div>
-        <AiNote text={snapshot.job_summary} />
-      </Card>
+      <RevenueByServiceCard snapshot={snapshot} />
+      <CustomerHealthCard snapshot={snapshot} />
+      <JobsCompletedCard snapshot={snapshot} />
     </>
   )
 }

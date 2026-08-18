@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useTransition } from 'react'
 import { ArrowRight, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { refreshMyAnalytics, type AnalyticsSnapshot } from '@/lib/actions/analytics'
-import { AnalyticsView } from '@/components/analytics/AnalyticsView'
+import { RevenueByServiceCard, CustomerHealthCard, JobsCompletedCard } from '@/components/analytics/AnalyticsView'
 
 interface Order   { payment_status: string; total_amount: number; created_at: string }
 interface Expense { date: string; category: string; amount: number }
@@ -363,12 +363,17 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
 
       <div style={{ padding: '20px' }}>
 
+      {/* Three-column desktop grid: money summary | trend + jobs | service mix + customers.
+          Below lg, columns stack in the same top-to-bottom order as before. */}
+      <div style={{ display: 'grid', gap: '12px' }} className="grid-cols-1 lg:grid-cols-[1fr_1.3fr_1fr]">
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
         {/* Hero summary card */}
         <div style={{
           borderRadius: '20px',
           background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
           padding: '24px',
-          marginBottom: '12px',
           position: 'relative',
           overflow: 'hidden',
         }}>
@@ -414,45 +419,9 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
           </div>
         </div>
 
-        {/* Revenue vs Expenses chart */}
-        <div style={{
-          borderRadius: '20px',
-          background: 'hsl(var(--card))',
-          border: '1px solid hsl(var(--border))',
-          padding: '18px 16px 10px',
-          marginBottom: '12px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
-                Revenue vs Expenses
-              </p>
-              {showSample && (
-                <span style={{
-                  fontSize: '15px', fontWeight: 600, padding: '2px 7px', borderRadius: '100px',
-                  background: 'rgba(42,82,160,0.12)', color: '#2a52a0', letterSpacing: '0.04em',
-                }}>
-                  SAMPLE
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#2a52a0', display: 'inline-block' }} />
-                Revenue
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f43f5e', display: 'inline-block' }} />
-                Expenses
-              </span>
-            </div>
-          </div>
-          <RevenueChart data={chartData} showSample={showSample} />
-        </div>
-
         {/* Expense breakdown — still part of the money section, same range filter */}
         {byCategory.length > 0 && (
-          <div style={{ marginBottom: '12px' }}>
+          <div>
             <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', marginBottom: '10px' }}>
               Expenses by Category
             </p>
@@ -482,10 +451,63 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
             </div>
           </div>
         )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+        {/* Revenue vs Expenses chart */}
+        <div style={{
+          borderRadius: '20px',
+          background: 'hsl(var(--card))',
+          border: '1px solid hsl(var(--border))',
+          padding: '18px 16px 10px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
+                Revenue vs Expenses
+              </p>
+              {showSample && (
+                <span style={{
+                  fontSize: '15px', fontWeight: 600, padding: '2px 7px', borderRadius: '100px',
+                  background: 'rgba(42,82,160,0.12)', color: '#2a52a0', letterSpacing: '0.04em',
+                }}>
+                  SAMPLE
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#2a52a0', display: 'inline-block' }} />
+                Revenue
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f43f5e', display: 'inline-block' }} />
+                Expenses
+              </span>
+            </div>
+          </div>
+          <RevenueChart data={chartData} showSample={showSample} />
+        </div>
+
+        {snapshot && <JobsCompletedCard snapshot={snapshot} />}
+
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {snapshot && (
+          <>
+            <RevenueByServiceCard snapshot={snapshot} />
+            <CustomerHealthCard snapshot={snapshot} />
+          </>
+        )}
+        </div>
+
+      </div>
 
         {/* Disclaimer — caps off the money section, right next to the figures it qualifies */}
         <div style={{
-          marginBottom: '20px',
+          margin: '12px 0 20px',
           padding: '10px 14px',
           borderRadius: '12px',
           background: 'rgba(42,82,160,0.06)',
@@ -499,23 +521,6 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
             <strong style={{ color: 'hsl(var(--foreground))' }}>Reference only</strong> — not accounting, bookkeeping, or tax advice. Consult a licensed accountant for financial decisions.
           </p>
         </div>
-
-        {/* Business health — always this month, not affected by the range filter above */}
-        {snapshot && (
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
-                Business Health
-              </p>
-              <p style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>
-                This month — updates weekly, or anytime you hit Refresh above
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <AnalyticsView snapshot={snapshot} />
-            </div>
-          </div>
-        )}
 
         {/* Manage expenses link */}
         <Link href="/overview/expenses" style={{ textDecoration: 'none' }}>
