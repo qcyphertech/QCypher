@@ -129,9 +129,10 @@ const SAMPLE_DATA = [
 ]
 
 function RevenueChart({ data, showSample }: { data: { key: string; label: string; income: number; expense: number }[]; showSample: boolean }) {
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; d: typeof data[0] } | null>(null)
-
   const displayData = showSample ? SAMPLE_DATA : data
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+
+  const active = displayData.find(d => d.key === hoveredKey) ?? displayData[displayData.length - 1] ?? null
 
   const W = 600, H = 180, PL = 44, PR = 12, PT = 12, PB = 32
   const chartW = W - PL - PR
@@ -148,10 +149,35 @@ function RevenueChart({ data, showSample }: { data: { key: string; label: string
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
+
+      {/* Fixed info strip — always in the same place, updates on hover instead of
+          following the cursor, so it never covers the bars it's describing. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 18px',
+        padding: '10px 12px', marginBottom: '10px', borderRadius: '10px',
+        background: 'hsl(var(--muted) / 0.5)', minHeight: '20px',
+      }}>
+        {active && (
+          <>
+            <span style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>
+              {active.label}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: 'hsl(var(--foreground))' }}>
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', background: '#2a52a0', flexShrink: 0 }} />
+              Revenue&nbsp;<strong style={{ fontVariantNumeric: 'tabular-nums' }}>${usd(active.income)}</strong>
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: 'hsl(var(--foreground))' }}>
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', background: '#f43f5e', flexShrink: 0 }} />
+              Expenses&nbsp;<strong style={{ fontVariantNumeric: 'tabular-nums' }}>${usd(active.expense)}</strong>
+            </span>
+          </>
+        )}
+      </div>
+
       <svg
         viewBox={`0 0 ${W} ${H}`}
         style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
-        onMouseLeave={() => setTooltip(null)}
+        onMouseLeave={() => setHoveredKey(null)}
       >
         <defs>
           <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
@@ -200,28 +226,30 @@ function RevenueChart({ data, showSample }: { data: { key: string; label: string
 
           const incH = Math.max((d.income / maxVal) * chartH, d.income > 0 ? 2 : 0)
           const expH = Math.max((d.expense / maxVal) * chartH, d.expense > 0 ? 2 : 0)
+          const isHovered = d.key === hoveredKey
 
           return (
             <g key={d.key}
-              onMouseEnter={e => {
-                const svg = (e.currentTarget as SVGGElement).closest('svg')!.getBoundingClientRect()
-                const gRect = (e.currentTarget as SVGGElement).getBoundingClientRect()
-                setTooltip({ x: gRect.left - svg.left + gRect.width / 2, y: gRect.top - svg.top - 8, d })
-              }}
+              onMouseEnter={() => setHoveredKey(d.key)}
               style={{ cursor: 'default' }}
             >
+              {/* hover highlight behind the bars */}
+              {isHovered && (
+                <rect x={cx - barGroupW / 2 + 1} y={PT} width={barGroupW - 2} height={chartH}
+                  rx="4" fill="hsl(var(--foreground))" opacity="0.06" />
+              )}
               {/* hover area */}
               <rect x={cx - barGroupW / 2} y={PT} width={barGroupW} height={chartH}
                 fill="transparent" />
               {/* income bar */}
               {d.income > 0 && (
                 <rect x={x1} y={PT + chartH - incH} width={barW} height={incH}
-                  rx="3" fill="url(#incomeGrad)" opacity="0.9" />
+                  rx="3" fill="url(#incomeGrad)" opacity={isHovered ? 1 : 0.9} />
               )}
               {/* expense bar */}
               {d.expense > 0 && (
                 <rect x={x2} y={PT + chartH - expH} width={barW} height={expH}
-                  rx="3" fill="url(#expGrad)" opacity="0.85" />
+                  rx="3" fill="url(#expGrad)" opacity={isHovered ? 1 : 0.85} />
               )}
               {/* x label */}
               {(displayData.length <= 12 || i % Math.ceil(displayData.length / 10) === 0) && (
@@ -234,40 +262,6 @@ function RevenueChart({ data, showSample }: { data: { key: string; label: string
           )
         })}
       </svg>
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div style={{
-          position: 'absolute',
-          left: `${(tooltip.x / 600) * 100}%`,
-          top: `${(tooltip.y / 180) * 100}%`,
-          transform: 'translate(-50%, -100%)',
-          pointerEvents: 'none',
-          background: 'hsl(var(--popover))',
-          border: '1px solid hsl(var(--border))',
-          borderRadius: '10px',
-          padding: '8px 12px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          minWidth: '120px',
-          zIndex: 10,
-        }}>
-          <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--muted-foreground))', marginBottom: '4px' }}>
-            {tooltip.d.label}
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#2a52a0', flexShrink: 0 }} />
-            <span style={{ fontSize: '15px', color: 'hsl(var(--foreground))', fontVariantNumeric: 'tabular-nums' }}>
-              ${usd(tooltip.d.income)}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#f43f5e', flexShrink: 0 }} />
-            <span style={{ fontSize: '15px', color: 'hsl(var(--foreground))', fontVariantNumeric: 'tabular-nums' }}>
-              ${usd(tooltip.d.expense)}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -462,30 +456,18 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
           border: '1px solid hsl(var(--border))',
           padding: '18px 16px 10px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
-                Revenue vs Expenses
-              </p>
-              {showSample && (
-                <span style={{
-                  fontSize: '15px', fontWeight: 600, padding: '2px 7px', borderRadius: '100px',
-                  background: 'rgba(42,82,160,0.12)', color: '#2a52a0', letterSpacing: '0.04em',
-                }}>
-                  SAMPLE
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#2a52a0', display: 'inline-block' }} />
-                Revenue
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
+              Revenue vs Expenses
+            </p>
+            {showSample && (
+              <span style={{
+                fontSize: '15px', fontWeight: 600, padding: '2px 7px', borderRadius: '100px',
+                background: 'rgba(42,82,160,0.12)', color: '#2a52a0', letterSpacing: '0.04em',
+              }}>
+                SAMPLE
               </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f43f5e', display: 'inline-block' }} />
-                Expenses
-              </span>
-            </div>
+            )}
           </div>
           <RevenueChart data={chartData} showSample={showSample} />
         </div>
