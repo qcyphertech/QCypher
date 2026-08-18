@@ -68,7 +68,7 @@ export async function createApprovalRequest(
     return { ok: false, error: 'Only admins can request this action' }
   }
 
-  const { data: tenant } = await supabase.from('tenants').select('name').single()
+  const { data: tenant } = await supabase.from('tenants').select('name').eq('id', tenant_id).single()
 
   const { data: req, error } = await admin
     .from('approval_requests')

@@ -19,7 +19,10 @@ export type RecurrenceInput = {
 
 export async function createExpense(input: ExpenseInput, recurrence?: RecurrenceInput) {
   const supabase = await createClient()
-  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const tenantId = user?.app_metadata?.tenant_id
+  if (!tenantId) throw new Error('No tenant')
+  const { data: tenant } = await supabase.from('tenants').select('id').eq('id', tenantId).single()
   if (!tenant) throw new Error('Tenant not found')
 
   let recurring_expense_id: string | null = null

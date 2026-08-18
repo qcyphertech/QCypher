@@ -6,7 +6,10 @@ import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 
 export async function updateTenantSettings(settings: Partial<TenantSettings>) {
   const supabase = await createClient()
-  const { data: tenant } = await supabase.from('tenants').select('id, settings').single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const tenantId = user?.app_metadata?.tenant_id
+  if (!tenantId) throw new Error('No tenant')
+  const { data: tenant } = await supabase.from('tenants').select('id, settings').eq('id', tenantId).single()
   if (!tenant) throw new Error('Tenant not found')
 
   const merged = { ...DEFAULT_SETTINGS, ...(tenant.settings as Record<string, unknown> ?? {}), ...settings }

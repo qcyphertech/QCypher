@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
     await configureNumberWebhook(phoneNumber)
 
     // Save to tenant
-    const { data: tenant } = await supabase.from('tenants').select('id').single()
-    if (tenant) {
-      await supabase.from('tenants').update({ telnyx_number: phoneNumber }).eq('id', tenant.id)
+    const tenantId = user.app_metadata?.tenant_id
+    if (tenantId) {
+      await supabase.from('tenants').update({ telnyx_number: phoneNumber }).eq('id', tenantId)
     }
 
     return NextResponse.json({ number: phoneNumber })

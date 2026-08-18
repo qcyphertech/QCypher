@@ -12,9 +12,10 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const tenantId = user.app_metadata?.tenant_id ?? ''
   const [{ data: profile }, { data: tenant }] = await Promise.all([
     supabase.from('users').select('legal_name, nickname, phone, street, city, state, zip').eq('id', user.id).single(),
-    supabase.from('tenants').select('name').single(),
+    supabase.from('tenants').select('name').eq('id', tenantId).single(),
   ])
 
   const identities  = user.identities ?? []

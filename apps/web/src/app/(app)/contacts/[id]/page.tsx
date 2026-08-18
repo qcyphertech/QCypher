@@ -28,7 +28,7 @@ export default async function ContactPage({ params }: Props) {
   const [{ data: contact }, { data: interactions }, { data: tenantRaw }, { data: orders }, { data: catalogItems }, { data: recurringJobs }] = await Promise.all([
     supabase.from('contacts').select('*').eq('id', id).single(),
     supabase.from('interactions').select('*').eq('contact_id', id).order('occurred_at', { ascending: false }),
-    supabase.from('tenants').select('slug, name').single(),
+    supabase.from('tenants').select('slug, name').eq('id', tenantId).single(),
     supabase.from('orders').select('id, order_number, total_amount, payment_status, notes, created_at').eq('customer_id', id).order('created_at', { ascending: false }),
     supabase.from('catalog_items').select('id, name, description, base_price').eq('is_active', true).order('name'),
     supabase.from('recurring_jobs').select('id, contact_id, catalog_item_id, title, description, amount, frequency, interval_days, day_of_month, next_scheduled_date, scheduled_time, status, send_reminder, reminder_days_before, auto_confirm_if_no_reply, created_at').eq('contact_id', id).order('created_at', { ascending: false }),

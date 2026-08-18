@@ -72,7 +72,9 @@ export async function commitImport(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  const jwtTenantId = user.app_metadata?.tenant_id
+  if (!jwtTenantId) throw new Error('No tenant')
+  const { data: tenant } = await supabase.from('tenants').select('id').eq('id', jwtTenantId).single()
   if (!tenant) throw new Error('Tenant not found')
   const tenantId = (tenant as { id: string }).id
 

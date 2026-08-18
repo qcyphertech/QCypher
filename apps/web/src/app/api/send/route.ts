@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   const [{ data: template }, { data: contact }, { data: tenant }] = await Promise.all([
     supabase.from('templates').select('*').eq('id', templateId).single(),
     supabase.from('contacts').select('*').eq('id', contactId).single(),
-    supabase.from('tenants').select('name').single(),
+    supabase.from('tenants').select('name').eq('id', tenantId).single(),
   ])
 
   if (!template || !contact) {
