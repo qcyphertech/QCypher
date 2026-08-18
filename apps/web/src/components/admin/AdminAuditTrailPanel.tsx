@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { ChevronLeft, ChevronRight, User, X } from 'lucide-react'
-import { getAuditLogs, type AuditLog, type AuditAction } from '@/lib/actions/audit'
+import { ChevronLeft, ChevronRight, User, X, Bot } from 'lucide-react'
+import { getAuditLogs, listChatbotInteractionLogs, type AuditLog, type AuditAction, type ChatbotInteractionLog } from '@/lib/actions/audit'
 import type { TenantSummary } from '@/lib/actions/admin-console'
 import { FilterToggle, FilterPopover, FilterOption } from '@/components/admin/AdminPanelUI'
 import { cn } from '@/lib/utils'
@@ -34,6 +34,7 @@ function fmtDate(iso: string) {
 }
 
 export function AdminAuditTrailPanel({ tenants }: { tenants: TenantSummary[] }) {
+  const [view, setView] = useState<'team' | 'chatbot'>('team')
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -44,6 +45,10 @@ export function AdminAuditTrailPanel({ tenants }: { tenants: TenantSummary[] }) 
   const [to, setTo] = useState('')
   const [isPending, startTransition] = useTransition()
   const [openFilter, setOpenFilter] = useState<'time' | 'user' | 'action' | 'resource' | null>(null)
+
+  const [chatbotLogs, setChatbotLogs] = useState<ChatbotInteractionLog[]>([])
+  const [chatbotTotal, setChatbotTotal] = useState(0)
+  const [chatbotPage, setChatbotPage] = useState(1)
 
   function load() {
     startTransition(async () => {
@@ -60,7 +65,16 @@ export function AdminAuditTrailPanel({ tenants }: { tenants: TenantSummary[] }) 
     })
   }
 
-  useEffect(load, [page, tenantId, search, action, from, to])
+  function loadChatbot() {
+    startTransition(async () => {
+      const result = await listChatbotInteractionLogs({ page: chatbotPage, pageSize: PAGE_SIZE, tenantId: tenantId || undefined })
+      setChatbotLogs(result.logs)
+      setChatbotTotal(result.total)
+    })
+  }
+
+  useEffect(() => { if (view === 'team') load() }, [view, page, tenantId, search, action, from, to])
+  useEffect(() => { if (view === 'chatbot') loadChatbot() }, [view, chatbotPage, tenantId])
 
   function toggleFilter(col: 'time' | 'user' | 'action' | 'resource') {
     setOpenFilter(prev => (prev === col ? null : col))
@@ -75,10 +89,112 @@ export function AdminAuditTrailPanel({ tenants }: { tenants: TenantSummary[] }) 
   const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
   const rangeEnd = Math.min(page * PAGE_SIZE, total)
 
+  const chatbotTotalPages = Math.max(1, Math.ceil(chatbotTotal / PAGE_SIZE))
+  const chatbotRangeStart = chatbotTotal === 0 ? 0 : (chatbotPage - 1) * PAGE_SIZE + 1
+  const chatbotRangeEnd = Math.min(chatbotPage * PAGE_SIZE, chatbotTotal)
+
   return (
     <div className="max-w-4xl">
       {openFilter && <div className="fixed inset-0 z-10" onClick={() => setOpenFilter(null)} />}
 
+      <div className="flex gap-1 p-1 rounded-2xl bg-[hsl(var(--muted))]/60 w-fit mb-3">
+        <button
+          onClick={() => setView('team')}
+          className={`text-[13px] font-medium px-3 py-1.5 rounded-xl transition-all ${view === 'team' ? 'bg-[hsl(var(--card))] shadow-sm' : 'text-[hsl(var(--muted-foreground))]'}`}
+        >
+          Team Activity
+        </button>
+        <button
+          onClick={() => setView('chatbot')}
+          className={`flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-xl transition-all ${view === 'chatbot' ? 'bg-[hsl(var(--card))] shadow-sm' : 'text-[hsl(var(--muted-foreground))]'}`}
+        >
+          <Bot className="w-3.5 h-3.5" /> Chatbot Interactions
+        </button>
+      </div>
+
+      {view === 'chatbot' && (
+        <div className="max-w-4xl">
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <p className="text-[13px] text-[hsl(var(--muted-foreground))]">
+              {chatbotTotal === 0 ? 'No interactions found' : `Showing ${chatbotRangeStart}–${chatbotRangeEnd} of ${chatbotTotal} ${chatbotTotal === 1 ? 'entry' : 'entries'}`}
+            </p>
+            {tenants.length > 0 && (
+              <select
+                value={tenantId}
+                onChange={e => { setChatbotPage(1); setTenantId(e.target.value) }}
+                className="text-[13px] font-medium px-2.5 py-1.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none cursor-pointer"
+              >
+                <option value="">All tenants + qcyphertech.com</option>
+                {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            )}
+          </div>
+
+          <p className="text-[12px] text-[hsl(var(--muted-foreground))] mb-3">
+            Anonymous website-chatbot visitors — no name, email, or IP is captured here.
+          </p>
+
+          <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] shadow-soft overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[14px] border-collapse text-left" style={{ minWidth: '560px' }}>
+                <thead>
+                  <tr className="border-b border-[hsl(var(--border))]">
+                    <th className="px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] whitespace-nowrap">Time</th>
+                    <th className="px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] whitespace-nowrap">Site</th>
+                    <th className="px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] whitespace-nowrap">Conversation</th>
+                    <th className="px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] whitespace-nowrap">Messages</th>
+                    <th className="px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] whitespace-nowrap">AI label shown</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[hsl(var(--border))]">
+                  {chatbotLogs.map(l => (
+                    <tr key={l.id} className="hover:bg-[hsl(var(--muted))]/40 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap text-[hsl(var(--muted-foreground))]">{fmtDate(l.created_at)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{l.tenant_name ?? 'qcyphertech.com'}</td>
+                      <td className="px-4 py-3 font-mono text-[13px] text-[hsl(var(--muted-foreground))] truncate max-w-[200px]">{l.conversation_id ?? '—'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{l.message_count}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold"
+                          style={{ background: l.label_shown ? '#10b9811a' : '#ef44441a', color: l.label_shown ? '#10b981' : '#ef4444' }}
+                        >
+                          {l.label_shown ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {!isPending && chatbotLogs.length === 0 && (
+                    <tr><td colSpan={5} className="px-4 py-10 text-center text-[hsl(var(--muted-foreground))]">No chatbot interactions yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {chatbotTotalPages > 1 && (
+            <div className="flex items-center justify-between mt-3 px-0.5">
+              <button
+                onClick={() => setChatbotPage(p => Math.max(1, p - 1))}
+                disabled={chatbotPage <= 1}
+                className={cn('flex items-center gap-1 text-[14px] font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors', chatbotPage <= 1 && 'opacity-40 cursor-not-allowed')}
+              >
+                <ChevronLeft className="w-4 h-4" /> Previous
+              </button>
+              <p className="text-[13px] text-[hsl(var(--muted-foreground))]">Page {chatbotPage} of {chatbotTotalPages}</p>
+              <button
+                onClick={() => setChatbotPage(p => Math.min(chatbotTotalPages, p + 1))}
+                disabled={chatbotPage >= chatbotTotalPages}
+                className={cn('flex items-center gap-1 text-[14px] font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors', chatbotPage >= chatbotTotalPages && 'opacity-40 cursor-not-allowed')}
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === 'team' && (
+      <>
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <p className="text-[13px] text-[hsl(var(--muted-foreground))]">
           {total === 0 ? 'No activity found' : `Showing ${rangeStart}–${rangeEnd} of ${total} ${total === 1 ? 'entry' : 'entries'}`}
@@ -256,6 +372,8 @@ export function AdminAuditTrailPanel({ tenants }: { tenants: TenantSummary[] }) 
             Next <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   )

@@ -90,6 +90,16 @@ async function requireAdmin() {
   return { tenant_id, isSuperAdmin: false }
 }
 
+async function requireSuperAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const admin = createAdminClient()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  if (!isSuperAdminUser(fresh)) throw new Error('Super admin only')
+}
+
 async function listSuperAdminEmails(): Promise<string[]> {
   const admin = createAdminClient()
   const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
@@ -140,6 +150,55 @@ export async function getAuditLogs(filters: {
 
   const { data, count } = await query.range(from, to)
   return { logs: (data ?? []) as AuditLog[], total: count ?? 0 }
+}
+
+export type ChatbotInteractionLog = {
+  id: string
+  tenant_id: string | null
+  tenant_name: string | null
+  conversation_id: string | null
+  message_count: number
+  label_shown: boolean
+  created_at: string
+}
+
+// Anonymous website-chatbot interactions live in a separate table (see
+// chatbot_interaction_logs migration) because audit_logs requires a real
+// tenant member (non-null user_id/tenant_id) to attribute a row to —
+// super-admin only, since there's no tenant-owner view of "my tenant's
+// anonymous site visitors" to gate this behind.
+export async function listChatbotInteractionLogs(filters: {
+  page?: number
+  pageSize?: number
+  tenantId?: string
+} = {}): Promise<{ logs: ChatbotInteractionLog[]; total: number }> {
+  await requireSuperAdmin()
+  const admin = createAdminClient()
+
+  const page = filters.page ?? 1
+  const pageSize = filters.pageSize ?? 25
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  let query = admin
+    .from('chatbot_interaction_logs')
+    .select('id, tenant_id, conversation_id, message_count, label_shown, created_at, tenants(name)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+
+  if (filters.tenantId) query = query.eq('tenant_id', filters.tenantId)
+
+  const { data, count } = await query.range(from, to)
+  const logs = (data ?? []).map(row => ({
+    id: row.id,
+    tenant_id: row.tenant_id,
+    tenant_name: (row as unknown as { tenants: { name: string } | null }).tenants?.name ?? null,
+    conversation_id: row.conversation_id,
+    message_count: row.message_count,
+    label_shown: row.label_shown,
+    created_at: row.created_at,
+  }))
+
+  return { logs, total: count ?? 0 }
 }
 
 export async function getRecentAuditLogs(limit = 5): Promise<AuditLog[]> {
