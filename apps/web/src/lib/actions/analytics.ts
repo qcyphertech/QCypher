@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { computeAnalyticsMetrics, generateAnalyticsInsights, type AnalyticsSnapshot } from '@/lib/analytics'
 import { revalidatePath } from 'next/cache'
 
@@ -24,8 +25,19 @@ async function requireOwner() {
   return { user, admin, tenantId }
 }
 
-export async function getLatestAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> {
-  const { admin, tenantId } = await requireOwner()
+async function requireSuperAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const admin = createAdminClient()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  if (!isSuperAdminUser(fresh)) throw new Error('Super admin only')
+
+  return { user, admin }
+}
+
+async function fetchLatestSnapshot(admin: ReturnType<typeof createAdminClient>, tenantId: string) {
   const { data } = await admin
     .from('analytics_snapshots')
     .select('*')
@@ -37,14 +49,14 @@ export async function getLatestAnalyticsSnapshot(): Promise<AnalyticsSnapshot | 
 }
 
 /**
- * On-demand refresh, rate-limited to once per rolling 24h — a real DB
- * check, not lib/rate-limit.ts's in-memory limiter (that one resets on
- * every cold start and can't enforce a 24h window). Mirrors
+ * Shared refresh logic — rate-limited to once per rolling 24h per tenant,
+ * regardless of whether the tenant owner or a super admin triggers it (the
+ * cap exists to control DeepSeek cost per tenant, not to gate by actor). A
+ * real DB check, not lib/rate-limit.ts's in-memory limiter (that one resets
+ * on every cold start and can't enforce a 24h window) — mirrors
  * generateMyBlogDraft's cooldown check in lib/actions/blog.ts.
  */
-export async function refreshMyAnalytics(): Promise<AnalyticsSnapshot> {
-  const { user, admin, tenantId } = await requireOwner()
-
+async function refreshTenantAnalytics(admin: ReturnType<typeof createAdminClient>, tenantId: string, triggeredBy: string | null): Promise<AnalyticsSnapshot> {
   const { data: recentManual } = await admin
     .from('analytics_snapshots')
     .select('id')
@@ -67,12 +79,37 @@ export async function refreshMyAnalytics(): Promise<AnalyticsSnapshot> {
       customer_summary: insights.customer || null,
       job_summary: insights.job || null,
       refresh_type: 'manual',
-      triggered_by: user.id,
+      triggered_by: triggeredBy,
     }, { onConflict: 'tenant_id,snapshot_date' })
     .select('*')
     .single()
 
   if (error || !data) throw new Error(error?.message ?? 'Failed to save analytics snapshot')
-  revalidatePath('/dashboard/analytics')
   return data as unknown as AnalyticsSnapshot
+}
+
+export async function getLatestAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> {
+  const { admin, tenantId } = await requireOwner()
+  return fetchLatestSnapshot(admin, tenantId)
+}
+
+export async function refreshMyAnalytics(): Promise<AnalyticsSnapshot> {
+  const { user, admin, tenantId } = await requireOwner()
+  const snapshot = await refreshTenantAnalytics(admin, tenantId, user.id)
+  revalidatePath('/dashboard/analytics')
+  return snapshot
+}
+
+// ── Super-admin cross-tenant view (Admin > Analytics) ────────────────────
+
+export async function getAnalyticsSnapshotForTenant(tenantId: string): Promise<AnalyticsSnapshot | null> {
+  const { admin } = await requireSuperAdmin()
+  return fetchLatestSnapshot(admin, tenantId)
+}
+
+export async function refreshAnalyticsForTenant(tenantId: string): Promise<AnalyticsSnapshot> {
+  const { user, admin } = await requireSuperAdmin()
+  const snapshot = await refreshTenantAnalytics(admin, tenantId, user.id)
+  revalidatePath('/admin')
+  return snapshot
 }
