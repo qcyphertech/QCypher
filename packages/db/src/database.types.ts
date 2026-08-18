@@ -1104,6 +1104,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           note: string | null
+          recurring_expense_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -1115,6 +1116,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           note?: string | null
+          recurring_expense_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -1126,10 +1128,18 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           note?: string | null
+          recurring_expense_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_recurring_expense_id_fkey"
+            columns: ["recurring_expense_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_expenses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -2421,6 +2431,59 @@ export type Database = {
           ip?: string
         }
         Relationships: []
+      }
+      recurring_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          day_of_month: number | null
+          frequency: string
+          id: string
+          interval_days: number | null
+          next_occurrence_date: string
+          note: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          day_of_month?: number | null
+          frequency: string
+          id?: string
+          interval_days?: number | null
+          next_occurrence_date: string
+          note?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          day_of_month?: number | null
+          frequency?: string
+          id?: string
+          interval_days?: number | null
+          next_occurrence_date?: string
+          note?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expenses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recurring_jobs: {
         Row: {

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Repeat } from 'lucide-react'
 import { BackLink } from '@/components/ui/BackLink'
 import { ExpenseForm } from '@/components/overview/ExpenseForm'
-import { deleteExpense } from '@/lib/actions/expenses'
+import { deleteExpense, stopRecurringExpense } from '@/lib/actions/expenses'
 import { useRouter } from 'next/navigation'
 
 interface Expense {
@@ -13,6 +13,7 @@ interface Expense {
   category: string
   amount: number
   note?: string | null
+  recurring_expense_id?: string | null
 }
 
 interface Props { expenses: Expense[] }
@@ -23,6 +24,8 @@ export function ExpensesClient({ expenses: initial }: Props) {
   const [editing, setEditing] = useState<Expense | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState<string | null>(null)
+  const [stoppingRecurring, setStoppingRecurring] = useState<string | null>(null)
+  const [showStopConfirm, setShowStopConfirm] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
     setDeleting(id)
@@ -32,6 +35,17 @@ export function ExpensesClient({ expenses: initial }: Props) {
     } finally {
       setDeleting(null)
       setShowConfirm(null)
+    }
+  }
+
+  async function handleStopRecurring(recurringExpenseId: string) {
+    setStoppingRecurring(recurringExpenseId)
+    try {
+      await stopRecurringExpense(recurringExpenseId)
+      router.refresh()
+    } finally {
+      setStoppingRecurring(null)
+      setShowStopConfirm(null)
     }
   }
 
@@ -116,7 +130,30 @@ export function ExpensesClient({ expenses: initial }: Props) {
                 </div>
                 {/* Main */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{expense.category}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-[15px] font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{expense.category}</p>
+                    {expense.recurring_expense_id && (
+                      showStopConfirm === expense.recurring_expense_id ? (
+                        <span className="flex items-center gap-1.5 text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                          Stop recurring?
+                          <button onClick={() => setShowStopConfirm(null)}
+                            className="px-2 py-0.5 rounded-lg" style={{ border: '1px solid hsl(var(--border))' }}>No</button>
+                          <button onClick={() => handleStopRecurring(expense.recurring_expense_id!)}
+                            disabled={stoppingRecurring === expense.recurring_expense_id}
+                            className="px-2 py-0.5 rounded-lg text-white disabled:opacity-50" style={{ background: '#ef4444' }}>
+                            {stoppingRecurring === expense.recurring_expense_id ? '…' : 'Yes'}
+                          </button>
+                        </span>
+                      ) : (
+                        <button onClick={() => setShowStopConfirm(expense.recurring_expense_id!)}
+                          title="Recurring expense — click to stop future occurrences"
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[15px] font-semibold"
+                          style={{ color: '#2a52a0', background: 'rgba(42,82,160,0.10)' }}>
+                          <Repeat style={{ width: '11px', height: '11px' }} /> Recurring
+                        </button>
+                      )
+                    )}
+                  </div>
                   {expense.note && (
                     <p className="text-[15px] mt-0.5 truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>{expense.note}</p>
                   )}

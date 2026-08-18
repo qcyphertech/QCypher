@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createExpense, updateExpense, type ExpenseInput } from '@/lib/actions/expenses'
+import { createExpense, updateExpense, type ExpenseInput, type RecurrenceInput } from '@/lib/actions/expenses'
+import type { RecurrenceFrequency } from '@/lib/recurrence'
 
 const CATEGORIES = [
   'Advertising',
@@ -31,6 +32,9 @@ export function ExpenseForm({ expense, onDone, onCancel }: Props) {
   const [note, setNote] = useState(expense?.note ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [frequency, setFrequency] = useState<RecurrenceFrequency>('monthly')
+  const [dayOfMonth, setDayOfMonth] = useState(String(new Date().getDate()))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -41,8 +45,19 @@ export function ExpenseForm({ expense, onDone, onCancel }: Props) {
     setError('')
     try {
       const input: ExpenseInput = { date, category, amount: parsed, note: note || undefined }
-      if (expense) await updateExpense(expense.id, input)
-      else await createExpense(input)
+      if (expense) {
+        await updateExpense(expense.id, input)
+      } else if (isRecurring) {
+        const isMonthlyLike = frequency === 'monthly' || frequency === 'quarterly' || frequency === 'annually'
+        const recurrence: RecurrenceInput = {
+          frequency,
+          dayOfMonth: isMonthlyLike ? parseInt(dayOfMonth, 10) || null : null,
+          intervalDays: frequency === 'custom' ? 30 : null,
+        }
+        await createExpense(input, recurrence)
+      } else {
+        await createExpense(input)
+      }
       onDone()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save expense.')
@@ -106,6 +121,40 @@ export function ExpenseForm({ expense, onDone, onCancel }: Props) {
         <textarea placeholder="Add a note…" value={note} onChange={e => setNote(e.target.value)}
           rows={2} style={{ ...inputStyle, resize: 'none' }} />
       </div>
+
+      {!expense && (
+        <div className="rounded-xl p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))' }}>
+          <label className="flex items-center gap-2 text-[15px] font-semibold cursor-pointer" style={{ color: 'hsl(var(--foreground))' }}>
+            <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} className="w-4 h-4" />
+            Make this recurring
+          </label>
+
+          {isRecurring && (
+            <div className="mt-3 flex flex-col gap-3">
+              <div>
+                <label style={labelStyle}>Repeats</label>
+                <select value={frequency} onChange={e => setFrequency(e.target.value as RecurrenceFrequency)} style={inputStyle}>
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Every 2 weeks</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="annually">Annually</option>
+                  <option value="custom">Every 30 days</option>
+                </select>
+              </div>
+              {(frequency === 'monthly' || frequency === 'quarterly' || frequency === 'annually') && (
+                <div>
+                  <label style={labelStyle}>Day of month</label>
+                  <input type="number" min="1" max="31" value={dayOfMonth} onChange={e => setDayOfMonth(e.target.value)} style={inputStyle} />
+                </div>
+              )}
+              <p className="text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                This expense will be logged today, then automatically re-created on that schedule.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-2 pt-1">
         <button type="button" onClick={onCancel}
