@@ -376,8 +376,17 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
   await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'user', content: trimmed })
   await logAudit({ action: 'ai_crm_bot_query', resource_type: 'ai_assistant', resource_id: conversationId, details: { label_shown: true } })
 
+  // Confirmed live 2026-08-18: without this, "tomorrow"/"next week" in
+  // schedule_event get resolved against the model's training cutoff
+  // instead of the real date — a request made today landed on the
+  // calendar in January 2025. Stamping the real current date/time (with
+  // weekday, since "tomorrow" needs day-of-week context too) into every
+  // turn fixes relative-date resolution without touching the model.
+  const now = new Date()
+  const currentDateLine = `Current date/time: ${now.toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}. Resolve "today"/"tomorrow"/"next week" etc. against this, not any other date.`
+
   const messages: ChatMessage[] = [
-    { role: 'system', content: CRM_BOT_SYSTEM_PROMPT },
+    { role: 'system', content: `${CRM_BOT_SYSTEM_PROMPT}\n\n${currentDateLine}` },
     ...(history ?? []).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     { role: 'user', content: trimmed },
   ]
