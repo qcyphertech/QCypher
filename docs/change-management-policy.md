@@ -16,18 +16,21 @@ consistency against what's written down.
 
 ## Current state (as of 2026-08-16)
 
-- **Branch protection on `main`, added 2026-08-18.** Requires
-  `TypeScript` and `RLS isolation tests` to pass before a PR can
-  merge — added after a QA re-verification pass found the earlier
-  claim that these jobs were "blocking on PRs" was false (`main` had
-  no protection rule at all; the jobs ran but nothing stopped a
-  failing PR from merging). No required PR review, and no push
-  restriction — both Thomas and any AI coding assistant acting on
-  Thomas's direction still push commits directly to `main`, which
-  required status checks alone don't gate (they only apply to PR
-  merges, not direct pushes). That's why this is real protection for
-  if/when a PR is used, not a change to the actual day-to-day
-  workflow.
+- **No branch protection on `main` — confirmed, and confirmed why, on
+  2026-08-18.** A QA re-verification pass found the earlier claim that
+  `rls-isolation`/`TypeScript` were "blocking on PRs" was false (`main`
+  had no protection rule; `GET .../branches/main/protection` returned
+  404). Branch protection requiring those two checks was enabled as a
+  fix, then reverted the same day: GitHub applies required status
+  checks to *every* push to a protected branch, not just PR merges, so
+  it immediately rejected a normal `git push` to `main` with "2 of 2
+  required status checks are expected" — the checks can't have run yet
+  for a commit that was just pushed. There is no GitHub setting that
+  gates PR merges on CI without also blocking direct pushes; the two
+  share one mechanism. Both Thomas and any AI coding assistant acting
+  on Thomas's direction still push commits directly to `main`, and a
+  failing PR (if one were ever opened) can still be merged regardless
+  of CI status — an accepted, real gap, not a fixed one.
 - **CI runs on every push and PR** (`.github/workflows/ci.yml`): secret
   audit, dependency audit (high/critical), TypeScript check, and RLS
   isolation tests (main only). The secret and dependency audits are
@@ -91,7 +94,8 @@ don't block anything.
 | Gap | Why it's not fixed yet | Remediation |
 |---|---|---|
 | No required PR review | 2-person team; mandatory review would block solo iteration, which is how this app has shipped every phase to date | Accept as a documented residual risk for now. If the team grows past 2 engineers, revisit. |
-| `security-audit` CI job doesn't block | Its dependency-audit step surfaces pre-existing findings that need triage before it can gate merges without red-X'ing unrelated pushes. | Triage `security-audit` findings, then add it to the branch protection required-checks list alongside `TypeScript` and `RLS isolation tests`. |
+| No PR-merge CI gate (a failing PR can still be merged) | Tried 2026-08-18 via GitHub branch protection required-status-checks; it also blocks direct pushes to `main` (same mechanism as PR-merge gating), which broke the team's actual workflow within one commit and was reverted same-day. | Revisit only alongside moving to a PR-based workflow — not fixable in isolation while direct pushes to `main` remain how this team ships. |
+| `security-audit` CI job doesn't block | Its dependency-audit step surfaces pre-existing findings that need triage before it can gate merges without red-X'ing unrelated pushes. | Triage `security-audit` findings; moot until the PR-merge gate above is revisited, since there's currently no gate to add it to. |
 | Deployment logging relied on a human remembering a manual step | The logging script (`scripts/log-deployment.sh`) was written assuming a manual `vercel --prod` step that turned out not to exist — deploys are actually automatic on push via Vercel's GitHub integration, so there was never a natural moment to trigger the script. Result: zero rows in `deployment_log` despite dozens of real deploys, confirmed 2026-08-16. | **Fixed 2026-08-16.** `.github/workflows/log-deployment.yml` logs every push to `main` automatically — no human step to forget. `scripts/log-deployment.sh` remains available for migrations or notes that need attaching by hand. |
 | No staging environment | Deliberate scope decision made early in the project — see prior phase notes | Not planned; accepted trade-off for a 2-person team's velocity. |
 

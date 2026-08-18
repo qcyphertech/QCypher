@@ -176,16 +176,17 @@ inflated.**
   message; a local build must pass before any deploy; GitHub provides
   an immutable audit trail; database migrations require a manual
   paste-and-confirm step (no auto-apply path).
-- **Fixed 2026-08-18:** branch protection on `main` now requires
-  `TypeScript` and `RLS isolation tests` to pass before a PR can
-  merge (`security-audit` stays `continue-on-error: true` by design —
-  it surfaces secret/dependency issues without gating on them).
+- **Attempted and reverted 2026-08-18:** branch protection requiring
+  `TypeScript` and `RLS isolation tests` before merge was enabled, then
+  reverted the same day — GitHub applies required status checks to
+  every push to the branch, not just PR merges, so it also rejected
+  ordinary direct pushes to `main`. See
+  `docs/change-management-policy.md` for the full account.
 - What's genuinely missing, per `docs/change-management-policy.md`:
-  **no required PR review before merging to `main`** — branch
-  protection deliberately stops short of that, since it would block
-  the 2-person team's direct-push workflow, which required status
-  checks alone don't (they only gate PR merges, not direct pushes).
-  See that policy doc for the reasoning.
+  **no required PR review before merging to `main`**, and **no PR-merge
+  CI gate** — both are the same underlying GitHub mechanism, and
+  enabling either currently means blocking the 2-person team's
+  direct-push workflow. Accepted as an open gap, not fixed.
 - This is the control area most likely to draw direct auditor
   questions. The mitigating argument is documented in
   `docs/change-management-policy.md`'s "Why this isn't 'no change

@@ -63,23 +63,25 @@ marked done, even where the supporting infrastructure is ready.
       zero rows against dozens of real deploys — the manual script was
       paired with a `vercel --prod` step that doesn't actually exist)
       — now automatic via `.github/workflows/log-deployment.yml`,
-      confirmed working. **Fixed 2026-08-18:** the previous claim that
-      `rls-isolation` was "blocking on PRs" was checked against live
-      GitHub state during a QA re-verification pass and found false —
-      `main` had no branch protection rule at all (`GET
-      .../branches/main/protection` returned 404), so the job ran on
-      every PR but nothing actually stopped a failing PR from being
-      merged. Branch protection is now enabled on `main` requiring
-      `TypeScript` and `RLS isolation tests` to pass before a PR can
-      merge (`security-audit` stays non-blocking — its steps are
-      `continue-on-error: true` by design, surfacing issues without
-      gating). **Still deliberately not enforced:** no required PR
-      review — this only gates PR merges, not the direct-push workflow
-      the 2-person team actually uses day to day, so it's real
-      protection for if/when a PR is used, not a workflow change. The
-      checklist's word "enforced" still overstates reality for that
-      reason, and that's a stated, deliberate trade-off — not an
-      oversight.
+      confirmed working. **Attempted and reverted 2026-08-18:** a QA
+      re-verification pass found the earlier claim that `rls-isolation`
+      was "blocking on PRs" was false — `main` had no branch protection
+      rule at all (`GET .../branches/main/protection` returned 404), so
+      the job ran but nothing stopped a failing PR from merging.
+      Enabling branch-protection required-status-checks was tried as a
+      fix, but GitHub applies required status checks to every push to
+      the protected branch, not just PR merges — it immediately
+      rejected a normal direct push to `main` with "2 of 2 required
+      status checks are expected" (the checks can't have run yet for a
+      commit that was just pushed). That breaks the team's actual
+      day-to-day workflow, so it was reverted the same day; `main` is
+      unprotected again. **Real, still-open gap:** there is currently
+      no way to gate a failing PR from merging without also blocking
+      direct pushes — the two are the same GitHub mechanism. Revisiting
+      this would mean moving to a PR-only workflow (rejected earlier for
+      this 2-person team) or accepting the gap. The checklist's word
+      "enforced" overstates reality here, and that remains a known,
+      stated gap rather than a fixed item.
 - [ ] **Vendor assessments completed (SOC 2 reports collected)** —
       `docs/vendor-risk-assessment.md` documents 9 vendors and what
       each *publicly claims* about their own compliance, but **no
