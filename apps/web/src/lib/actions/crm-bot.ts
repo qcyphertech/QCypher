@@ -6,12 +6,18 @@ import { revalidatePath } from 'next/cache'
 import { callDeepSeekWithTools, type ChatMessage, type ChatTool } from '@/lib/deepseek'
 import { CRM_BOT_SYSTEM_PROMPT } from '@/lib/bot-knowledge'
 import { logAudit } from '@/lib/actions/audit'
+import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import type { Json } from '@qcypher/db'
+
+export type CrmBotActionType =
+  | 'create_contact' | 'schedule_event' | 'create_invoice' | 'mark_order_paid' | 'add_order_discount'
+  | 'toggle_module' | 'invite_team_member'
 
 export type CrmBotProposedAction = {
   id: string
-  actionType: 'create_contact' | 'schedule_event' | 'create_invoice' | 'mark_order_paid' | 'add_order_discount'
+  actionType: CrmBotActionType
   summary: string
+  step?: { index: number; total: number }
 }
 
 export type CrmBotNavigate = { label: string; path: string }
@@ -39,12 +45,18 @@ async function requireTenantWriter() {
 
   const admin = createAdminClient()
   const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
-  const role = fresh?.app_metadata?.role ?? 'member'
+  const role = (fresh?.app_metadata?.role ?? 'member') as 'owner' | 'member' | 'read_only'
   if (role === 'read_only') throw new Error('Read-only accounts cannot use the assistant')
 
   const tenantId = await getTenantId(user.id, fresh?.app_metadata)
-  return { userId: user.id, admin, tenantId }
+  return { userId: user.id, admin, tenantId, role }
 }
+
+// toggle_module and invite_team_member touch shared tenant state (nav
+// visibility for everyone, who has account access) — same gate the
+// Settings UI itself uses (isAdmin = role === 'owner' in
+// app/(app)/settings/page.tsx), not just "not read-only".
+const OWNER_ONLY_ACTIONS = new Set<CrmBotActionType>(['toggle_module', 'invite_team_member'])
 
 const CRM_BOT_TOOLS: ChatTool[] = [
   {
@@ -165,6 +177,30 @@ const CRM_BOT_TOOLS: ChatTool[] = [
       required: ['order_number', 'discount_type', 'discount_value'],
     },
   },
+  {
+    name: 'toggle_module',
+    description: 'Propose turning an app section on or off in the workspace nav (Settings > Workspace). Only the account owner can do this — if the caller isn\'t the owner, still call it; the confirmation step will explain why it was refused.',
+    parameters: {
+      type: 'object',
+      properties: {
+        module: { type: 'string', enum: ['calendar', 'templates', 'catalog', 'orders', 'overview', 'crm_bot'] },
+        enabled: { type: 'boolean' },
+      },
+      required: ['module', 'enabled'],
+    },
+  },
+  {
+    name: 'invite_team_member',
+    description: 'Propose inviting a new team member by email. Only the account owner can do this — if the caller isn\'t the owner, still call it; the confirmation step will explain why it was refused.',
+    parameters: {
+      type: 'object',
+      properties: {
+        email: { type: 'string' },
+        role: { type: 'string', enum: ['owner', 'member', 'read_only'], description: 'Defaults to member if not specified' },
+      },
+      required: ['email'],
+    },
+  },
 ]
 
 // Only paths this bot's own knowledge base actually documents — a
@@ -197,6 +233,12 @@ function summarizeAction(type: string, data: Record<string, unknown>): string {
   if (type === 'add_order_discount') {
     const amount = data.discount_type === 'percent' ? `${data.discount_value}%` : `$${data.discount_value}`
     return `Apply a ${amount} discount to order #${data.order_number}${data.show_discount === false ? ' (hidden from customer)' : ''}`
+  }
+  if (type === 'toggle_module') {
+    return `${data.enabled ? 'Enable' : 'Disable'} the ${data.module} module`
+  }
+  if (type === 'invite_team_member') {
+    return `Invite ${data.email} as ${data.role ?? 'member'}`
   }
   return `${type}: ${JSON.stringify(data)}`
 }
@@ -308,9 +350,9 @@ export async function startCrmBotConversation(): Promise<CrmBotResult<string>> {
 }
 
 export async function sendCrmBotMessage(conversationId: string, message: string): Promise<CrmBotResult<CrmBotReply>> {
-  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string
+  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string, role: 'owner' | 'member' | 'read_only'
   try {
-    ;({ admin, tenantId } = await requireTenantWriter())
+    ;({ admin, tenantId, role } = await requireTenantWriter())
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
   }
@@ -343,7 +385,9 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
   let content: string | null
   let toolCalls: Awaited<ReturnType<typeof callDeepSeekWithTools>>['toolCalls']
   try {
-    const result = await callDeepSeekWithTools(messages, CRM_BOT_TOOLS, { maxTokens: 300 })
+    // Raised from 300: a multi-step request now returns several tool
+    // calls in one response, which needs more headroom than a single call.
+    const result = await callDeepSeekWithTools(messages, CRM_BOT_TOOLS, { maxTokens: 500 })
     content = result.content
     toolCalls = result.toolCalls
   } catch {
@@ -380,23 +424,57 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
 
   const navigate = navigateLinks.length ? navigateLinks : null
 
-  const mutationCall = toolCalls.find(c =>
-    c.name === 'create_contact' || c.name === 'schedule_event' ||
-    c.name === 'create_invoice' || c.name === 'mark_order_paid' || c.name === 'add_order_discount')
-  if (mutationCall) {
-    const actionType = mutationCall.name as CrmBotProposedAction['actionType']
-    const summary = summarizeAction(actionType, mutationCall.arguments)
+  const MUTATION_TOOL_NAMES = new Set([
+    'create_contact', 'schedule_event', 'create_invoice', 'mark_order_paid',
+    'add_order_discount', 'toggle_module', 'invite_team_member',
+  ])
+  // A single request can produce several proposed actions ("add a
+  // contact and schedule a call with them") — DeepSeek returns them as
+  // multiple toolCalls in one response. All get queued as a batch and
+  // confirmed one at a time; confirmCrmBotAction surfaces the next one
+  // automatically once the current step is resolved, so the user never
+  // has to re-type anything mid-chain.
+  const mutationCalls = toolCalls.filter(c => MUTATION_TOOL_NAMES.has(c.name))
+  if (mutationCalls.length > 0) {
+    const ownerBlocked = mutationCalls.find(c => OWNER_ONLY_ACTIONS.has(c.name as CrmBotActionType) && role !== 'owner')
+    if (ownerBlocked) {
+      const reply = "Only the account owner can do that — ask them, or an owner can do it from Settings."
+      await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
+      return { ok: true, data: { conversationId, reply, proposedAction: null, navigate } }
+    }
 
-    const { data: actionRow, error } = await admin
-      .from('crm_bot_actions')
-      .insert({ conversation_id: conversationId, tenant_id: tenantId, action_type: actionType, action_data: mutationCall.arguments as Json })
-      .select('id')
-      .single()
-    if (error || !actionRow) return { ok: false, error: 'Could not save proposed action' }
+    const batchId = mutationCalls.length > 1 ? crypto.randomUUID() : null
+    const rows = mutationCalls.map((c, i) => ({
+      conversation_id: conversationId,
+      tenant_id: tenantId,
+      action_type: c.name,
+      action_data: c.arguments as Json,
+      batch_id: batchId,
+      batch_order: i,
+    }))
+    const { data: actionRows, error } = await admin.from('crm_bot_actions').insert(rows).select('id, action_type, action_data')
+    if (error || !actionRows || actionRows.length === 0) return { ok: false, error: 'Could not save proposed action' }
 
-    const reply = `${summary} — confirm below to proceed.`
+    const first = actionRows[0]
+    const firstType = first.action_type as CrmBotActionType
+    const summary = summarizeAction(firstType, first.action_data as Record<string, unknown>)
+    const stepSuffix = actionRows.length > 1 ? ` (step 1 of ${actionRows.length})` : ''
+    const reply = `${summary}${stepSuffix} — confirm below to proceed.`
     await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
-    return { ok: true, data: { conversationId, reply, proposedAction: { id: actionRow.id, actionType, summary }, navigate } }
+    return {
+      ok: true,
+      data: {
+        conversationId,
+        reply,
+        proposedAction: {
+          id: first.id,
+          actionType: firstType,
+          summary,
+          step: actionRows.length > 1 ? { index: 1, total: actionRows.length } : undefined,
+        },
+        navigate,
+      },
+    }
   }
 
   const reply = dataAnswer ?? content ?? (navigate ? `Here's where to find that.` : "I'm not sure how to help with that — try rephrasing?")
@@ -404,10 +482,27 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
   return { ok: true, data: { conversationId, reply, proposedAction: null, navigate } }
 }
 
-export async function confirmCrmBotAction(actionId: string, approve: boolean): Promise<CrmBotResult<{ reply: string }>> {
-  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string
+async function nextBatchAction(admin: AdminClient, batchId: string | null, currentOrder: number): Promise<CrmBotProposedAction | null> {
+  if (!batchId) return null
+  const { data: rows } = await admin
+    .from('crm_bot_actions')
+    .select('id, action_type, action_data, batch_order')
+    .eq('batch_id', batchId)
+    .eq('status', 'pending')
+    .order('batch_order')
+    .limit(1)
+  const next = rows?.[0]
+  if (!next) return null
+  const { count: total } = await admin.from('crm_bot_actions').select('id', { count: 'exact', head: true }).eq('batch_id', batchId)
+  const actionType = next.action_type as CrmBotActionType
+  const summary = summarizeAction(actionType, next.action_data as Record<string, unknown>)
+  return { id: next.id, actionType, summary, step: { index: next.batch_order + 1, total: total ?? currentOrder + 2 } }
+}
+
+export async function confirmCrmBotAction(actionId: string, approve: boolean): Promise<CrmBotResult<{ reply: string; nextAction: CrmBotProposedAction | null }>> {
+  let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string, role: 'owner' | 'member' | 'read_only'
   try {
-    ;({ admin, tenantId } = await requireTenantWriter())
+    ;({ admin, tenantId, role } = await requireTenantWriter())
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Not authorized' }
   }
@@ -418,9 +513,21 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
 
   if (!approve) {
     await admin.from('crm_bot_actions').update({ status: 'failed', error_message: 'Rejected by user', completed_at: new Date().toISOString() }).eq('id', actionId)
+    // Cancel the rest of the batch too — a rejected step means the chain
+    // no longer makes sense to continue (e.g. reject the contact creation
+    // in "add a contact and schedule a call with them").
+    if (action.batch_id) {
+      await admin.from('crm_bot_actions')
+        .update({ status: 'failed', error_message: 'Cancelled — an earlier step in this chain was rejected', completed_at: new Date().toISOString() })
+        .eq('batch_id', action.batch_id).eq('status', 'pending')
+    }
     const reply = "Okay, I won't do that."
     await admin.from('chatbot_messages').insert({ conversation_id: action.conversation_id, role: 'assistant', content: reply })
-    return { ok: true, data: { reply } }
+    return { ok: true, data: { reply, nextAction: null } }
+  }
+
+  if (OWNER_ONLY_ACTIONS.has(action.action_type as CrmBotActionType) && role !== 'owner') {
+    return { ok: false, error: 'Only the account owner can do that' }
   }
 
   const data = action.action_data as Record<string, unknown>
@@ -531,6 +638,49 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
       reply = `✓ Applied a ${discountType === 'percent' ? `${discountValue}%` : `$${discountValue}`} discount to order #${order.order_number}`
       revalidatePath('/orders')
       revalidatePath(`/orders/${order.id}`)
+    } else if (action.action_type === 'toggle_module') {
+      const moduleKey = String(data.module ?? '')
+      const settingsKey = `show_${moduleKey}` as keyof TenantSettings
+      if (!(settingsKey in DEFAULT_SETTINGS)) throw new Error(`Unknown module: ${moduleKey}`)
+      const { data: tenant } = await admin.from('tenants').select('settings').eq('id', tenantId).single()
+      const merged = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}), [settingsKey]: data.enabled === true }
+      const { error } = await admin.from('tenants').update({ settings: merged }).eq('id', tenantId)
+      if (error) throw new Error(error.message)
+      reply = `✓ ${data.enabled ? 'Enabled' : 'Disabled'} the ${moduleKey} module`
+      revalidatePath('/settings', 'layout')
+      revalidatePath('/dashboard', 'layout')
+    } else if (action.action_type === 'invite_team_member') {
+      const email = String(data.email ?? '').trim().toLowerCase()
+      const inviteRole = ['owner', 'member', 'read_only'].includes(String(data.role)) ? String(data.role) : 'member'
+      if (!email) throw new Error('No email given')
+
+      const { data: { users: existingUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+      if (existingUsers.some(u => u.email?.toLowerCase() === email)) {
+        throw new Error('That email already has an account')
+      }
+
+      const { data: token, error: tokenErr } = await admin.from('invite_tokens').insert({ tenant_id: tenantId, email }).select('token').single()
+      if (tokenErr) throw new Error(tokenErr.message)
+
+      const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
+      const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${appUrl}/auth/confirm`,
+        data: { tenant_id: tenantId, role: inviteRole },
+      })
+      if (inviteErr) {
+        await admin.from('invite_tokens').delete().eq('token', token.token)
+        throw new Error(inviteErr.message)
+      }
+
+      const { data: { users } } = await admin.auth.admin.listUsers()
+      const invited = users.find(u => u.email?.toLowerCase() === email)
+      if (invited) {
+        await admin.auth.admin.updateUserById(invited.id, {
+          app_metadata: { tenant_id: tenantId, role: inviteRole, provider: 'email', providers: ['email'] },
+        })
+      }
+      reply = `✓ Invited ${email} as ${inviteRole}`
+      revalidatePath('/settings')
     } else {
       throw new Error(`Unknown action type: ${action.action_type}`)
     }
@@ -543,5 +693,6 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
   }
 
   await admin.from('chatbot_messages').insert({ conversation_id: action.conversation_id, role: 'assistant', content: reply })
-  return { ok: true, data: { reply } }
+  const nextAction = await nextBatchAction(admin, action.batch_id, action.batch_order)
+  return { ok: true, data: { reply, nextAction } }
 }

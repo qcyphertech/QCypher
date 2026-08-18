@@ -57,10 +57,14 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
       const result = await confirmCrmBotAction(pendingAction.id, approve)
       if (!result.ok) throw new Error(result.error)
       setMessages((prev) => [...prev, { role: 'assistant', content: result.data.reply }])
+      // A multi-step chain surfaces its next proposed action here instead
+      // of requiring the user to type anything — resolveAction just keeps
+      // going until nextAction comes back null.
+      setPendingAction(result.data.nextAction)
     } catch (e) {
       setMessages((prev) => [...prev, { role: 'assistant', content: e instanceof Error ? e.message : 'Something went wrong.' }])
-    } finally {
       setPendingAction(null)
+    } finally {
       setResolvingAction(false)
     }
   }
@@ -170,7 +174,13 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
             )}
 
             {pendingAction && (
-              <div style={{ background: actionBoxBg, border: actionBoxBorder, borderRadius: '12px', padding: '12px', display: 'flex', gap: '8px' }}>
+              <div style={{ background: actionBoxBg, border: actionBoxBorder, borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {pendingAction.step && (
+                  <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em', color: typingText, textTransform: 'uppercase' }}>
+                    Step {pendingAction.step.index} of {pendingAction.step.total}
+                  </span>
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={() => resolveAction(true)}
                   disabled={resolvingAction}
@@ -181,6 +191,7 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
                   disabled={resolvingAction}
                   style={{ flex: 1, background: 'transparent', color: cancelText, border: cancelBorder, borderRadius: '8px', padding: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
                 >Cancel</button>
+                </div>
               </div>
             )}
           </div>

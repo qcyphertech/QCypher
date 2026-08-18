@@ -833,6 +833,8 @@ export type Database = {
         Row: {
           action_data: Json
           action_type: string
+          batch_id: string | null
+          batch_order: number
           completed_at: string | null
           conversation_id: string
           created_at: string
@@ -844,6 +846,8 @@ export type Database = {
         Insert: {
           action_data: Json
           action_type: string
+          batch_id?: string | null
+          batch_order?: number
           completed_at?: string | null
           conversation_id: string
           created_at?: string
@@ -855,6 +859,8 @@ export type Database = {
         Update: {
           action_data?: Json
           action_type?: string
+          batch_id?: string | null
+          batch_order?: number
           completed_at?: string | null
           conversation_id?: string
           created_at?: string
