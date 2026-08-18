@@ -36,7 +36,16 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' https://secure.helcim.app https://app.cal.com",
   "style-src 'self' 'unsafe-inline'",
   "frame-src 'self' https://secure.helcim.app https://cal.com https://app.cal.com",
-  "img-src 'self' data: https://www.qcyphertech.com",
+  // blob: is required for any client-side image preview/decode step that
+  // uses URL.createObjectURL() before upload (job photos' compression
+  // pipeline loads the picked file into an <img> via a blob: URL to draw
+  // it to canvas) — without it every image, in any format, fails to
+  // decode client-side before the app ever gets to upload it. Confirmed
+  // 2026-08-18: a plain, valid PNG blob: URL failed img.onerror with
+  // this directive as it was. The Supabase Storage host is required for
+  // the same reason on the read side — job photos render via signed URLs
+  // from SUPABASE_URL, which this list didn't include.
+  `img-src 'self' data: blob: https://www.qcyphertech.com ${SUPABASE_URL}`,
   `connect-src 'self' https://nominatim.openstreetmap.org https://formspree.io ${SUPABASE_URL} wss://${new URL(SUPABASE_URL).host}`,
   "font-src 'self'",
   "frame-ancestors 'self'",
