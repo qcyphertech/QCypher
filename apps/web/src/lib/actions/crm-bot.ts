@@ -369,6 +369,23 @@ type ContactMatch = { id: string; first_name: string; last_name: string | null }
 // (capped) so a caller can refuse to guess when there's more than one.
 async function matchContactByName(admin: AdminClient, tenantId: string, name: string): Promise<{ matches: ContactMatch[] }> {
   const nameParts = name.trim().split(/\s+/)
+
+  // A multi-word name ("John Beta") is exactly how a caller is expected
+  // to disambiguate after an initial ambiguous match — filtering on
+  // first AND last name here is what makes that actually work. Without
+  // this, a fuller name still only ever matched the first word and
+  // could loop forever on the same "multiple contacts match" reply.
+  if (nameParts.length > 1) {
+    const { data: precise } = await admin
+      .from('contacts')
+      .select('id, first_name, last_name')
+      .eq('tenant_id', tenantId)
+      .ilike('first_name', `%${nameParts[0]}%`)
+      .ilike('last_name', `%${nameParts[nameParts.length - 1]}%`)
+      .limit(5)
+    if (precise && precise.length > 0) return { matches: precise as ContactMatch[] }
+  }
+
   const { data } = await admin
     .from('contacts')
     .select('id, first_name, last_name')
