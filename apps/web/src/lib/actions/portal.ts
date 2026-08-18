@@ -405,6 +405,7 @@ export async function validateAndRecordPayment(input: {
   await sendPaymentConfirmationEmails({
     admin: db,
     tenantId: input.tenantId,
+    orderId: input.orderId,
     orderNumber: order.order_number,
     amount: Number(order.total_amount),
     transactionId: verified.transactionId,
@@ -529,6 +530,7 @@ async function markOrderPaidFromStripeSession(
   await sendPaymentConfirmationEmails({
     admin: db,
     tenantId,
+    orderId: order.id,
     orderNumber: order.order_number,
     amount: Number(order.total_amount),
     transactionId: session.id,

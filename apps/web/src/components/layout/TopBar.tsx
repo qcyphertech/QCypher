@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Search, Bell, Sun, Moon, Menu, X,
+  Search, Sun, Moon, Menu, X,
   LayoutDashboard, Users, Calendar,
   Package, ShoppingBag, FileText, Settings, ShieldCheck, Home, Wallet,
   HelpCircle, LogOut, BarChart2,
@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
+import { NotificationBell } from './NotificationBell'
 
 type NavItem = {
   href:  string
@@ -202,9 +203,7 @@ export function TopBar({
               : <Moon style={{ width: '16px', height: '16px', color: 'hsl(var(--muted-foreground))' }} />}
           </button>
 
-          <button className="hidden sm:flex w-9 h-9 rounded-xl items-center justify-center hover:bg-[hsl(var(--muted))] transition-colors">
-            <Bell style={{ width: '16px', height: '16px', color: 'hsl(var(--muted-foreground))' }} />
-          </button>
+          <NotificationBell />
 
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black flex-shrink-0"
             style={{ background: 'linear-gradient(135deg,#1a3070,#4a9db5)', fontSize: '12px', letterSpacing: '-0.02em' }}>

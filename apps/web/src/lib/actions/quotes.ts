@@ -338,6 +338,14 @@ export async function signQuote(input: {
     `,
   )
 
+  await admin.from('notifications').insert({
+    tenant_id: qt.tenant_id,
+    type: 'quote_signed',
+    title: `${orderLabel} approved`,
+    body: `${input.signedByName.trim()} approved ${orderLabel} for $${Number(order.total_amount).toFixed(2)}.`,
+    link: `/orders/${qt.order_id}`,
+  })
+
   await admin.from('audit_logs').insert({
     tenant_id: qt.tenant_id,
     user_id: null,
