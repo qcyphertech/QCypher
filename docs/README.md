@@ -31,6 +31,7 @@ was last verified against the actual code.
 | [auditor-selection.md](auditor-selection.md) | Researched auditor shortlist with real sourced pricing, Type I vs. Type II framing, a GRC-platform buy-vs-skip analysis, and questions to ask before signing — decision and engagement still Thomas/Felix Sam's to make. |
 | [type1-vs-type2-decision.md](type1-vs-type2-decision.md) | Full trade-off analysis for Type I vs. Type II, narrowed to QCypher's actual situation (controls already built, evidence window already running) down to one real question: is a deal waiting on a report soon? |
 | [vercel-outage-runbook.md](vercel-outage-runbook.md) | The cost-efficient contingency for Vercel (HIGH risk, no fallback before this): what actually depends on Vercel (verified against the code — mostly just the 10 cron jobs), and how to migrate if it ever came to that. |
+| [ai-disclosure-policy.md](ai-disclosure-policy.md) | Where/how AI (DeepSeek) is used across the product, data handling, and the compliance basis for AI disclosure badges — legal citations independently verified and corrected 2026-08-18 (see `evidence/ai-disclosure/2026-08-18-legal-citation-verification.md`); still pending actual counsel review. |
 
 ## SOC 2 context
 

@@ -30,6 +30,7 @@ const POLICY_DOCS: DocEntry[] = [
   { path: 'docs/auditor-selection.md', title: 'Auditor Selection', description: 'Shortlist, pricing, questions to ask.' },
   { path: 'docs/type1-vs-type2-decision.md', title: 'Type I vs Type II Decision', description: 'Trade-off analysis for which report to pursue.' },
   { path: 'docs/vercel-outage-runbook.md', title: 'Vercel Outage Runbook', description: 'Contingency if Vercel has an extended outage.' },
+  { path: 'docs/ai-disclosure-policy.md', title: 'AI Disclosure Policy', description: 'Where AI is used, data handling, and disclosure compliance basis.' },
 ]
 
 const EVIDENCE_DOCS: DocEntry[] = [
