@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, X, Send } from 'lucide-react'
-import { startCrmBotConversation, sendCrmBotMessage, confirmCrmBotAction, type CrmBotProposedAction } from '@/lib/actions/crm-bot'
+import Link from 'next/link'
+import { Sparkles, X, Send, ArrowRight } from 'lucide-react'
+import { startCrmBotConversation, sendCrmBotMessage, confirmCrmBotAction, type CrmBotProposedAction, type CrmBotNavigate } from '@/lib/actions/crm-bot'
 
-type Msg = { role: 'user' | 'assistant'; content: string }
+type Msg = { role: 'user' | 'assistant'; content: string; navigate?: CrmBotNavigate | null }
 
 export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -40,7 +41,7 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
       const id = await ensureConversation()
       const result = await sendCrmBotMessage(id, text)
       if (!result.ok) throw new Error(result.error)
-      setMessages((prev) => [...prev, { role: 'assistant', content: result.data.reply }])
+      setMessages((prev) => [...prev, { role: 'assistant', content: result.data.reply, navigate: result.data.navigate }])
       setPendingAction(result.data.proposedAction)
     } catch (e) {
       setMessages((prev) => [...prev, { role: 'assistant', content: e instanceof Error ? e.message : 'Something went wrong.' }])
@@ -137,6 +138,23 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
                   border: m.role === 'user' ? 'none' : assistantBubbleBorder,
                   color: m.role === 'user' ? '#fff' : assistantText,
                 }}>{m.content}</p>
+                {m.navigate && (
+                  <Link
+                    href={m.navigate.path}
+                    onClick={() => setIsOpen(false)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px',
+                      fontSize: '13px', fontWeight: 700, textDecoration: 'none',
+                      color: dark ? '#5eead4' : '#0d6dff',
+                      padding: '7px 10px', borderRadius: '8px',
+                      background: dark ? 'rgba(94,234,212,0.1)' : 'rgba(13,109,255,0.08)',
+                      border: dark ? '1px solid rgba(94,234,212,0.25)' : '1px solid rgba(13,109,255,0.18)',
+                      width: 'fit-content',
+                    }}
+                  >
+                    {m.navigate.label} <ArrowRight size={13} />
+                  </Link>
+                )}
               </div>
             ))}
             {sending && (

@@ -14,10 +14,13 @@ export type CrmBotProposedAction = {
   summary: string
 }
 
+export type CrmBotNavigate = { label: string; path: string }
+
 export type CrmBotReply = {
   conversationId: string
   reply: string
   proposedAction: CrmBotProposedAction | null
+  navigate: CrmBotNavigate | null
 }
 
 // Next.js redacts thrown Server Action error messages in production —
@@ -74,7 +77,28 @@ const CRM_BOT_TOOLS: ChatTool[] = [
       required: ['title', 'starts_at'],
     },
   },
+  {
+    name: 'navigate_to',
+    description: 'Hand the user a direct link to a page described in the knowledge base — the right move whenever you can\'t perform an action yourself but know exactly where they\'d go to do it. Informational only, no confirmation needed.',
+    parameters: {
+      type: 'object',
+      properties: {
+        label: { type: 'string', description: 'Short button label, e.g. "Open Team settings"' },
+        path: { type: 'string', description: 'The exact app path from the knowledge base, e.g. "/settings"' },
+      },
+      required: ['label', 'path'],
+    },
+  },
 ]
+
+// Only paths this bot's own knowledge base actually documents — a
+// model-invented path would otherwise become a real, clickable link to a
+// 404 or (worse) somewhere unintended.
+const ALLOWED_NAVIGATE_PATHS = new Set([
+  '/dashboard', '/contacts', '/contacts/new', '/contacts/import',
+  '/orders', '/orders/rentals', '/calendar', '/overview', '/overview/expenses',
+  '/payments', '/templates', '/inventory', '/settings',
+])
 
 function summarizeAction(type: string, data: Record<string, unknown>): string {
   if (type === 'create_contact') {
@@ -146,29 +170,42 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
   } catch {
     const fallback = "Sorry, I'm having trouble responding right now — try again in a moment."
     await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: fallback })
-    return { ok: true, data: { conversationId, reply: fallback, proposedAction: null } }
+    return { ok: true, data: { conversationId, reply: fallback, proposedAction: null, navigate: null } }
   }
 
-  if (toolCalls.length > 0) {
-    const call = toolCalls[0]
-    const actionType = call.name as 'create_contact' | 'schedule_event'
-    const summary = summarizeAction(actionType, call.arguments)
+  // navigate_to is informational (a link, not a mutation) — apply it
+  // immediately rather than routing it through the propose/confirm flow
+  // create_contact and schedule_event use. A reply can carry both: text
+  // plus a link, e.g. explaining discounts and linking straight to the
+  // order that prompted the question.
+  const navigateCall = toolCalls.find(c => c.name === 'navigate_to')
+  let navigate: CrmBotNavigate | null = null
+  if (navigateCall) {
+    const path = String(navigateCall.arguments.path ?? '')
+    const label = String(navigateCall.arguments.label ?? 'Open')
+    if (ALLOWED_NAVIGATE_PATHS.has(path)) navigate = { label, path }
+  }
+
+  const mutationCall = toolCalls.find(c => c.name === 'create_contact' || c.name === 'schedule_event')
+  if (mutationCall) {
+    const actionType = mutationCall.name as 'create_contact' | 'schedule_event'
+    const summary = summarizeAction(actionType, mutationCall.arguments)
 
     const { data: actionRow, error } = await admin
       .from('crm_bot_actions')
-      .insert({ conversation_id: conversationId, tenant_id: tenantId, action_type: actionType, action_data: call.arguments as Json })
+      .insert({ conversation_id: conversationId, tenant_id: tenantId, action_type: actionType, action_data: mutationCall.arguments as Json })
       .select('id')
       .single()
     if (error || !actionRow) return { ok: false, error: 'Could not save proposed action' }
 
     const reply = `${summary} — confirm below to proceed.`
     await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
-    return { ok: true, data: { conversationId, reply, proposedAction: { id: actionRow.id, actionType, summary } } }
+    return { ok: true, data: { conversationId, reply, proposedAction: { id: actionRow.id, actionType, summary }, navigate } }
   }
 
-  const reply = content ?? "I'm not sure how to help with that — try rephrasing?"
+  const reply = content ?? (navigate ? `Here's where to find that.` : "I'm not sure how to help with that — try rephrasing?")
   await admin.from('chatbot_messages').insert({ conversation_id: conversationId, role: 'assistant', content: reply })
-  return { ok: true, data: { conversationId, reply, proposedAction: null } }
+  return { ok: true, data: { conversationId, reply, proposedAction: null, navigate } }
 }
 
 export async function confirmCrmBotAction(actionId: string, approve: boolean): Promise<CrmBotResult<{ reply: string }>> {
