@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { updateTenantSettings } from '@/lib/actions/settings'
 import { type TenantSettings } from '@/lib/types/settings'
-import { GitBranch, Calendar, FileText, Package, ShoppingBag, BarChart2, Bot, BarChart3 } from 'lucide-react'
+import { GitBranch, Calendar, FileText, Package, ShoppingBag, BarChart2, Bot } from 'lucide-react'
 
 const MODULES: Array<{
   key: keyof TenantSettings
@@ -17,9 +17,8 @@ const MODULES: Array<{
   { key: 'show_catalog',   label: 'Catalog',    description: 'Products, services & rentals',          icon: Package,     color: '#f59e0b' },
   { key: 'show_orders',    label: 'Orders',     description: 'Sales orders and invoicing',            icon: ShoppingBag, color: '#10b981' },
   { key: 'show_templates', label: 'Templates',  description: 'SMS and email quick-reply snippets',    icon: FileText,    color: '#a855f7' },
-  { key: 'show_overview',  label: 'Overview',   description: 'Income & expense summary',              icon: BarChart2,   color: '#22c55e' },
+  { key: 'show_overview',  label: 'Overview',   description: 'Income, expenses, revenue & customer health', icon: BarChart2,   color: '#22c55e' },
   { key: 'show_crm_bot',   label: 'CRM Assistant', description: 'In-app AI assistant for how-to questions and quick actions', icon: Bot, color: '#6366f1' },
-  { key: 'show_analytics', label: 'Analytics', description: 'Revenue, customer health, and job metrics dashboard', icon: BarChart3, color: '#0d6dff' },
 ]
 
 export function ModuleToggles({ settings, availableModules }: { settings: TenantSettings; availableModules?: string[] }) {

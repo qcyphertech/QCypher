@@ -40,7 +40,6 @@ const SECONDARY_NAV: NavItem[] = [
   { href: '/payments',  label: 'Payments',  icon: Wallet,      color: '#2a52a0', bg: 'rgba(42,82,160,0.12)',   flag: 'show_orders'    },
   { href: '/templates', label: 'Templates', icon: FileText,    color: '#a855f7', bg: 'rgba(168,85,247,0.12)',  flag: 'show_templates' },
   { href: '/overview',  label: 'Overview',  icon: BarChart2,   color: '#22c55e', bg: 'rgba(34,197,94,0.12)',   flag: 'show_overview'  },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart2, color: '#0d6dff', bg: 'rgba(13,109,255,0.12)', flag: 'show_analytics' },
   { href: '/support',   label: 'Support',   icon: HelpCircle,  color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)',  flag: null             },
   { href: '/settings',  label: 'Settings',  icon: Settings,    color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', flag: null             },
 ]
@@ -69,10 +68,7 @@ export function TopBar({
   const [menuOpen, setMenuOpen] = useState(false)
   const [exitPrompt, setExitPrompt] = useState(false)
 
-  // '/dashboard' is an exact-match-only prefix of its own '/dashboard/analytics'
-  // sibling — without this, both would highlight as active on the analytics page.
-  const active = (href: string) =>
-    pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
+  const active = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
   const visiblePrimary   = PRIMARY_NAV.filter(i => i.flag === null || settings[i.flag])
   const visibleSecondary = SECONDARY_NAV.filter(i => i.flag === null || settings[i.flag])

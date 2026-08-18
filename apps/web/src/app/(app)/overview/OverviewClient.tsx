@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { useState, useMemo, useEffect, useTransition } from 'react'
+import { ArrowRight, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+import { refreshMyAnalytics, type AnalyticsSnapshot } from '@/lib/actions/analytics'
+import { AnalyticsView } from '@/components/analytics/AnalyticsView'
 
 interface Order   { payment_status: string; total_amount: number; created_at: string }
 interface Expense { date: string; category: string; amount: number }
@@ -270,10 +272,23 @@ function RevenueChart({ data, showSample }: { data: { key: string; label: string
   )
 }
 
-export function OverviewClient({ orders, expenses }: { orders: Order[]; expenses: Expense[] }) {
+export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: Order[]; expenses: Expense[]; initialSnapshot: AnalyticsSnapshot | null }) {
   const [range, setRange] = useState<Range>('month')
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
+
+  const [snapshot, setSnapshot] = useState(initialSnapshot)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [refreshing, startRefresh] = useTransition()
+
+  function handleRefresh() {
+    setRefreshError(null)
+    startRefresh(async () => {
+      const result = await refreshMyAnalytics()
+      if (result.ok) setSnapshot(result.snapshot)
+      else setRefreshError(result.error)
+    })
+  }
 
   const { income, totalExp, net, byCategory, chartData } = useMemo(() => {
     if (!mounted) return { income: 0, totalExp: 0, net: 0, byCategory: [], chartData: [] }
@@ -296,14 +311,33 @@ export function OverviewClient({ orders, expenses }: { orders: Order[]; expenses
   return (
     <div style={{ background: 'hsl(var(--background))', minHeight: '100vh' }}>
       {/* Top bar */}
-      <div style={{ padding: '24px 20px 0' }}>
-        <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', marginBottom: '4px' }}>
-          Overview
-        </p>
-        <h1 style={{ fontSize: '22px', fontWeight: 900, color: 'var(--heading)', lineHeight: 1.2 }}>
-          Income & Expenses
-        </h1>
+      <div style={{ padding: '24px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'hsl(var(--muted-foreground))', marginBottom: '4px' }}>
+            Overview
+          </p>
+          <h1 style={{ fontSize: '22px', fontWeight: 900, color: 'var(--heading)', lineHeight: 1.2 }}>
+            Your Business at a Glance
+          </h1>
+          <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))', marginTop: '4px' }}>
+            {snapshot ? `Updated ${new Date(snapshot.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : 'No data yet — click Refresh to generate it'}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 700, padding: '9px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: '#4f46e5', color: '#fff', opacity: refreshing ? 0.6 : 1, flexShrink: 0 }}
+        >
+          <RefreshCw style={{ width: '14px', height: '14px' }} className={refreshing ? 'animate-spin' : ''} />
+          {refreshing ? 'Refreshing…' : 'Refresh'}
+        </button>
       </div>
+
+      {refreshError && (
+        <p style={{ margin: '10px 20px 0', fontSize: '13px', color: '#c0392b', background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: '10px', padding: '10px 14px' }}>
+          {refreshError}
+        </p>
+      )}
 
       {/* Disclaimer — prominent, above range filter */}
       <div style={{
@@ -433,6 +467,13 @@ export function OverviewClient({ orders, expenses }: { orders: Order[]; expenses
           </div>
           <RevenueChart data={chartData} showSample={showSample} />
         </div>
+
+        {/* Business health — revenue by service, customers, jobs */}
+        {snapshot && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+            <AnalyticsView snapshot={snapshot} />
+          </div>
+        )}
 
         {/* Expense breakdown */}
         {byCategory.length > 0 && (

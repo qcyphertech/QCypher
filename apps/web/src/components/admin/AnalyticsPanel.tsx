@@ -45,7 +45,7 @@ export function AnalyticsPanel({ tenants }: { tenants: TenantSummary[] }) {
         <h2 className="text-xl font-semibold">Analytics</h2>
       </div>
       <p className="text-[13px] text-[hsl(var(--muted-foreground))] -mt-2">
-        View any tenant&apos;s revenue, customer health, and job metrics — the same data they see on their own <code>/dashboard/analytics</code> page.
+        View any tenant&apos;s revenue, customer health, and job metrics — the same data they see on their own <code>/overview</code> page.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">

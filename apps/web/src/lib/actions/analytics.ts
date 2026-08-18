@@ -20,19 +20,16 @@ export type RefreshResult =
   | { ok: true; snapshot: AnalyticsSnapshot }
   | { ok: false; error: string }
 
-// Mirrors requireAdmin()'s role check in lib/actions/audit.ts — analytics
-// exposes real revenue figures, so this is owner-only, not every non-read_only
-// member (unlike e.g. blog.ts's requireTenantWriter).
-async function requireOwner() {
+// Now merged into /overview, which any tenant member can already see
+// (income/expenses there have never been owner-gated) — matching that same
+// access level rather than splitting the merged page's data by role.
+async function requireTenantMember() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
   const admin = createAdminClient()
   const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
-  const role = fresh?.app_metadata?.role ?? 'member'
-  if (role !== 'owner') throw new Error('Only the workspace owner can view analytics')
-
   const tenantId = await getTenantId(user.id, fresh?.app_metadata)
   return { user, admin, tenantId }
 }
@@ -61,25 +58,12 @@ async function fetchLatestSnapshot(admin: ReturnType<typeof createAdminClient>, 
 }
 
 /**
- * Shared refresh logic — rate-limited to once per rolling 24h per tenant,
- * regardless of whether the tenant owner or a super admin triggers it (the
- * cap exists to control DeepSeek cost per tenant, not to gate by actor). A
- * real DB check, not lib/rate-limit.ts's in-memory limiter (that one resets
- * on every cold start and can't enforce a 24h window) — mirrors
- * generateMyBlogDraft's cooldown check in lib/actions/blog.ts.
+ * Shared refresh logic — no rate limit (removed per explicit request; the
+ * weekly auto-refresh still runs regardless, this is purely the on-demand
+ * path). Each call is a real DeepSeek call, so this trades a small,
+ * uncapped per-click cost for letting tenants refresh whenever they want.
  */
 async function refreshTenantAnalytics(admin: ReturnType<typeof createAdminClient>, tenantId: string, triggeredBy: string | null): Promise<RefreshResult> {
-  const { data: recentManual } = await admin
-    .from('analytics_snapshots')
-    .select('id')
-    .eq('tenant_id', tenantId)
-    .eq('refresh_type', 'manual')
-    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-    .limit(1)
-  if ((recentManual?.length ?? 0) > 0) {
-    return { ok: false, error: 'Analytics can be refreshed once every 24 hours — try again later' }
-  }
-
   const metrics = await computeAnalyticsMetrics(admin, tenantId)
   const insights = await generateAnalyticsInsights(metrics)
 
@@ -105,14 +89,14 @@ async function refreshTenantAnalytics(admin: ReturnType<typeof createAdminClient
 }
 
 export async function getLatestAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> {
-  const { admin, tenantId } = await requireOwner()
+  const { admin, tenantId } = await requireTenantMember()
   return fetchLatestSnapshot(admin, tenantId)
 }
 
 export async function refreshMyAnalytics(): Promise<RefreshResult> {
-  const { user, admin, tenantId } = await requireOwner()
+  const { user, admin, tenantId } = await requireTenantMember()
   const result = await refreshTenantAnalytics(admin, tenantId, user.id)
-  if (result.ok) revalidatePath('/dashboard/analytics')
+  if (result.ok) revalidatePath('/overview')
   return result
 }
 
