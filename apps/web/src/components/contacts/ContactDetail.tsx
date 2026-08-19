@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2, Package } from 'lucide-react'
+import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2, Package, Activity as ActivityIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { InteractionTimeline } from '@/components/interactions/InteractionTimeline'
@@ -36,7 +36,7 @@ function initials(c: Contact) {
 }
 
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
-type TabKey = 'orders' | 'payments' | 'recurring' | 'timeline' | 'automation'
+type TabKey = 'orders' | 'payments' | 'activity' | 'recurring' | 'timeline' | 'automation'
 
 export function ContactDetail({ contact, interactions, orders = [], activity = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [] }: {
   contact: Contact
@@ -55,7 +55,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   const { canEdit, isAdmin } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
   const initialTab = searchParams.get('tab')
   const highlightOrderId = searchParams.get('order')
-  const validTabs: TabKey[] = ['orders', 'payments', 'recurring', 'timeline', 'automation']
+  const validTabs: TabKey[] = ['orders', 'payments', 'activity', 'recurring', 'timeline', 'automation']
   const [tab, setTab] = useState<TabKey>(
     validTabs.includes(initialTab as TabKey) ? (initialTab as TabKey) : 'orders'
   )
@@ -82,6 +82,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   const tabs: { key: TabKey; label: string; icon: React.ReactNode; count?: number }[] = [
     { key: 'orders', label: 'Orders', icon: <Package className="w-4 h-4" />, count: orders.length },
     { key: 'payments', label: 'Payments', icon: <CreditCard className="w-4 h-4" />, count: orders.length },
+    { key: 'activity', label: 'Order Activity', icon: <ActivityIcon className="w-4 h-4" />, count: activity.length },
     { key: 'recurring', label: 'Recurring Jobs', icon: <Repeat className="w-4 h-4" />, count: recurringJobs.length },
     { key: 'timeline', label: 'Timeline', icon: <Clock className="w-4 h-4" />, count: interactions.length },
     ...(isAdmin ? [{ key: 'automation' as TabKey, label: 'Automation', icon: <Zap className="w-4 h-4" /> }] : []),
@@ -245,6 +246,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
           {tab === 'payments' && (
             <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} highlightOrderId={highlightOrderId} />
           )}
+          {tab === 'activity' && <ActivityTimeline activity={activity} showOrderLink />}
           {tab === 'recurring' && (
             <RecurringJobsSection
               contactId={contact.id}
@@ -256,16 +258,11 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
           )}
           {tab === 'timeline' && (
             <div className="space-y-6">
+              <h2 className="text-[15px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Customer Interactions
+              </h2>
               <AddInteractionForm contactId={contact.id} />
               <InteractionTimeline interactions={interactions} />
-              {orders.length > 0 && (
-                <div className="pt-2 border-t border-[hsl(var(--border))]">
-                  <h2 className="text-[15px] font-semibold uppercase tracking-wide mb-3 mt-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    Order activity
-                  </h2>
-                  <ActivityTimeline activity={activity} showOrderLink />
-                </div>
-              )}
             </div>
           )}
           {tab === 'automation' && isAdmin && <AutomationSection contactId={contact.id} />}
