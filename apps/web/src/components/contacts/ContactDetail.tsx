@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2 } from 'lucide-react'
+import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2, Package } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { InteractionTimeline } from '@/components/interactions/InteractionTimeline'
@@ -14,6 +14,7 @@ import { PaymentRequestSection } from '@/components/contacts/PaymentRequestSecti
 import { AutomationSection } from '@/components/contacts/AutomationSection'
 import { RecurringJobsSection } from '@/components/contacts/RecurringJobsSection'
 import { ActivityTimeline, type ActivityLog } from '@/components/shared/ActivityTimeline'
+import { OrdersTable } from '@/components/orders/OrdersTable'
 import { createOrder } from '@/lib/actions/orders'
 import type { RecurringJob } from '@/lib/actions/recurring-jobs'
 import { useUserRole } from '@/lib/hooks/useUserRole'
@@ -35,7 +36,7 @@ function initials(c: Contact) {
 }
 
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
-type TabKey = 'timeline' | 'payments' | 'recurring' | 'automation'
+type TabKey = 'orders' | 'payments' | 'recurring' | 'timeline' | 'automation'
 
 export function ContactDetail({ contact, interactions, orders = [], activity = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [] }: {
   contact: Contact
@@ -54,7 +55,10 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   const { canEdit, isAdmin } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
   const initialTab = searchParams.get('tab')
   const highlightOrderId = searchParams.get('order')
-  const [tab, setTab] = useState<TabKey>(initialTab === 'payments' || initialTab === 'recurring' || initialTab === 'automation' ? initialTab : 'timeline')
+  const validTabs: TabKey[] = ['orders', 'payments', 'recurring', 'timeline', 'automation']
+  const [tab, setTab] = useState<TabKey>(
+    validTabs.includes(initialTab as TabKey) ? (initialTab as TabKey) : 'orders'
+  )
   const [creatingOrder, setCreatingOrder] = useState(false)
 
   async function handleDelete() {
@@ -76,11 +80,21 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   }
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode; count?: number }[] = [
-    { key: 'timeline', label: 'Timeline', icon: <Clock className="w-4 h-4" />, count: interactions.length },
+    { key: 'orders', label: 'Orders', icon: <Package className="w-4 h-4" />, count: orders.length },
     { key: 'payments', label: 'Payments', icon: <CreditCard className="w-4 h-4" />, count: orders.length },
     { key: 'recurring', label: 'Recurring Jobs', icon: <Repeat className="w-4 h-4" />, count: recurringJobs.length },
+    { key: 'timeline', label: 'Timeline', icon: <Clock className="w-4 h-4" />, count: interactions.length },
     ...(isAdmin ? [{ key: 'automation' as TabKey, label: 'Automation', icon: <Zap className="w-4 h-4" /> }] : []),
   ]
+
+  const contactOrders = orders.map(o => ({
+    id: o.id,
+    order_number: o.order_number,
+    total_amount: o.total_amount,
+    payment_status: o.payment_status,
+    created_at: o.created_at,
+    contact: { id: contact.id, first_name: contact.first_name, last_name: contact.last_name },
+  }))
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -210,6 +224,27 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
         </nav>
 
         <div className="flex-1 min-w-0">
+          {tab === 'orders' && (
+            orders.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[hsl(var(--border))] py-12 text-center">
+                <p className="text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>No orders yet for this customer.</p>
+              </div>
+            ) : (
+              <OrdersTable orders={contactOrders} />
+            )
+          )}
+          {tab === 'payments' && (
+            <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} highlightOrderId={highlightOrderId} />
+          )}
+          {tab === 'recurring' && (
+            <RecurringJobsSection
+              contactId={contact.id}
+              tenantId={tenantId}
+              businessName={businessName}
+              catalogItems={catalogItems}
+              jobs={recurringJobs}
+            />
+          )}
           {tab === 'timeline' && (
             <div className="space-y-6">
               <AddInteractionForm contactId={contact.id} />
@@ -223,18 +258,6 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
                 </div>
               )}
             </div>
-          )}
-          {tab === 'payments' && (
-            <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} highlightOrderId={highlightOrderId} />
-          )}
-          {tab === 'recurring' && (
-            <RecurringJobsSection
-              contactId={contact.id}
-              tenantId={tenantId}
-              businessName={businessName}
-              catalogItems={catalogItems}
-              jobs={recurringJobs}
-            />
           )}
           {tab === 'automation' && isAdmin && <AutomationSection contactId={contact.id} />}
         </div>
