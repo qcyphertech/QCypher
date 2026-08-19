@@ -7,11 +7,16 @@ export const metadata: Metadata = { title: 'Calendar' }
 export default async function CalendarPage() {
   const supabase = await createClient()
 
-  const [eventsRes, calIntegRes, gcalIntegRes, calBookingsRes, gcalEventsRes] = await Promise.all([
+  const [eventsRes, contactsRes, calIntegRes, gcalIntegRes, calBookingsRes, gcalEventsRes] = await Promise.all([
     supabase
       .from('events')
-      .select('id, title, description, starts_at, ends_at, contact_id')
+      .select('id, title, description, starts_at, ends_at, contact_id, guest_email, meeting_link')
       .order('starts_at', { ascending: true }),
+
+    supabase
+      .from('contacts')
+      .select('id, first_name, last_name, email')
+      .order('first_name'),
 
     supabase
       .from('tenant_integrations')
@@ -43,6 +48,7 @@ export default async function CalendarPage() {
       <h1 className="text-xl font-black">Calendar</h1>
       <CalendarView
         events={eventsRes.data ?? []}
+        contacts={contactsRes.data ?? []}
         calBookings={calBookingsRes.data ?? []}
         gcalEvents={gcalEventsRes.data ?? []}
         calConnected={!!calIntegRes.data}

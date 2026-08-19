@@ -10,7 +10,8 @@ import { EventModal } from './EventModal'
 import { AddEventSheet } from './AddEventSheet'
 import type { Tables } from '@/types/database'
 
-type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id'>
+type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link'>
+type Contact = { id: string; first_name: string; last_name: string | null; email: string | null }
 type ViewMode = 'month' | 'week' | '3day' | 'day'
 
 type CalBooking = {
@@ -396,12 +397,14 @@ const VIEWS: { key: ViewMode; label: string }[] = [
 // ── Main export ───────────────────────────────────────────────────────────────
 export function CalendarView({
   events,
+  contacts = [],
   calBookings = [],
   gcalEvents = [],
   calConnected = false,
   gcalConnected = false,
 }: {
   events: CalEvent[]
+  contacts?: Contact[]
   calBookings?: CalBooking[]
   gcalEvents?: GCalEvent[]
   calConnected?: boolean
@@ -431,6 +434,8 @@ export function CalendarView({
         starts_at:   b.starts_at!,
         ends_at:     b.ends_at!,
         contact_id:  null,
+        guest_email: null,
+        meeting_link: null,
       })),
     ...gcalEvents
       .filter(e => e.starts_at && e.ends_at && e.status !== 'cancelled')
@@ -441,6 +446,8 @@ export function CalendarView({
         starts_at:   e.starts_at!,
         ends_at:     e.ends_at!,
         contact_id:  null,
+        guest_email: null,
+        meeting_link: null,
       })),
   ]
 
@@ -593,7 +600,7 @@ export function CalendarView({
         />
       )}
 
-      {modal && <EventModal date={modal.date} event={modal.event} readOnly={modal.readOnly} onClose={() => setModal(null)} />}
+      {modal && <EventModal date={modal.date} event={modal.event} readOnly={modal.readOnly} contacts={contacts} onClose={() => setModal(null)} />}
     </>
   )
 }

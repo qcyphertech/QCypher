@@ -3,13 +3,14 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { X, Trash2, AlertTriangle, Clock, CalendarDays } from 'lucide-react'
+import { X, Trash2, AlertTriangle, Clock, CalendarDays, Video } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { TimePicker } from '@/components/shared/TimePicker'
 import type { Tables } from '@/types/database'
 
-type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id'>
+type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link'>
+type Contact = { id: string; first_name: string; last_name: string | null; email: string | null }
 
 function toInputDateTime(iso: string) {
   return iso.slice(0, 16)
@@ -28,10 +29,11 @@ function joinDateTime(date: string, time: string) {
   return `${date}T${time || '00:00'}`
 }
 
-export function EventModal({ date, event, readOnly, onClose }: {
+export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
   date?: Date
   event?: CalEvent
   readOnly?: boolean
+  contacts?: Contact[]
   onClose: () => void
 }) {
   const router = useRouter()
@@ -53,11 +55,24 @@ export function EventModal({ date, event, readOnly, onClose }: {
     description: event?.description ?? '',
     starts_at: defaultStart,
     ends_at: defaultEnd,
+    contact_id: event?.contact_id ?? '',
+    guest_email: event?.guest_email ?? '',
+    meeting_link: event?.meeting_link ?? '',
   })
 
   function set(field: string) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }))
+  }
+
+  function handleContactChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const contactId = e.target.value
+    const contact = contacts.find(c => c.id === contactId)
+    setForm(prev => ({
+      ...prev,
+      contact_id: contactId,
+      guest_email: contact?.email ? contact.email : prev.guest_email,
+    }))
   }
 
   async function doSave() {
@@ -76,6 +91,9 @@ export function EventModal({ date, event, readOnly, onClose }: {
         description: form.description.trim() || null,
         starts_at: toISO(form.starts_at),
         ends_at: toISO(form.ends_at),
+        contact_id: form.contact_id || null,
+        guest_email: form.guest_email.trim() || null,
+        meeting_link: form.meeting_link.trim() || null,
         tenant_id: tenantId,
       }
       if (event) {
@@ -183,9 +201,9 @@ export function EventModal({ date, event, readOnly, onClose }: {
                 <div className="flex items-center gap-2">
                   <input type="date" required value={splitDateTime(form.starts_at).date}
                     onChange={e => setForm(prev => ({ ...prev, starts_at: joinDateTime(e.target.value, splitDateTime(prev.starts_at).time) }))}
-                    className={`${input} flex-1 min-w-0`} />
+                    className={`${input} w-[128px] flex-shrink-0`} />
                   <TimePicker
-                    className="flex-shrink-0"
+                    className="flex-1"
                     value={splitDateTime(form.starts_at).time}
                     onChange={t => setForm(prev => ({ ...prev, starts_at: joinDateTime(splitDateTime(prev.starts_at).date, t) }))}
                   />
@@ -196,14 +214,39 @@ export function EventModal({ date, event, readOnly, onClose }: {
                 <div className="flex items-center gap-2">
                   <input type="date" required value={splitDateTime(form.ends_at).date}
                     onChange={e => setForm(prev => ({ ...prev, ends_at: joinDateTime(e.target.value, splitDateTime(prev.ends_at).time) }))}
-                    className={`${input} flex-1 min-w-0`} />
+                    className={`${input} w-[128px] flex-shrink-0`} />
                   <TimePicker
-                    className="flex-shrink-0"
+                    className="flex-1"
                     value={splitDateTime(form.ends_at).time}
                     onChange={t => setForm(prev => ({ ...prev, ends_at: joinDateTime(splitDateTime(prev.ends_at).date, t) }))}
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[15px] font-medium">Link a customer</label>
+                <select value={form.contact_id} onChange={handleContactChange} className={input}>
+                  <option value="">— None —</option>
+                  {contacts.map(c => (
+                    <option key={c.id} value={c.id}>{c.first_name} {c.last_name ?? ''}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[15px] font-medium">Guest email</label>
+                <input type="email" value={form.guest_email} onChange={set('guest_email')} className={input} placeholder="name@example.com" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[15px] font-medium flex items-center gap-1.5">
+                <Video className="w-3.5 h-3.5" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                Meeting link
+              </label>
+              <input value={form.meeting_link} onChange={set('meeting_link')} className={input}
+                placeholder="https://cal.com/… or https://meet.google.com/…" />
             </div>
 
             <div className="space-y-1.5">

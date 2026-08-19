@@ -1089,7 +1089,9 @@ export type Database = {
           created_at: string
           description: string | null
           ends_at: string
+          guest_email: string | null
           id: string
+          meeting_link: string | null
           starts_at: string
           tenant_id: string
           title: string
@@ -1099,7 +1101,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at: string
+          guest_email?: string | null
           id?: string
+          meeting_link?: string | null
           starts_at: string
           tenant_id: string
           title: string
@@ -1109,7 +1113,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at?: string
+          guest_email?: string | null
           id?: string
+          meeting_link?: string | null
           starts_at?: string
           tenant_id?: string
           title?: string
