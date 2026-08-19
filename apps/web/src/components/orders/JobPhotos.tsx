@@ -105,7 +105,7 @@ function NameField({ value, placeholder, onChange, onBlur, disabled }: {
   value: string
   placeholder: string
   onChange: (v: string) => void
-  onBlur?: () => void
+  onBlur?: (value: string) => void
   disabled?: boolean
 }) {
   return (
@@ -114,7 +114,11 @@ function NameField({ value, placeholder, onChange, onBlur, disabled }: {
       placeholder={placeholder}
       disabled={disabled}
       onChange={e => onChange(e.target.value)}
-      onBlur={onBlur}
+      // Reads the live DOM value at blur time, not a value captured in a
+      // render closure — blur can fire before React has re-rendered with
+      // the latest onChange, so a closure-captured value here would be
+      // stale and silently skip the save (found live-testing the rename).
+      onBlur={e => onBlur?.(e.target.value)}
       onClick={e => e.stopPropagation()}
       style={{
         width: '100%', border: '1px solid transparent', background: 'transparent',
@@ -502,7 +506,7 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
                         value={photo.name ?? ''}
                         placeholder="Name this photo…"
                         onChange={v => setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, name: v } : p))}
-                        onBlur={() => handleRename(photo, photo.name ?? '')}
+                        onBlur={v => handleRename(photo, v)}
                       />
                     </div>
                   ))}
