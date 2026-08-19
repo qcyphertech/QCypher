@@ -143,6 +143,16 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
   const [lightbox,      setLightbox]      = useState<JobPhoto | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Last name actually persisted per photo, so handleRename can tell a
+  // real edit from a no-op. photos[].name itself isn't safe to compare
+  // against — the NameField's onChange keeps it in sync with the input
+  // on every keystroke, so by the time blur fires it already equals
+  // whatever was just typed, and a "did this change?" check against it
+  // would always say no.
+  const savedNames = useRef<Record<string, string>>(
+    Object.fromEntries(initialPhotos.map(p => [p.id, p.name ?? '']))
+  )
+
   // Pending previews are local blob: URLs — must be revoked or they leak
   // for the life of the tab, and definitely on unmount.
   useEffect(() => () => { pending.forEach(p => URL.revokeObjectURL(p.previewUrl)) }, [])
@@ -241,6 +251,7 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
         })
       }
       setPhotos(prev => [...prev, ...saved])
+      saved.forEach(p => { savedNames.current[p.id] = p.name ?? '' })
       pending.forEach(p => URL.revokeObjectURL(p.previewUrl))
       setPending([])
     } catch (e) {
@@ -250,6 +261,7 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
       // for ones that already succeeded.
       if (saved.length > 0) {
         setPhotos(prev => [...prev, ...saved])
+        saved.forEach(p => { savedNames.current[p.id] = p.name ?? '' })
         const savedCount = saved.length
         setPending(prev => {
           prev.slice(0, savedCount).forEach(p => URL.revokeObjectURL(p.previewUrl))
@@ -279,10 +291,11 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
 
   async function handleRename(photo: JobPhoto, name: string) {
     const trimmed = name.trim()
-    if ((photo.name ?? '') === trimmed) return
+    if ((savedNames.current[photo.id] ?? '') === trimmed) return
     setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, name: trimmed || null } : p))
     try {
       await renameJobPhoto(photo.id, orderId, trimmed)
+      savedNames.current[photo.id] = trimmed
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : 'Could not save the name')
     }
