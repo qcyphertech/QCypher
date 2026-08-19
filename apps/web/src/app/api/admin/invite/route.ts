@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
   // magic link alone authenticates them but never makes them prove they can log
   // back in on their own, which this closes.
   await admin.auth.admin.updateUserById(invite.user.id, {
-    app_metadata: { tenant_id: tenant.id, needs_credential_setup: true },
+    app_metadata: { tenant_id: tenant.id, role: 'owner', needs_credential_setup: true },
   })
 
   // 4. Record the tenant referral (Layer 2 loyalty) — tracked for manual fulfillment
