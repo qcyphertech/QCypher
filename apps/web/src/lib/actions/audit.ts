@@ -22,7 +22,8 @@ export type AuditAction =
   | 'review_request_sent' | 'review_reminder_sent'
   | 'automation_settings_updated'
   | 'renewal_reminder_sent'
-  | 'quote_approved' | 'quote_change_requested'
+  | 'quote_sent' | 'quote_approved' | 'quote_change_requested'
+  | 'order_created' | 'order_status_changed' | 'job_status_changed'
   | 'upsell_accepted'
   | 'location_created' | 'location_updated' | 'location_paused' | 'location_activated'
   | 'staff_location_assigned' | 'staff_location_unassigned'
@@ -199,6 +200,56 @@ export async function listChatbotInteractionLogs(filters: {
   }))
 
   return { logs, total: count ?? 0 }
+}
+
+// Order/contact activity is much narrower than the full tenant audit
+// trail (getAuditLogs) — scoped to one order (or one contact's orders),
+// so it's safe for any non-read-only tenant member to see on the order
+// or contact page, not just owners the way the full trail is gated.
+const ORDER_ACTIVITY_ACTIONS: AuditAction[] = [
+  'order_created', 'order_status_changed', 'job_status_changed',
+  'quote_sent', 'quote_approved', 'quote_change_requested',
+  'payment_link_created', 'payment_link_sent', 'payment_link_paid',
+  'review_request_sent', 'review_reminder_sent', 'upsell_accepted',
+]
+
+async function requireTenantMember() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  const tenant_id = await getTenantId(user.id, user.app_metadata)
+  return { tenant_id }
+}
+
+export async function getOrderActivity(orderId: string): Promise<AuditLog[]> {
+  const { tenant_id } = await requireTenantMember()
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('audit_logs')
+    .select('id, user_email, action, resource_type, resource_id, resource_name, details, created_at')
+    .eq('tenant_id', tenant_id)
+    .eq('resource_id', orderId)
+    .in('action', ORDER_ACTIVITY_ACTIONS)
+    .order('created_at', { ascending: false })
+  return (data ?? []) as AuditLog[]
+}
+
+export async function getContactActivity(contactId: string): Promise<AuditLog[]> {
+  const { tenant_id } = await requireTenantMember()
+  const admin = createAdminClient()
+
+  const { data: contactOrders } = await admin.from('orders').select('id').eq('tenant_id', tenant_id).eq('customer_id', contactId)
+  const orderIds = (contactOrders ?? []).map(o => o.id)
+  if (orderIds.length === 0) return []
+
+  const { data } = await admin
+    .from('audit_logs')
+    .select('id, user_email, action, resource_type, resource_id, resource_name, details, created_at')
+    .eq('tenant_id', tenant_id)
+    .in('resource_id', orderIds)
+    .in('action', ORDER_ACTIVITY_ACTIONS)
+    .order('created_at', { ascending: false })
+  return (data ?? []) as AuditLog[]
 }
 
 export async function getRecentAuditLogs(limit = 5): Promise<AuditLog[]> {

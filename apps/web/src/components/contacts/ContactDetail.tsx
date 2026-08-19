@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap } from 'lucide-react'
+import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { InteractionTimeline } from '@/components/interactions/InteractionTimeline'
@@ -13,6 +13,8 @@ import { SendPortalLinkButton } from '@/components/portal/SendPortalLinkButton'
 import { PaymentRequestSection } from '@/components/contacts/PaymentRequestSection'
 import { AutomationSection } from '@/components/contacts/AutomationSection'
 import { RecurringJobsSection } from '@/components/contacts/RecurringJobsSection'
+import { ActivityTimeline, type ActivityLog } from '@/components/shared/ActivityTimeline'
+import { createOrder } from '@/lib/actions/orders'
 import type { RecurringJob } from '@/lib/actions/recurring-jobs'
 import { useUserRole } from '@/lib/hooks/useUserRole'
 import type { Tables } from '@/types/database'
@@ -35,10 +37,11 @@ function initials(c: Contact) {
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
 type TabKey = 'timeline' | 'payments' | 'recurring' | 'automation'
 
-export function ContactDetail({ contact, interactions, orders = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [] }: {
+export function ContactDetail({ contact, interactions, orders = [], activity = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [] }: {
   contact: Contact
   interactions: Interaction[]
   orders?: Order[]
+  activity?: ActivityLog[]
   tenantId: string
   tenantSlug: string
   businessName: string
@@ -49,6 +52,7 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
   const supabase = createClient()
   const { canEdit, isAdmin } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
   const [tab, setTab] = useState<TabKey>('timeline')
+  const [creatingOrder, setCreatingOrder] = useState(false)
 
   async function handleDelete() {
     if (!confirm(`Delete ${contact.first_name}? This cannot be undone.`)) return
@@ -56,6 +60,16 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
     logAudit({ action: 'contact_deleted', resource_type: 'contact', resource_id: contact.id, resource_name: `${contact.first_name} ${contact.last_name ?? ''}`.trim() })
     router.push('/contacts')
     router.refresh()
+  }
+
+  async function handleAddOrder() {
+    setCreatingOrder(true)
+    try {
+      const orderId = await createOrder({ customer_id: contact.id })
+      router.push(`/orders/${orderId}`)
+    } catch {
+      setCreatingOrder(false)
+    }
   }
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode; count?: number }[] = [
@@ -135,6 +149,17 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
 
         {/* Quick-send row */}
         <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] flex gap-2 flex-wrap">
+          {canEdit && (
+            <button
+              onClick={handleAddOrder}
+              disabled={creatingOrder}
+              className="flex items-center gap-1.5 text-[13px] font-semibold px-3 py-2 rounded-xl text-white disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}
+            >
+              {creatingOrder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              {creatingOrder ? 'Creating…' : 'Add order'}
+            </button>
+          )}
           <QuickSendButton contact={contact} channel="email" />
           <QuickSendButton contact={contact} channel="sms" />
           <SendPortalLinkButton
@@ -183,9 +208,17 @@ export function ContactDetail({ contact, interactions, orders = [], tenantId, te
 
         <div className="flex-1 min-w-0">
           {tab === 'timeline' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <AddInteractionForm contactId={contact.id} />
               <InteractionTimeline interactions={interactions} />
+              {orders.length > 0 && (
+                <div className="pt-2 border-t border-[hsl(var(--border))]">
+                  <h2 className="text-[15px] font-semibold uppercase tracking-wide mb-3 mt-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    Order activity
+                  </h2>
+                  <ActivityTimeline activity={activity} showOrderLink />
+                </div>
+              )}
             </div>
           )}
           {tab === 'payments' && (

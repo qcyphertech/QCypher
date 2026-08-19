@@ -5,6 +5,7 @@ import { OrderDetail } from '@/components/orders/OrderDetail'
 import type { Order, OrderLineItem } from '@/lib/actions/orders'
 import { getJobPhotos } from '@/lib/actions/photos'
 import { getQuoteSignature } from '@/lib/actions/quotes'
+import { getOrderActivity } from '@/lib/actions/audit'
 
 export const metadata: Metadata = { title: 'Order' }
 
@@ -14,7 +15,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const { data: { user } } = await supabase.auth.getUser()
   const tenantId = user?.app_metadata?.tenant_id ?? ''
 
-  const [{ data: order }, { data: lines }, { data: catalogItems }, { data: contacts }, { data: tenant }, photos, signature] = await Promise.all([
+  const [{ data: order }, { data: lines }, { data: catalogItems }, { data: contacts }, { data: tenant }, photos, signature, activity] = await Promise.all([
     supabase
       .from('orders')
       .select('*, contact:contacts(id, first_name, last_name, email, phone)')
@@ -40,6 +41,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       .single(),
     getJobPhotos(params.id).catch(() => []),
     getQuoteSignature(params.id).catch(() => null),
+    getOrderActivity(params.id).catch(() => []),
   ])
 
   if (!order) notFound()
@@ -57,6 +59,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       tenantId={tenantId}
       signedBy={sig?.signed_by_name ?? null}
       signedAt={sig?.signed_at ?? null}
+      activity={activity}
     />
   )
 }

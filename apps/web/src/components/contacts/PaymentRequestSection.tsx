@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Copy, MessageSquare, Mail, CheckCircle2, Filter } from 'lucide-react'
+import Link from 'next/link'
+import { Copy, MessageSquare, Mail, CheckCircle2, Filter, ArrowUpRight } from 'lucide-react'
 import { createPaymentLink, sendPaymentLinkSms, sendPaymentLinkEmail } from '@/lib/actions/payment-requests'
 import { useUserRole } from '@/lib/hooks/useUserRole'
 
@@ -104,14 +105,19 @@ export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: 
       {paid.length > 0 && (
         <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] divide-y divide-[hsl(var(--border))] overflow-hidden">
           {paid.map(order => (
-            <div key={order.id} className="flex items-center gap-3 px-4 py-3">
+            <Link
+              key={order.id}
+              href={`/orders/${order.id}`}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-[hsl(var(--muted))] transition-colors group"
+            >
               <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-medium">${Number(order.total_amount).toFixed(2)}</p>
                 <p className="text-[13px] text-[hsl(var(--muted-foreground))]">{orderLabel(order)}</p>
               </div>
               <span className={`text-[13px] px-2.5 py-1 rounded-full font-medium ${STATUS_STYLE.paid}`}>Paid</span>
-            </div>
+              <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'hsl(var(--muted-foreground))' }} />
+            </Link>
           ))}
         </div>
       )}
@@ -151,15 +157,18 @@ function OrderRow({ order, isAdmin, hasPhone, hasEmail }: { order: Order; isAdmi
 
   return (
     <div className="p-4 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[15px] font-medium">${Number(order.total_amount).toFixed(2)}</p>
-          <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">{orderLabel(order)} · {fmtDate(order.created_at)}</p>
+      <Link href={`/orders/${order.id}`} className="flex items-center justify-between gap-2 group">
+        <div className="min-w-0 flex items-center gap-1.5">
+          <div>
+            <p className="text-[15px] font-medium">${Number(order.total_amount).toFixed(2)}</p>
+            <p className="text-[13px] text-[hsl(var(--muted-foreground))] truncate">{orderLabel(order)} · {fmtDate(order.created_at)}</p>
+          </div>
+          <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'hsl(var(--muted-foreground))' }} />
         </div>
         <span className={`text-[13px] px-2.5 py-1 rounded-full font-medium capitalize flex-shrink-0 ${STATUS_STYLE[order.payment_status] ?? STATUS_STYLE.draft}`}>
           {order.payment_status}
         </span>
-      </div>
+      </Link>
 
       {isAdmin && (
         <div className="flex items-center gap-2 flex-wrap">

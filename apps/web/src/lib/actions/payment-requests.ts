@@ -130,7 +130,7 @@ export async function sendPaymentLinkSms(orderId: string): Promise<{ ok: true } 
   if ('error' in result) return { ok: false, error: result.error }
 
   await admin.from('payment_requests').update({ sent_via: 'sms' }).eq('id', req.id)
-  await logPaymentAudit(admin, tenantId, userId, 'payment_link_sent', order.id, { via: 'sms' })
+  await logPaymentAudit(admin, tenantId, userId, 'payment_link_sent', order.id, { via: 'sms', recipient_phone: phone })
   revalidatePath(`/contacts/${order.customer_id}`)
   return { ok: true }
 }
@@ -168,7 +168,7 @@ export async function sendPaymentLinkEmail(orderId: string): Promise<{ ok: true 
   if (!result.ok) return { ok: false, error: result.error }
 
   await admin.from('payment_requests').update({ sent_via: 'email' }).eq('id', req.id)
-  await logPaymentAudit(admin, tenantId, userId, 'payment_link_sent', order.id, { via: 'email' })
+  await logPaymentAudit(admin, tenantId, userId, 'payment_link_sent', order.id, { via: 'email', recipient_email: email })
   revalidatePath(`/contacts/${order.customer_id}`)
   return { ok: true }
 }

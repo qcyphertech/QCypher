@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { logAudit } from '@/lib/actions/audit'
 
 export type DiscountType = 'percent' | 'flat'
 
@@ -85,10 +86,17 @@ export async function createOrder(input: {
   const { data, error } = await supabase
     .from('orders')
     .insert({ ...input, tenant_id })
-    .select('id')
+    .select('id, order_number')
     .single()
   if (error) throw error
+  await logAudit({
+    action: 'order_created',
+    resource_type: 'order',
+    resource_id: data.id,
+    resource_name: `Order #${String(data.order_number ?? 0).padStart(4, '0')}`,
+  })
   revalidatePath('/orders')
+  if (input.customer_id) revalidatePath(`/contacts/${input.customer_id}`)
   return data.id as string
 }
 
@@ -125,11 +133,20 @@ export async function deleteOrder(id: string): Promise<{ ok: true } | { ok: fals
 
 export async function updateOrderStatus(id: string, payment_status: Order['payment_status']) {
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('orders')
     .update({ payment_status })
     .eq('id', id)
+    .select('order_number')
+    .single()
   if (error) throw error
+  await logAudit({
+    action: 'order_status_changed',
+    resource_type: 'order',
+    resource_id: id,
+    resource_name: `Order #${String(data?.order_number ?? 0).padStart(4, '0')}`,
+    details: { payment_status },
+  })
   revalidatePath('/orders')
   revalidatePath(`/orders/${id}`)
 }
@@ -147,11 +164,20 @@ export async function updateOrderCustomer(id: string, customer_id: string) {
 
 export async function updateJobStatus(id: string, job_status: Order['job_status']) {
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('orders')
     .update({ job_status })
     .eq('id', id)
+    .select('order_number')
+    .single()
   if (error) throw error
+  await logAudit({
+    action: 'job_status_changed',
+    resource_type: 'order',
+    resource_id: id,
+    resource_name: `Order #${String(data?.order_number ?? 0).padStart(4, '0')}`,
+    details: { job_status },
+  })
   revalidatePath(`/orders/${id}`)
 }
 

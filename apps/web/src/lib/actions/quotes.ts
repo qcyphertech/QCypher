@@ -165,6 +165,20 @@ Questions? Reply to this email.
 
   const okBody = await res.json().catch(() => ({}))
   console.log('[sendQuoteEmail] Resend accepted', JSON.stringify(okBody))
+
+  const tenantId = user.app_metadata?.tenant_id
+  if (tenantId) {
+    await supabase.from('audit_logs').insert({
+      tenant_id: tenantId,
+      user_id: user.id,
+      user_email: user.email ?? '',
+      action: 'quote_sent',
+      resource_type: 'order',
+      resource_id: input.orderId,
+      details: { recipient_email: input.recipientEmail },
+    })
+  }
+
   return { url, emailSent: true }
   } catch (e: unknown) {
     return { url: null, emailSent: false, emailError: e instanceof Error ? e.message : 'Unexpected error' }

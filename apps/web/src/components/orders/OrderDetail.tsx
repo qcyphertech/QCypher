@@ -14,6 +14,7 @@ import { JobPhotos } from './JobPhotos'
 import type { JobPhoto } from '@/lib/actions/photos'
 import { SendQuoteButton } from './SendQuoteButton'
 import { useRouter } from 'next/navigation'
+import { ActivityTimeline, type ActivityLog } from '@/components/shared/ActivityTimeline'
 
 function UpsellSuggestionCard({ suggestion, onAccept, onDismiss }: {
   suggestion: UpsellSuggestion
@@ -76,7 +77,7 @@ function isOverdue(line: OrderLineItem): boolean {
 
 export function OrderDetail({
   order, lines, catalogItems, contacts, businessName, initialPhotos, tenantId,
-  signedBy, signedAt,
+  signedBy, signedAt, activity = [],
 }: {
   order: Order
   lines: OrderLineItem[]
@@ -87,6 +88,7 @@ export function OrderDetail({
   tenantId: string
   signedBy: string | null
   signedAt: string | null
+  activity?: ActivityLog[]
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -520,6 +522,14 @@ export function OrderDetail({
           initialPhotos={initialPhotos}
           tenantId={tenantId}
         />
+      </div>
+
+      {/* Activity — hidden on print */}
+      <div className="no-print rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
+        <h2 className="text-[15px] font-semibold uppercase tracking-wide mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Activity
+        </h2>
+        <ActivityTimeline activity={activity} />
       </div>
 
       {/* Modals — hidden on print */}
