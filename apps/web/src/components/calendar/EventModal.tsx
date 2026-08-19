@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { X, Trash2, AlertTriangle, Clock, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
+import { TimePicker } from '@/components/shared/TimePicker'
 import type { Tables } from '@/types/database'
 
 type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id'>
@@ -16,6 +17,15 @@ function toInputDateTime(iso: string) {
 
 function toISO(local: string) {
   return new Date(local).toISOString()
+}
+
+function splitDateTime(v: string) {
+  const [date, time] = v.split('T')
+  return { date: date ?? '', time: time ?? '' }
+}
+
+function joinDateTime(date: string, time: string) {
+  return `${date}T${time || '00:00'}`
 }
 
 export function EventModal({ date, event, readOnly, onClose }: {
@@ -170,11 +180,27 @@ export function EventModal({ date, event, readOnly, onClose }: {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-[15px] font-medium">Start</label>
-                <input type="datetime-local" required value={form.starts_at} onChange={set('starts_at')} className={input} />
+                <div className="flex items-center gap-2">
+                  <input type="date" required value={splitDateTime(form.starts_at).date}
+                    onChange={e => setForm(prev => ({ ...prev, starts_at: joinDateTime(e.target.value, splitDateTime(prev.starts_at).time) }))}
+                    className={input} />
+                  <TimePicker
+                    value={splitDateTime(form.starts_at).time}
+                    onChange={t => setForm(prev => ({ ...prev, starts_at: joinDateTime(splitDateTime(prev.starts_at).date, t) }))}
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[15px] font-medium">End</label>
-                <input type="datetime-local" required value={form.ends_at} onChange={set('ends_at')} className={input} />
+                <div className="flex items-center gap-2">
+                  <input type="date" required value={splitDateTime(form.ends_at).date}
+                    onChange={e => setForm(prev => ({ ...prev, ends_at: joinDateTime(e.target.value, splitDateTime(prev.ends_at).time) }))}
+                    className={input} />
+                  <TimePicker
+                    value={splitDateTime(form.ends_at).time}
+                    onChange={t => setForm(prev => ({ ...prev, ends_at: joinDateTime(splitDateTime(prev.ends_at).date, t) }))}
+                  />
+                </div>
               </div>
             </div>
 

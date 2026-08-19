@@ -52,9 +52,10 @@ export function TimePicker({
 
   function update(part: Partial<{ hour12: string; minute: string; period: Period }>) {
     const next = { ...parsed, ...part }
-    if (!next.hour12 || !next.minute) { onChange(''); return }
+    if (!next.hour12) { onChange(''); return }
+    const minute = next.minute || '00'
     const h24 = to24h(parseInt(next.hour12, 10), next.period)
-    onChange(`${String(h24).padStart(2, '0')}:${next.minute}`)
+    onChange(`${String(h24).padStart(2, '0')}:${minute}`)
   }
 
   const selectCls = isApp ? APP_SELECT_CLS : undefined
