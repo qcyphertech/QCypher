@@ -64,6 +64,13 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
         if (!customerName.includes(q) && !label.includes(q) && !orderNum.includes(q)) return false
       }
       return true
+    }).sort((a, b) => {
+      const nameA = a.contact ? `${a.contact.first_name} ${a.contact.last_name ?? ''}`.trim().toLowerCase() : ''
+      const nameB = b.contact ? `${b.contact.first_name} ${b.contact.last_name ?? ''}`.trim().toLowerCase() : ''
+      if (!nameA && nameB) return 1
+      if (nameA && !nameB) return -1
+      if (nameA !== nameB) return nameA.localeCompare(nameB)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
   }, [orders, search, orderQuery, customerQuery, amountQuery, status, dateFrom, dateTo])
 
@@ -177,10 +184,12 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
                         {orderLabel(o)}
                       </Link>
                     </td>
-                    <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
+                    <td className="px-5 py-3.5 text-[15px]">
                       {o.contact ? (
-                        <Link href={`/contacts/${o.contact.id}`} className="hover:text-[#1a3070] transition-colors">
-                          {o.contact.first_name} {o.contact.last_name ?? ''}
+                        <Link href={`/contacts/${o.contact.id}`}
+                          className="text-[13px] font-bold text-white px-2.5 py-1 rounded-full hover:opacity-90 transition-opacity inline-block"
+                          style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}>
+                          {`${o.contact.first_name} ${o.contact.last_name ?? ''}`.trim()}
                         </Link>
                       ) : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
                     </td>
@@ -189,7 +198,7 @@ export function PaymentsTable({ orders }: { orders: Order[] }) {
                     </td>
                     <td className="px-5 py-3.5">
                       {o.contact ? (
-                        <Link href={`/contacts/${o.contact.id}#payments`}
+                        <Link href={`/contacts/${o.contact.id}?tab=payments&order=${o.id}`}
                           className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize hover:opacity-80 transition-opacity"
                           style={s} title="View payments for this customer">
                           {o.payment_status}
