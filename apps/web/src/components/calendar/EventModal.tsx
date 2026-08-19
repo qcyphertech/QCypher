@@ -201,9 +201,8 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
                 <div className="flex items-center gap-2 flex-wrap">
                   <input type="date" required value={splitDateTime(form.starts_at).date}
                     onChange={e => setForm(prev => ({ ...prev, starts_at: joinDateTime(e.target.value, splitDateTime(prev.starts_at).time) }))}
-                    className={`${input} w-[128px] flex-shrink-0`} />
+                    className={`${input} w-[118px] flex-shrink-0`} />
                   <TimePicker
-                    className="flex-1"
                     value={splitDateTime(form.starts_at).time}
                     onChange={t => setForm(prev => ({ ...prev, starts_at: joinDateTime(splitDateTime(prev.starts_at).date, t) }))}
                   />
@@ -214,9 +213,8 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
                 <div className="flex items-center gap-2 flex-wrap">
                   <input type="date" required value={splitDateTime(form.ends_at).date}
                     onChange={e => setForm(prev => ({ ...prev, ends_at: joinDateTime(e.target.value, splitDateTime(prev.ends_at).time) }))}
-                    className={`${input} w-[128px] flex-shrink-0`} />
+                    className={`${input} w-[118px] flex-shrink-0`} />
                   <TimePicker
-                    className="flex-1"
                     value={splitDateTime(form.ends_at).time}
                     onChange={t => setForm(prev => ({ ...prev, ends_at: joinDateTime(splitDateTime(prev.ends_at).date, t) }))}
                   />

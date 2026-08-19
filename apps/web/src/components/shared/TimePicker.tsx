@@ -24,17 +24,17 @@ function parseValue(value: string): { hour12: string; minute: string; period: Pe
 
 type Variant = 'app' | 'standalone'
 
-const APP_SELECT_CLS = 'flex-1 min-w-0 bg-transparent outline-none text-[15px] py-2.5 text-center cursor-pointer appearance-none'
-const APP_CONTAINER_CLS = 'flex items-stretch rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-1 min-w-[136px] flex-shrink-0 transition-shadow focus-within:ring-2 focus-within:ring-accent/40 focus-within:border-accent'
+const APP_SELECT_CLS = 'flex-1 min-w-0 bg-transparent outline-none text-[15px] py-2 text-center cursor-pointer appearance-none'
+const APP_CONTAINER_CLS = 'inline-flex items-stretch rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-1 min-w-[118px] flex-shrink-0 transition-shadow focus-within:ring-2 focus-within:ring-accent/40 focus-within:border-accent'
 
 const STANDALONE_STYLE: React.CSSProperties = {
-  display: 'flex', alignItems: 'stretch', borderRadius: '10px',
+  display: 'inline-flex', alignItems: 'stretch', borderRadius: '10px',
   border: '1px solid rgba(26,48,112,0.15)', background: '#fff', padding: '0 4px',
-  minWidth: '140px', flexShrink: 0,
+  minWidth: '120px', flexShrink: 0,
 }
 const STANDALONE_SELECT_STYLE: React.CSSProperties = {
   flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-  fontSize: '15px', padding: '12px 0', textAlign: 'center', cursor: 'pointer', color: '#171a2b',
+  fontSize: '15px', padding: '10px 0', textAlign: 'center', cursor: 'pointer', color: '#171a2b',
 }
 
 export function TimePicker({

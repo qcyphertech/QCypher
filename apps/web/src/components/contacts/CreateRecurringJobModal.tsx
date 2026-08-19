@@ -183,8 +183,9 @@ export function CreateRecurringJobModal({
           ) : (
             <div className="space-y-1.5">
               <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>First occurrence</label>
-              <div className="grid grid-cols-2 gap-2">
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+              <div className="flex items-center gap-2 flex-wrap">
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required
+                  className={inputCls} style={{ color: 'hsl(var(--foreground))', width: '128px', flexShrink: 0 }} />
                 <TimePicker value={scheduledTime} onChange={setScheduledTime} />
               </div>
               {previewNextDate && (
