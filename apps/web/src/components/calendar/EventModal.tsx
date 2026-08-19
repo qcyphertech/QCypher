@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { X, Trash2, AlertTriangle, Clock, CalendarDays, Video, Sparkles, Loader2 } from 'lucide-react'
+import { X, Trash2, AlertTriangle, Clock, CalendarDays, Video, Sparkles, Loader2, CalendarClock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { TimePicker } from '@/components/shared/TimePicker'
 import { generateGoogleMeetLink, deleteGoogleMeetEvent } from '@/lib/actions/google-meet'
+import { listCalEventTypes, generateCalBookingLink, cancelCalBooking, type CalEventType } from '@/lib/actions/cal-booking'
 import type { Tables } from '@/types/database'
 
-type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link' | 'gcal_meet_event_id'>
+type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link' | 'gcal_meet_event_id' | 'cal_booking_uid'>
 type Contact = { id: string; first_name: string; last_name: string | null; email: string | null }
 
 function toInputDateTime(iso: string) {
@@ -30,12 +31,13 @@ function joinDateTime(date: string, time: string) {
   return `${date}T${time || '00:00'}`
 }
 
-export function EventModal({ date, event, readOnly, contacts = [], gcalConnected = false, onClose }: {
+export function EventModal({ date, event, readOnly, contacts = [], gcalConnected = false, calConnected = false, onClose }: {
   date?: Date
   event?: CalEvent
   readOnly?: boolean
   contacts?: Contact[]
   gcalConnected?: boolean
+  calConnected?: boolean
   onClose: () => void
 }) {
   const router = useRouter()
@@ -46,6 +48,13 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
   const [linkError, setLinkError] = useState<string | null>(null)
   const [gcalMeetEventId, setGcalMeetEventId] = useState(event?.gcal_meet_event_id ?? null)
   const [linkIsAuto, setLinkIsAuto] = useState(false)
+  const [calBookingUid, setCalBookingUid] = useState(event?.cal_booking_uid ?? null)
+  const [showCalPanel, setShowCalPanel] = useState(false)
+  const [calEventTypes, setCalEventTypes] = useState<CalEventType[] | null>(null)
+  const [calEventTypeId, setCalEventTypeId] = useState('')
+  const [calLoadError, setCalLoadError] = useState<string | null>(null)
+  const [bookingCal, setBookingCal] = useState(false)
+  const [calError, setCalError] = useState<string | null>(null)
   const supabase = createClient()
 
   // Use the exact date/time passed in — no hardcoded 09:00 override
@@ -140,6 +149,7 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
         guest_email: form.guest_email.trim() || null,
         meeting_link: form.meeting_link.trim() || null,
         gcal_meet_event_id: gcalMeetEventId,
+        cal_booking_uid: calBookingUid,
         tenant_id: tenantId,
       }
       if (event) {
@@ -171,9 +181,45 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
       await supabase.from('events').delete().eq('id', event.id)
       logAudit({ action: 'event_deleted', resource_type: 'event', resource_id: event.id, resource_name: event.title })
       if (gcalMeetEventId) deleteGoogleMeetEvent(gcalMeetEventId)
+      if (calBookingUid) cancelCalBooking(calBookingUid)
       router.refresh()
       onClose()
     })
+  }
+
+  async function handleOpenCalPanel() {
+    setShowCalPanel(true)
+    if (calEventTypes) return
+    setCalLoadError(null)
+    const result = await listCalEventTypes()
+    if (!result.ok) { setCalLoadError(result.error); return }
+    setCalEventTypes(result.data)
+    if (result.data.length === 1) setCalEventTypeId(String(result.data[0].id))
+  }
+
+  async function handleCreateCalBooking() {
+    setCalError(null)
+    if (!calEventTypeId) { setCalError('Pick an event type.'); return }
+    if (!form.guest_email.trim()) { setCalError('Add a guest email — Cal.com requires an attendee.'); return }
+    setBookingCal(true)
+    const prevBookingUid = calBookingUid
+    const result = await generateCalBookingLink({
+      eventTypeId: Number(calEventTypeId),
+      startsAt: toISO(form.starts_at),
+      guestName: (() => {
+        const contact = contacts.find(c => c.id === form.contact_id)
+        return contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : 'Guest'
+      })(),
+      guestEmail: form.guest_email.trim(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    })
+    setBookingCal(false)
+    if (!result.ok) { setCalError(result.error); return }
+    setForm(prev => ({ ...prev, meeting_link: result.data.meetingLink }))
+    setCalBookingUid(result.data.bookingUid)
+    setLinkIsAuto(false)
+    setShowCalPanel(false)
+    if (prevBookingUid) cancelCalBooking(prevBookingUid)
   }
 
   // Read-only view for gcal / cal_ events
@@ -292,7 +338,7 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
               </label>
               <div className="flex items-center gap-2 flex-wrap">
                 <input value={form.meeting_link}
-                  onChange={e => { set('meeting_link')(e); setGcalMeetEventId(null); setLinkIsAuto(false) }}
+                  onChange={e => { set('meeting_link')(e); setGcalMeetEventId(null); setCalBookingUid(null); setLinkIsAuto(false) }}
                   className={`${input} flex-1 min-w-[180px]`}
                   placeholder="https://cal.com/… or https://meet.google.com/…" />
                 {gcalConnected && (
@@ -303,12 +349,62 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
                     {generatingLink ? 'Generating…' : form.meeting_link ? 'Regenerate' : 'Generate Google Meet link'}
                   </button>
                 )}
+                {calConnected && (
+                  <button type="button" onClick={handleOpenCalPanel}
+                    className="flex items-center gap-1.5 text-[13px] font-semibold px-3 py-2 rounded-xl flex-shrink-0"
+                    style={{ background: 'rgba(74,157,181,0.12)', color: '#2a7a8c' }}>
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    Book via Cal.com
+                  </button>
+                )}
               </div>
               {linkError && <p className="text-[13px] text-red-500">{linkError}</p>}
               {!linkError && gcalConnected && !form.meeting_link && (
                 <p className="text-[12.5px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   A Google Meet link is generated automatically once you add a title and time.
                 </p>
+              )}
+
+              {showCalPanel && (
+                <div className="rounded-xl border p-3 space-y-2.5" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}>
+                  {calLoadError ? (
+                    <p className="text-[13px] text-red-500">{calLoadError}</p>
+                  ) : calEventTypes === null ? (
+                    <p className="text-[13px] flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading your Cal.com event types…
+                    </p>
+                  ) : calEventTypes.length === 0 ? (
+                    <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      No event types found on your Cal.com account.
+                    </p>
+                  ) : (
+                    <>
+                      <label className="text-[13px] font-medium">Event type</label>
+                      <select value={calEventTypeId} onChange={e => setCalEventTypeId(e.target.value)} className={input}>
+                        <option value="">— Select —</option>
+                        {calEventTypes.map(et => (
+                          <option key={et.id} value={et.id}>{et.title}</option>
+                        ))}
+                      </select>
+                      <p className="text-[12.5px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        Books at the Start time above, using the Guest email field. Must fall within that event type's available hours on Cal.com.
+                      </p>
+                      {calError && <p className="text-[13px] text-red-500">{calError}</p>}
+                      <div className="flex gap-2">
+                        <button type="button" onClick={handleCreateCalBooking} disabled={bookingCal}
+                          className="flex items-center gap-1.5 text-[13px] font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-60"
+                          style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}>
+                          {bookingCal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarClock className="w-3.5 h-3.5" />}
+                          {bookingCal ? 'Booking…' : 'Create booking'}
+                        </button>
+                        <button type="button" onClick={() => setShowCalPanel(false)}
+                          className="text-[13px] font-semibold px-3 py-1.5 rounded-lg" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
 

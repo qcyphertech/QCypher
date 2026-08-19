@@ -26,7 +26,11 @@ export async function GET() {
     client_id:     process.env.CAL_CLIENT_ID!,
     redirect_uri:  `${process.env.APP_URL}/api/cal/callback`,
     response_type: 'code',
-    scope:         'READ_BOOKING READ_PROFILE',
+    // Scope names per Cal.com's real OAuth catalog — the previous
+    // READ_BOOKING/READ_PROFILE strings were wrong (silently ignored/invalid),
+    // not just insufficient. EVENT_TYPE_READ + BOOKING_WRITE are new, needed
+    // to list event types and create bookings on demand.
+    scope:         'BOOKING_READ BOOKING_WRITE PROFILE_READ EVENT_TYPE_READ',
     state,
   })
 

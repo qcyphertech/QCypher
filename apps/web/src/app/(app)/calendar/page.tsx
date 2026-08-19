@@ -10,7 +10,7 @@ export default async function CalendarPage() {
   const [eventsRes, contactsRes, calIntegRes, gcalIntegRes, calBookingsRes, gcalEventsRes] = await Promise.all([
     supabase
       .from('events')
-      .select('id, title, description, starts_at, ends_at, contact_id, guest_email, meeting_link, gcal_meet_event_id')
+      .select('id, title, description, starts_at, ends_at, contact_id, guest_email, meeting_link, gcal_meet_event_id, cal_booking_uid')
       .order('starts_at', { ascending: true }),
 
     supabase

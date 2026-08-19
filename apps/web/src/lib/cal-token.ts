@@ -1,0 +1,53 @@
+import { createClient } from '@/lib/supabase/server'
+import { encryptToken, decryptToken } from '@/lib/cal-encrypt'
+
+const REFRESH_BUFFER_MS = 2 * 60 * 1000
+
+export async function getValidCalAccessToken(tenantId: string): Promise<string | null> {
+  const supabase = await createClient()
+  const { data: row } = await supabase
+    .from('tenant_integrations')
+    .select('access_token_enc, refresh_token_enc, token_expires_at')
+    .eq('tenant_id', tenantId)
+    .eq('provider', 'cal_com')
+    .maybeSingle()
+
+  if (!row?.access_token_enc) return null
+
+  const stillValid = row.token_expires_at
+    ? new Date(row.token_expires_at).getTime() - REFRESH_BUFFER_MS > Date.now()
+    : false
+
+  if (stillValid) return decryptToken(row.access_token_enc)
+  if (!row.refresh_token_enc) return null
+
+  const refreshToken = decryptToken(row.refresh_token_enc)
+  const res = await fetch('https://app.cal.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type:    'refresh_token',
+      refresh_token: refreshToken,
+      client_id:     process.env.CAL_CLIENT_ID!,
+      client_secret: process.env.CAL_CLIENT_SECRET!,
+    }),
+  })
+  const body = await res.json()
+  if (!res.ok || !body.access_token) {
+    console.error('[cal-token] refresh failed', JSON.stringify(body))
+    return null
+  }
+
+  const expiresAt = body.expires_in
+    ? new Date(Date.now() + body.expires_in * 1000).toISOString()
+    : null
+
+  await supabase.from('tenant_integrations').update({
+    access_token_enc: encryptToken(body.access_token),
+    refresh_token_enc: body.refresh_token ? encryptToken(body.refresh_token) : undefined,
+    token_expires_at: expiresAt,
+    updated_at: new Date().toISOString(),
+  }).eq('tenant_id', tenantId).eq('provider', 'cal_com')
+
+  return body.access_token as string
+}

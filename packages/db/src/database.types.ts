@@ -1085,6 +1085,7 @@ export type Database = {
       }
       events: {
         Row: {
+          cal_booking_uid: string | null
           contact_id: string | null
           created_at: string
           description: string | null
@@ -1098,6 +1099,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          cal_booking_uid?: string | null
           contact_id?: string | null
           created_at?: string
           description?: string | null
@@ -1111,6 +1113,7 @@ export type Database = {
           title: string
         }
         Update: {
+          cal_booking_uid?: string | null
           contact_id?: string | null
           created_at?: string
           description?: string | null
