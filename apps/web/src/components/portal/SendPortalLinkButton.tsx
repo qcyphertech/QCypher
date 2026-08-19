@@ -11,6 +11,7 @@ export function SendPortalLinkButton({
   businessName,
   hasEmail,
   hasPhone,
+  iconOnly = false,
 }: {
   contactId: string
   tenantId: string
@@ -18,6 +19,7 @@ export function SendPortalLinkButton({
   businessName: string
   hasEmail: boolean
   hasPhone: boolean
+  iconOnly?: boolean
 }) {
   const [busy, setBusy] = useState<'email' | 'sms' | null>(null)
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
@@ -40,6 +42,38 @@ export function SendPortalLinkButton({
     setResult(res.ok ? { ok: true, message: 'Portal link sent via SMS' } : { ok: false, message: res.error ?? 'Something went wrong' })
     setBusy(null)
     if (res.ok) setTimeout(() => setResult(null), 3000)
+  }
+
+  if (iconOnly) {
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap relative">
+        {hasEmail && (
+          <button
+            onClick={handleEmail}
+            disabled={busy !== null}
+            title="Send client portal link via email"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-accent/10 hover:text-accent transition-colors disabled:opacity-50"
+          >
+            <Mail className="w-3.5 h-3.5" />
+          </button>
+        )}
+        {hasPhone && (
+          <button
+            onClick={handleSms}
+            disabled={busy !== null}
+            title="Send client portal link via SMS"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-accent/10 hover:text-accent transition-colors disabled:opacity-50"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+          </button>
+        )}
+        {result && (
+          <p className={`absolute top-full left-0 mt-1 text-[12.5px] font-medium whitespace-nowrap ${result.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+            {result.message}
+          </p>
+        )}
+      </div>
+    )
   }
 
   return (

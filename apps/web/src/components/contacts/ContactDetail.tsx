@@ -144,30 +144,45 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
           </div>
         </div>
 
-        {/* Info + quick-action chips */}
-        <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-          {contact.email && (
-            <ChipLink href={`mailto:${contact.email}`} icon={<Mail className="w-3 h-3" />}>{contact.email}</ChipLink>
-          )}
-          {contact.phone && (
-            <ChipLink href={`tel:${contact.phone}`} icon={<Phone className="w-3 h-3" />}>{contact.phone}</ChipLink>
-          )}
-          {contact.address && (
-            <Chip icon={<MapPin className="w-3 h-3" />}>{contact.address}</Chip>
-          )}
-          {contact.source && (
-            <Chip icon={<Building2 className="w-3 h-3" />}>{contact.source}</Chip>
-          )}
-          <QuickSendButton contact={contact} channel="email" />
-          <QuickSendButton contact={contact} channel="sms" />
-          <SendPortalLinkButton
-            contactId={contact.id}
-            tenantId={tenantId}
-            tenantSlug={tenantSlug}
-            businessName={businessName}
-            hasEmail={!!contact.email}
-            hasPhone={!!contact.phone}
-          />
+        {/* Info lane */}
+        {(contact.email || contact.phone || contact.address || contact.source) && (
+          <div className="mt-3.5 flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold uppercase tracking-wider w-14 flex-shrink-0" style={{ color: 'hsl(var(--muted-foreground) / 0.7)' }}>
+              Contact
+            </span>
+            {contact.email && (
+              <ChipLink href={`mailto:${contact.email}`} icon={<Mail className="w-3 h-3" />}>{contact.email}</ChipLink>
+            )}
+            {contact.phone && (
+              <ChipLink href={`tel:${contact.phone}`} icon={<Phone className="w-3 h-3" />}>{contact.phone}</ChipLink>
+            )}
+            {contact.address && (
+              <Chip icon={<MapPin className="w-3 h-3" />}>{contact.address}</Chip>
+            )}
+            {contact.source && (
+              <Chip icon={<Building2 className="w-3 h-3" />}>{contact.source}</Chip>
+            )}
+          </div>
+        )}
+
+        {/* Quick-send lane */}
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-bold uppercase tracking-wider w-14 flex-shrink-0" style={{ color: 'hsl(var(--muted-foreground) / 0.7)' }}>
+            Quick send
+          </span>
+          <div className="flex items-center gap-1.5">
+            <QuickSendButton contact={contact} channel="email" iconOnly />
+            <QuickSendButton contact={contact} channel="sms" iconOnly />
+            <SendPortalLinkButton
+              contactId={contact.id}
+              tenantId={tenantId}
+              tenantSlug={tenantSlug}
+              businessName={businessName}
+              hasEmail={!!contact.email}
+              hasPhone={!!contact.phone}
+              iconOnly
+            />
+          </div>
         </div>
 
         {contact.tags && contact.tags.length > 0 && (

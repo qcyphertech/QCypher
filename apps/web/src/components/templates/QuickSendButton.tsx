@@ -13,10 +13,12 @@ export function QuickSendButton({
   contact,
   businessName = '',
   channel = 'email',
+  iconOnly = false,
 }: {
   contact:       Contact
   businessName?: string
   channel?:      'email' | 'sms'
+  iconOnly?:     boolean
 }) {
   const [open,      setOpen]      = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
@@ -77,13 +79,23 @@ export function QuickSendButton({
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-[15px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] px-3 py-1.5 rounded-lg transition-colors"
-      >
-        <Icon className="w-3.5 h-3.5" />
-        Quick {channel}
-      </button>
+      {iconOnly ? (
+        <button
+          onClick={() => setOpen(true)}
+          title={`Quick ${channel}`}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-accent/10 hover:text-accent transition-colors"
+        >
+          <Icon className="w-3.5 h-3.5" />
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 text-[15px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <Icon className="w-3.5 h-3.5" />
+          Quick {channel}
+        </button>
+      )}
 
       {open && (
         <div
