@@ -100,82 +100,63 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header card */}
       <div
-        className="bg-[hsl(var(--card))] rounded-3xl border border-[hsl(var(--border))] p-6"
+        className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-4"
         style={{ boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 8px 24px rgba(15,23,42,0.05)' }}
       >
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-3">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold flex-shrink-0 text-white"
+            className="w-[42px] h-[42px] rounded-xl flex items-center justify-center text-[15px] font-bold flex-shrink-0 text-white"
             style={{ background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent) / 0.65))' }}
           >
             {initials(contact)}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg font-semibold tracking-tight">{contact.first_name} {contact.last_name}</h1>
-              <span className={cn('text-[13px] px-2 py-0.5 rounded-full font-semibold capitalize', STATUS_COLOR[contact.status])}>
+              <h1 className="text-[15.5px] font-bold tracking-tight">{contact.first_name} {contact.last_name}</h1>
+              <span className={cn('text-[11.5px] px-2 py-0.5 rounded-full font-bold capitalize', STATUS_COLOR[contact.status])}>
                 {contact.status}
               </span>
             </div>
-            {contact.company && <p className="text-[15px] text-[hsl(var(--muted-foreground))] mt-0.5">{contact.company}</p>}
+            {contact.company && <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">{contact.company}</p>}
           </div>
-          {canEdit && (
-            <div className="flex gap-1.5 flex-shrink-0">
-              <Link href={`/contacts/${contact.id}/edit`} className="p-2 rounded-xl hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] transition-colors">
-                <Pencil className="w-4 h-4" />
-              </Link>
-              <button onClick={handleDelete} className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-[hsl(var(--muted-foreground))] hover:text-red-500 transition-colors">
-                <Trash2 className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {canEdit && (
+              <button
+                onClick={handleAddOrder}
+                disabled={creatingOrder}
+                className="flex items-center gap-1.5 text-[12.5px] font-bold px-3 py-1.5 rounded-lg text-white disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}
+              >
+                {creatingOrder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                {creatingOrder ? 'Creating…' : 'Add order'}
               </button>
-            </div>
-          )}
+            )}
+            {canEdit && (
+              <>
+                <Link href={`/contacts/${contact.id}/edit`} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] transition-colors">
+                  <Pencil className="w-3.5 h-3.5" />
+                </Link>
+                <button onClick={handleDelete} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[hsl(var(--muted-foreground))] hover:text-red-500 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Contact fields */}
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Info + quick-action chips */}
+        <div className="mt-3 flex items-center gap-1.5 flex-wrap">
           {contact.email && (
-            <InfoRow icon={<Mail className="w-3.5 h-3.5" />}>
-              <a href={`mailto:${contact.email}`} className="hover:text-accent transition-colors">{contact.email}</a>
-            </InfoRow>
+            <ChipLink href={`mailto:${contact.email}`} icon={<Mail className="w-3 h-3" />}>{contact.email}</ChipLink>
           )}
           {contact.phone && (
-            <InfoRow icon={<Phone className="w-3.5 h-3.5" />}>
-              <a href={`tel:${contact.phone}`} className="hover:text-accent transition-colors">{contact.phone}</a>
-            </InfoRow>
+            <ChipLink href={`tel:${contact.phone}`} icon={<Phone className="w-3 h-3" />}>{contact.phone}</ChipLink>
           )}
           {contact.address && (
-            <InfoRow icon={<MapPin className="w-3.5 h-3.5" />}>{contact.address}</InfoRow>
+            <Chip icon={<MapPin className="w-3 h-3" />}>{contact.address}</Chip>
           )}
           {contact.source && (
-            <InfoRow icon={<Building2 className="w-3.5 h-3.5" />}>Source: {contact.source}</InfoRow>
-          )}
-        </div>
-
-        {contact.tags && contact.tags.length > 0 && (
-          <div className="mt-4 flex items-center gap-2 flex-wrap">
-            <Tag className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-            {contact.tags.map(tag => (
-              <span key={tag} className="text-[13px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-semibold">{tag}</span>
-            ))}
-          </div>
-        )}
-
-        {contact.notes && (
-          <p className="mt-4 text-[15px] text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))] pt-4">{contact.notes}</p>
-        )}
-
-        {/* Quick-send row */}
-        <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] flex gap-2 flex-wrap">
-          {canEdit && (
-            <button
-              onClick={handleAddOrder}
-              disabled={creatingOrder}
-              className="flex items-center gap-1.5 text-[13px] font-semibold px-3 py-2 rounded-xl text-white disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}
-            >
-              {creatingOrder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              {creatingOrder ? 'Creating…' : 'Add order'}
-            </button>
+            <Chip icon={<Building2 className="w-3 h-3" />}>{contact.source}</Chip>
           )}
           <QuickSendButton contact={contact} channel="email" />
           <QuickSendButton contact={contact} channel="sms" />
@@ -188,6 +169,19 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
             hasPhone={!!contact.phone}
           />
         </div>
+
+        {contact.tags && contact.tags.length > 0 && (
+          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+            <Tag className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+            {contact.tags.map(tag => (
+              <span key={tag} className="text-[12px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-semibold">{tag}</span>
+            ))}
+          </div>
+        )}
+
+        {contact.notes && (
+          <p className="mt-3 text-[13.5px] text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))] pt-3">{contact.notes}</p>
+        )}
       </div>
 
       {/* Sidebar tabs + content */}
@@ -266,11 +260,22 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   )
 }
 
-function InfoRow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+const chipCls = 'inline-flex items-center gap-1.5 text-[12.5px] font-semibold px-2.5 py-1.5 rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]'
+
+function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 text-[15px] text-[hsl(var(--foreground))]">
-      <span className="text-[hsl(var(--muted-foreground))] flex-shrink-0">{icon}</span>
+    <span className={chipCls}>
+      <span className="text-accent flex-shrink-0">{icon}</span>
       {children}
-    </div>
+    </span>
+  )
+}
+
+function ChipLink({ href, icon, children }: { href: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <a href={href} className={cn(chipCls, 'hover:bg-[hsl(var(--border))] transition-colors')}>
+      <span className="text-accent flex-shrink-0">{icon}</span>
+      {children}
+    </a>
   )
 }
