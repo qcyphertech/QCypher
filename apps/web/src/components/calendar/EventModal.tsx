@@ -176,7 +176,7 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
     <>
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
         <div
-          className="w-full sm:max-w-md bg-[hsl(var(--card))] rounded-t-2xl sm:rounded-2xl shadow-card flex flex-col"
+          className="w-full sm:max-w-lg bg-[hsl(var(--card))] rounded-t-2xl sm:rounded-2xl shadow-card flex flex-col"
           style={{ maxHeight: '92svh' }}
           onClick={e => e.stopPropagation()}
         >
@@ -198,7 +198,7 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-[15px] font-medium">Start</label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <input type="date" required value={splitDateTime(form.starts_at).date}
                     onChange={e => setForm(prev => ({ ...prev, starts_at: joinDateTime(e.target.value, splitDateTime(prev.starts_at).time) }))}
                     className={`${input} w-[128px] flex-shrink-0`} />
@@ -211,7 +211,7 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[15px] font-medium">End</label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <input type="date" required value={splitDateTime(form.ends_at).date}
                     onChange={e => setForm(prev => ({ ...prev, ends_at: joinDateTime(e.target.value, splitDateTime(prev.ends_at).time) }))}
                     className={`${input} w-[128px] flex-shrink-0`} />
