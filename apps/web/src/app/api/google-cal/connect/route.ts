@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import crypto from 'crypto'
 
 const SCOPES = [
-  'https://www.googleapis.com/auth/calendar.readonly',
+  'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/userinfo.email',
 ].join(' ')
 

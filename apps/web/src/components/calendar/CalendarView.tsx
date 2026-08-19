@@ -10,7 +10,7 @@ import { EventModal } from './EventModal'
 import { AddEventSheet } from './AddEventSheet'
 import type { Tables } from '@/types/database'
 
-type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link'>
+type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link' | 'gcal_meet_event_id'>
 type Contact = { id: string; first_name: string; last_name: string | null; email: string | null }
 type ViewMode = 'month' | 'week' | '3day' | 'day'
 
@@ -436,6 +436,7 @@ export function CalendarView({
         contact_id:  null,
         guest_email: null,
         meeting_link: null,
+        gcal_meet_event_id: null,
       })),
     ...gcalEvents
       .filter(e => e.starts_at && e.ends_at && e.status !== 'cancelled')
@@ -448,6 +449,7 @@ export function CalendarView({
         contact_id:  null,
         guest_email: null,
         meeting_link: null,
+        gcal_meet_event_id: null,
       })),
   ]
 
@@ -600,7 +602,7 @@ export function CalendarView({
         />
       )}
 
-      {modal && <EventModal date={modal.date} event={modal.event} readOnly={modal.readOnly} contacts={contacts} onClose={() => setModal(null)} />}
+      {modal && <EventModal date={modal.date} event={modal.event} readOnly={modal.readOnly} contacts={contacts} gcalConnected={gcalConnected} onClose={() => setModal(null)} />}
     </>
   )
 }

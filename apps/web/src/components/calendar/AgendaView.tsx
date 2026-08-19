@@ -6,7 +6,7 @@ import { Calendar, Plus } from 'lucide-react'
 import { EventModal } from './EventModal'
 import type { Tables } from '@/types/database'
 
-type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link'>
+type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link' | 'gcal_meet_event_id'>
 
 function dayLabel(date: Date): string {
   if (isToday(date)) return 'Today'

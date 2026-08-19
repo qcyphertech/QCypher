@@ -1089,6 +1089,7 @@ export type Database = {
           created_at: string
           description: string | null
           ends_at: string
+          gcal_meet_event_id: string | null
           guest_email: string | null
           id: string
           meeting_link: string | null
@@ -1101,6 +1102,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at: string
+          gcal_meet_event_id?: string | null
           guest_email?: string | null
           id?: string
           meeting_link?: string | null
@@ -1113,6 +1115,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at?: string
+          gcal_meet_event_id?: string | null
           guest_email?: string | null
           id?: string
           meeting_link?: string | null

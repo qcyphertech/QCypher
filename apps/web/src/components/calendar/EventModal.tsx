@@ -3,13 +3,14 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { X, Trash2, AlertTriangle, Clock, CalendarDays, Video } from 'lucide-react'
+import { X, Trash2, AlertTriangle, Clock, CalendarDays, Video, Sparkles, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { TimePicker } from '@/components/shared/TimePicker'
+import { generateGoogleMeetLink, deleteGoogleMeetEvent } from '@/lib/actions/google-meet'
 import type { Tables } from '@/types/database'
 
-type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link'>
+type CalEvent = Pick<Tables<'events'>, 'id' | 'title' | 'description' | 'starts_at' | 'ends_at' | 'contact_id' | 'guest_email' | 'meeting_link' | 'gcal_meet_event_id'>
 type Contact = { id: string; first_name: string; last_name: string | null; email: string | null }
 
 function toInputDateTime(iso: string) {
@@ -29,17 +30,21 @@ function joinDateTime(date: string, time: string) {
   return `${date}T${time || '00:00'}`
 }
 
-export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
+export function EventModal({ date, event, readOnly, contacts = [], gcalConnected = false, onClose }: {
   date?: Date
   event?: CalEvent
   readOnly?: boolean
   contacts?: Contact[]
+  gcalConnected?: boolean
   onClose: () => void
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [showPastConfirm, setShowPastConfirm] = useState(false)
+  const [generatingLink, setGeneratingLink] = useState(false)
+  const [linkError, setLinkError] = useState<string | null>(null)
+  const [gcalMeetEventId, setGcalMeetEventId] = useState(event?.gcal_meet_event_id ?? null)
   const supabase = createClient()
 
   // Use the exact date/time passed in — no hardcoded 09:00 override
@@ -75,6 +80,24 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
     }))
   }
 
+  async function handleGenerateMeetLink() {
+    setLinkError(null)
+    if (!form.title.trim()) { setLinkError('Add a title first.'); return }
+    if (new Date(form.ends_at) <= new Date(form.starts_at)) { setLinkError('End time must be after start time.'); return }
+    setGeneratingLink(true)
+    const prevGcalEventId = gcalMeetEventId
+    const result = await generateGoogleMeetLink({
+      title: form.title.trim(),
+      startsAt: toISO(form.starts_at),
+      endsAt: toISO(form.ends_at),
+    })
+    setGeneratingLink(false)
+    if (!result.ok) { setLinkError(result.error); return }
+    setForm(prev => ({ ...prev, meeting_link: result.data.meetingLink }))
+    setGcalMeetEventId(result.data.gcalEventId)
+    if (prevGcalEventId) deleteGoogleMeetEvent(prevGcalEventId)
+  }
+
   async function doSave() {
     setError(null)
     if (new Date(form.ends_at) <= new Date(form.starts_at)) {
@@ -94,6 +117,7 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
         contact_id: form.contact_id || null,
         guest_email: form.guest_email.trim() || null,
         meeting_link: form.meeting_link.trim() || null,
+        gcal_meet_event_id: gcalMeetEventId,
         tenant_id: tenantId,
       }
       if (event) {
@@ -124,6 +148,7 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
     startTransition(async () => {
       await supabase.from('events').delete().eq('id', event.id)
       logAudit({ action: 'event_deleted', resource_type: 'event', resource_id: event.id, resource_name: event.title })
+      if (gcalMeetEventId) deleteGoogleMeetEvent(gcalMeetEventId)
       router.refresh()
       onClose()
     })
@@ -243,8 +268,20 @@ export function EventModal({ date, event, readOnly, contacts = [], onClose }: {
                 <Video className="w-3.5 h-3.5" style={{ color: 'hsl(var(--muted-foreground))' }} />
                 Meeting link
               </label>
-              <input value={form.meeting_link} onChange={set('meeting_link')} className={input}
-                placeholder="https://cal.com/… or https://meet.google.com/…" />
+              <div className="flex items-center gap-2 flex-wrap">
+                <input value={form.meeting_link} onChange={e => { set('meeting_link')(e); setGcalMeetEventId(null) }}
+                  className={`${input} flex-1 min-w-[180px]`}
+                  placeholder="https://cal.com/… or https://meet.google.com/…" />
+                {gcalConnected && (
+                  <button type="button" onClick={handleGenerateMeetLink} disabled={generatingLink}
+                    className="flex items-center gap-1.5 text-[13px] font-semibold px-3 py-2 rounded-xl flex-shrink-0 disabled:opacity-60"
+                    style={{ background: 'rgba(42,82,160,0.10)', color: '#2a52a0' }}>
+                    {generatingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    {generatingLink ? 'Generating…' : 'Generate Google Meet link'}
+                  </button>
+                )}
+              </div>
+              {linkError && <p className="text-[13px] text-red-500">{linkError}</p>}
             </div>
 
             <div className="space-y-1.5">
