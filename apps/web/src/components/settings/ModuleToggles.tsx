@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { updateTenantSettings } from '@/lib/actions/settings'
 import { type TenantSettings } from '@/lib/types/settings'
 import { Calendar, FileText, Package, ShoppingBag, BarChart2, Bot } from 'lucide-react'
@@ -22,9 +22,25 @@ const MODULES: Array<{
 
 export function ModuleToggles({ settings, availableModules }: { settings: TenantSettings; availableModules?: string[] }) {
   const [pending, startTransition] = useTransition()
+  // Mirrors `settings` but flips immediately on click — the server prop
+  // only catches up once revalidatePath's refresh lands, and previously
+  // this had no local state at all, so a failed save (e.g. an RLS write
+  // that's silently accepted with 0 rows changed) looked identical to a
+  // successful one until the next hard reload.
+  const [localSettings, setLocalSettings] = useState(settings)
+  const [error, setError] = useState<string | null>(null)
 
   function handleToggle(key: keyof TenantSettings, value: boolean) {
-    startTransition(() => updateTenantSettings({ [key]: value }))
+    setError(null)
+    setLocalSettings(prev => ({ ...prev, [key]: value }))
+    startTransition(async () => {
+      try {
+        await updateTenantSettings({ [key]: value })
+      } catch {
+        setLocalSettings(prev => ({ ...prev, [key]: !value }))
+        setError("Couldn't save that change — try again.")
+      }
+    })
   }
 
   // availableModules undefined means the platform_modules lookup failed
@@ -43,14 +59,18 @@ export function ModuleToggles({ settings, availableModules }: { settings: Tenant
   }
 
   return (
-    <div style={{
-      borderRadius: '18px',
-      background: 'hsl(var(--card))',
-      border: '1px solid hsl(var(--border))',
-      overflow: 'hidden',
-    }}>
+    <div>
+      {error && (
+        <p style={{ fontSize: '13px', color: 'hsl(var(--destructive, 0 84% 60%))', marginBottom: '8px' }}>{error}</p>
+      )}
+      <div style={{
+        borderRadius: '18px',
+        background: 'hsl(var(--card))',
+        border: '1px solid hsl(var(--border))',
+        overflow: 'hidden',
+      }}>
       {visibleModules.map(({ key, label, description, icon: Icon, color }, i) => {
-        const enabled = settings[key]
+        const enabled = localSettings[key]
         return (
           <div key={key} style={{
             display: 'flex', alignItems: 'center', gap: '14px',
@@ -104,6 +124,7 @@ export function ModuleToggles({ settings, availableModules }: { settings: Tenant
           </div>
         )
       })}
+      </div>
     </div>
   )
 }
