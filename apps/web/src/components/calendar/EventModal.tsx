@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { X, Trash2, AlertTriangle, Clock, CalendarDays, Video, Sparkles, Loader2 } from 'lucide-react'
@@ -45,6 +45,7 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
   const [generatingLink, setGeneratingLink] = useState(false)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [gcalMeetEventId, setGcalMeetEventId] = useState(event?.gcal_meet_event_id ?? null)
+  const [linkIsAuto, setLinkIsAuto] = useState(false)
   const supabase = createClient()
 
   // Use the exact date/time passed in — no hardcoded 09:00 override
@@ -80,10 +81,8 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
     }))
   }
 
-  async function handleGenerateMeetLink() {
+  async function runGenerateMeetLink() {
     setLinkError(null)
-    if (!form.title.trim()) { setLinkError('Add a title first.'); return }
-    if (new Date(form.ends_at) <= new Date(form.starts_at)) { setLinkError('End time must be after start time.'); return }
     setGeneratingLink(true)
     const prevGcalEventId = gcalMeetEventId
     const result = await generateGoogleMeetLink({
@@ -95,8 +94,31 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
     if (!result.ok) { setLinkError(result.error); return }
     setForm(prev => ({ ...prev, meeting_link: result.data.meetingLink }))
     setGcalMeetEventId(result.data.gcalEventId)
+    setLinkIsAuto(true)
     if (prevGcalEventId) deleteGoogleMeetEvent(prevGcalEventId)
   }
+
+  function handleGenerateMeetLink() {
+    if (!form.title.trim()) { setLinkError('Add a title first.'); return }
+    if (new Date(form.ends_at) <= new Date(form.starts_at)) { setLinkError('End time must be after start time.'); return }
+    runGenerateMeetLink()
+  }
+
+  // Auto-generate a Meet link once there's a title and a valid time range,
+  // as long as the field is empty or still holds a link we generated
+  // ourselves (never overwrite something the user typed in).
+  const autoGenerateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (!gcalConnected) return
+    if (generatingLink) return
+    if (form.meeting_link && !linkIsAuto) return
+    if (!form.title.trim()) return
+    if (new Date(form.ends_at) <= new Date(form.starts_at)) return
+
+    autoGenerateTimer.current = setTimeout(() => { runGenerateMeetLink() }, 800)
+    return () => { if (autoGenerateTimer.current) clearTimeout(autoGenerateTimer.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.title, form.starts_at, form.ends_at, gcalConnected])
 
   async function doSave() {
     setError(null)
@@ -269,7 +291,8 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
                 Meeting link
               </label>
               <div className="flex items-center gap-2 flex-wrap">
-                <input value={form.meeting_link} onChange={e => { set('meeting_link')(e); setGcalMeetEventId(null) }}
+                <input value={form.meeting_link}
+                  onChange={e => { set('meeting_link')(e); setGcalMeetEventId(null); setLinkIsAuto(false) }}
                   className={`${input} flex-1 min-w-[180px]`}
                   placeholder="https://cal.com/… or https://meet.google.com/…" />
                 {gcalConnected && (
@@ -277,11 +300,16 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
                     className="flex items-center gap-1.5 text-[13px] font-semibold px-3 py-2 rounded-xl flex-shrink-0 disabled:opacity-60"
                     style={{ background: 'rgba(42,82,160,0.10)', color: '#2a52a0' }}>
                     {generatingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    {generatingLink ? 'Generating…' : 'Generate Google Meet link'}
+                    {generatingLink ? 'Generating…' : form.meeting_link ? 'Regenerate' : 'Generate Google Meet link'}
                   </button>
                 )}
               </div>
               {linkError && <p className="text-[13px] text-red-500">{linkError}</p>}
+              {!linkError && gcalConnected && !form.meeting_link && (
+                <p className="text-[12.5px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  A Google Meet link is generated automatically once you add a title and time.
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
