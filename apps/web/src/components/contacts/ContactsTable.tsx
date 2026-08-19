@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Filter } from 'lucide-react'
+import { Filter, Users } from 'lucide-react'
 
 type Contact = {
   id: string; first_name: string; last_name: string | null
@@ -78,7 +78,7 @@ export function ContactsTable({ contacts, locations = [] }: { contacts: Contact[
   if (contacts.length === 0) {
     return (
       <div style={{ background: 'hsl(var(--card))', borderRadius: '16px', border: '1px solid hsl(var(--border))', padding: '48px 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: '32px', marginBottom: '12px' }}>👥</div>
+        <Users style={{ width: '32px', height: '32px', marginBottom: '12px' }} fill="currentColor" strokeWidth={1} />
         <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: '4px' }}>No contacts yet</p>
         <p style={{ fontSize: '15px', color: 'hsl(var(--muted-foreground))' }}>Add your first contact to get started.</p>
       </div>

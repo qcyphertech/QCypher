@@ -1,19 +1,23 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { Medal, Trophy, type LucideIcon } from 'lucide-react'
 import { updateLoyaltySettings, type LoyaltySettings } from '@/lib/actions/loyalty'
 
 const card: React.CSSProperties = { borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', overflow: 'hidden' }
 const labelCls = 'text-[12px] font-bold uppercase tracking-wider'
 const inputCls = 'w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2.5 text-[15px] outline-none transition-shadow focus:ring-2 focus:ring-accent/40 focus:border-accent'
 
-function TierRow({ emoji, name, minAmount, discountPercent, onMinChange, onDiscountChange }: {
-  emoji: string; name: string; minAmount: number; discountPercent: number
+function TierRow({ icon: Icon, iconColor, name, minAmount, discountPercent, onMinChange, onDiscountChange }: {
+  icon: LucideIcon; iconColor: string; name: string; minAmount: number; discountPercent: number
   onMinChange: (v: number) => void; onDiscountChange: (v: number) => void
 }) {
   return (
     <div className="p-4 space-y-2">
-      <p className="text-[15px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>{emoji} {name}</p>
+      <p className="text-[15px] font-bold flex items-center gap-1.5" style={{ color: 'hsl(var(--foreground))' }}>
+        <Icon style={{ width: '16px', height: '16px', color: iconColor }} fill="currentColor" strokeWidth={1} />
+        {name}
+      </p>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>Min. lifetime spend</label>
@@ -71,11 +75,11 @@ export function LoyaltyRewardsPanel({ initial }: { initial: LoyaltySettings }) {
           </label>
         </div>
         <div className="divide-y divide-[hsl(var(--border))]">
-          <TierRow emoji="🥉" name="Bronze" minAmount={settings.bronze_min_amount} discountPercent={settings.bronze_discount_percent}
+          <TierRow icon={Medal} iconColor="#b45309" name="Bronze" minAmount={settings.bronze_min_amount} discountPercent={settings.bronze_discount_percent}
             onMinChange={v => patch('bronze_min_amount', v)} onDiscountChange={v => patch('bronze_discount_percent', v)} />
-          <TierRow emoji="🥈" name="Silver" minAmount={settings.silver_min_amount} discountPercent={settings.silver_discount_percent}
+          <TierRow icon={Medal} iconColor="#64748b" name="Silver" minAmount={settings.silver_min_amount} discountPercent={settings.silver_discount_percent}
             onMinChange={v => patch('silver_min_amount', v)} onDiscountChange={v => patch('silver_discount_percent', v)} />
-          <TierRow emoji="🏆" name="Gold" minAmount={settings.gold_min_amount} discountPercent={settings.gold_discount_percent}
+          <TierRow icon={Trophy} iconColor="#ca8a04" name="Gold" minAmount={settings.gold_min_amount} discountPercent={settings.gold_discount_percent}
             onMinChange={v => patch('gold_min_amount', v)} onDiscountChange={v => patch('gold_discount_percent', v)} />
         </div>
       </div>

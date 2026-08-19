@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Users, FileText } from 'lucide-react'
+import { X, Users, FileText, Lock } from 'lucide-react'
 import { startImpersonation, endImpersonation, getTenantSnapshot } from '@/lib/actions/impersonation'
 
 type Snapshot = Awaited<ReturnType<typeof getTenantSnapshot>>
@@ -32,7 +32,10 @@ export function TenantSnapshotModal({ tenantId, tenantName, onClose }: {
         <div className="px-5 py-4 border-b border-[hsl(var(--border))] flex items-center justify-between sticky top-0 bg-[hsl(var(--card))]">
           <div>
             <h2 className="text-[15px] font-semibold">{tenantName}</h2>
-            <p className="text-[13px] text-[hsl(var(--muted-foreground))]">🔒 Impersonation session — logged</p>
+            <p className="text-[13px] text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+              <Lock style={{ width: '13px', height: '13px' }} fill="currentColor" strokeWidth={1} />
+              Impersonation session — logged
+            </p>
           </div>
           <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-[hsl(var(--muted))]">
             <X className="w-4 h-4" />

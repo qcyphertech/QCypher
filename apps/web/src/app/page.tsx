@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import Lenis from 'lenis'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { Lightbulb, Calendar, FileEdit } from 'lucide-react'
 
 // Public marketing page — no auth calls, no Supabase imports.
 // Middleware handles logged-in redirect (/ → /dashboard).
@@ -1955,7 +1956,10 @@ export default function HomePage() {
             </div>
 
             <div style={{ background: '#eef2ff', padding: '20px', borderRadius: '12px', border: '1px solid rgba(26,48,112,0.15)' }}>
-              <p style={{ fontSize: '14px', color: '#1a3070', fontWeight: 600, margin: 0 }}>💡 Our recommendation: The online store is your highest-ROI channel right now. Consider adding 2-3 new products next month and promoting them via email.</p>
+              <p style={{ fontSize: '14px', color: '#1a3070', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <Lightbulb size={16} style={{ flexShrink: 0, marginTop: '2px' }} fill="currentColor" strokeWidth={1} />
+                Our recommendation: The online store is your highest-ROI channel right now. Consider adding 2-3 new products next month and promoting them via email.
+              </p>
             </div>
 
             <p style={{ fontSize: '13px', color: '#5b6072', marginTop: '24px', textAlign: 'center' }}>This is a sample report. When you sign up, Felix or Thomas will walk you through your actual data every month.</p>
@@ -1992,7 +1996,9 @@ export default function HomePage() {
                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                📅 Schedule a Meeting
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={16} fill="currentColor" strokeWidth={1} /> Schedule a Meeting
+                </span>
               </button>
 
               <button
@@ -2014,7 +2020,9 @@ export default function HomePage() {
                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                📝 Fill Out Form
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <FileEdit size={16} fill="currentColor" strokeWidth={1} /> Fill Out Form
+                </span>
               </button>
             </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useTransition } from 'react'
-import { ArrowRight, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, ArrowDownRight, RefreshCw, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { refreshMyAnalytics, type AnalyticsSnapshot } from '@/lib/actions/analytics'
 import { RevenueByServiceCard, CustomerHealthCard, JobsCompletedCard } from '@/components/analytics/AnalyticsView'
@@ -541,7 +541,7 @@ export function OverviewClient({ orders, expenses, initialSnapshot }: { orders: 
           alignItems: 'flex-start',
           gap: '8px',
         }}>
-          <span style={{ fontSize: '14px', lineHeight: 1.3, flexShrink: 0 }}>⚠️</span>
+          <AlertTriangle style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="currentColor" strokeWidth={1} />
           <p style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'hsl(var(--muted-foreground))', margin: 0 }}>
             <strong style={{ color: 'hsl(var(--foreground))' }}>Reference only</strong> — not accounting, bookkeeping, or tax advice. Consult a licensed accountant for financial decisions.
           </p>

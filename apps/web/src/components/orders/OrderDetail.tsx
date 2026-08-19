@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet, Tag, Pencil, Save, Check } from 'lucide-react'
+import { ChevronLeft, Plus, Trash2, RotateCcw, CalendarClock, Printer, Lock, Wallet, Tag, Pencil, Save, Check, Car, Wrench, CheckCircle2 } from 'lucide-react'
+import { BundleIcon } from '@/lib/bundle-icons'
 import {
   addLineItem, removeLineItem, updateOrderStatus, updateOrderCustomer, updateJobStatus, returnRental, extendRental,
   updateLineItemDiscount, updateOrderDiscount, updateLineItem, saveOrderDraft,
@@ -25,8 +26,9 @@ function UpsellSuggestionCard({ suggestion, onAccept, onDismiss }: {
   return (
     <div className="mx-6 mt-4 rounded-xl border border-cyan-200 bg-cyan-50 dark:border-cyan-900 dark:bg-cyan-950/30 px-4 py-3 flex items-center justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-[14px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-          {suggestion.rule.bundle_emoji_icon ?? '💡'} Suggestion: add {suggestion.suggestedItemName}?
+        <p className="text-[14px] font-bold flex items-center gap-1.5" style={{ color: 'hsl(var(--foreground))' }}>
+          <BundleIcon iconKey={suggestion.rule.bundle_emoji_icon} style={{ width: '15px', height: '15px', flexShrink: 0 }} />
+          Suggestion: add {suggestion.suggestedItemName}?
         </p>
         <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
           Bundle price ${suggestion.bundlePrice.toFixed(2)} (save ${suggestion.savings.toFixed(2)})
@@ -258,9 +260,9 @@ export function OrderDetail({
               }}
             >
               <option value="">Job status…</option>
-              <option value="en_route">🚗 En route</option>
-              <option value="in_progress">🔧 In progress</option>
-              <option value="completed">✅ Completed</option>
+              <option value="en_route">En route</option>
+              <option value="in_progress">In progress</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
         </div>

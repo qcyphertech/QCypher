@@ -57,7 +57,7 @@ async function alertSuperAdmins(
   if (emails.length) {
     await sendEmail({
       to: emails,
-      subject: `🚨 Security Alert: ${incident.incident_type.replace(/_/g, ' ')} detected`,
+      subject: `Security Alert: ${incident.incident_type.replace(/_/g, ' ')} detected`,
       html: renderBrandedEmail({
         bodyHtml: `
           <p style="margin:0 0 16px;font-size:20px;font-weight:800;color:#171a2b;">Security incident detected</p>

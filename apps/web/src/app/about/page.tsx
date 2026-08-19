@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { Calendar, FileEdit } from 'lucide-react'
 
 // Same footer used on the homepage — see apps/web/src/app/page.tsx
 const INTEGRATION_LOGOS = [
@@ -599,7 +600,9 @@ export default function AboutPage() {
                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                📅 Schedule a Meeting
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={16} fill="currentColor" strokeWidth={1} /> Schedule a Meeting
+                </span>
               </button>
 
               <button
@@ -617,7 +620,9 @@ export default function AboutPage() {
                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                📝 Fill Out Form
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <FileEdit size={16} fill="currentColor" strokeWidth={1} /> Fill Out Form
+                </span>
               </button>
             </div>
 

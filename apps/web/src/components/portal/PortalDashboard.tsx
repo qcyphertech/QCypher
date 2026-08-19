@@ -3,6 +3,7 @@
 import type { PortalSession } from '@/lib/actions/portal'
 import Link from 'next/link'
 import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
+import { Car, Wrench, CheckCircle2, Medal, Trophy, CreditCard, type LucideIcon } from 'lucide-react'
 
 type Order = {
   id: string
@@ -19,10 +20,10 @@ const fmt = (n: number) => `$${Number(n).toFixed(2)}`
 const fmtDate = (s: string) =>
   new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-const JOB_STATUS_LABEL: Record<string, string> = {
-  en_route: '🚗 En route',
-  in_progress: '🔧 In progress',
-  completed: '✅ Completed',
+const JOB_STATUS_LABEL: Record<string, { icon: LucideIcon; text: string }> = {
+  en_route: { icon: Car, text: 'En route' },
+  in_progress: { icon: Wrench, text: 'In progress' },
+  completed: { icon: CheckCircle2, text: 'Completed' },
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -62,8 +63,9 @@ function OrderCard({
               {badge}
             </span>
             {order.job_status && (
-              <span className="text-[11px] font-medium text-gray-500">
-                {JOB_STATUS_LABEL[order.job_status]}
+              <span className="text-[11px] font-medium text-gray-500 flex items-center gap-1">
+                {(() => { const S = JOB_STATUS_LABEL[order.job_status].icon; return <S style={{ width: '12px', height: '12px' }} fill="currentColor" strokeWidth={1} /> })()}
+                {JOB_STATUS_LABEL[order.job_status].text}
               </span>
             )}
           </div>
@@ -91,7 +93,7 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
 }
 
 const TIER_COLOR: Record<string, string> = { bronze: '#b45309', silver: '#64748b', gold: '#ca8a04' }
-const TIER_EMOJI: Record<string, string> = { bronze: '🥉', silver: '🥈', gold: '🏆' }
+const TIER_ICON: Record<string, LucideIcon> = { bronze: Medal, silver: Medal, gold: Trophy }
 
 function LoyaltyCard({
   tier, lifetimeSpend, creditBalance, settings,
@@ -110,13 +112,16 @@ function LoyaltyCard({
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-[18px]">{TIER_EMOJI[tier]}</span>
+          {(() => { const T = TIER_ICON[tier]; return <T style={{ width: '18px', height: '18px', color: TIER_COLOR[tier] }} fill="currentColor" strokeWidth={1} /> })()}
           <span className="text-[15px] font-bold capitalize" style={{ color: TIER_COLOR[tier] }}>{tier} Member</span>
         </div>
         <span className="text-[13px] font-semibold text-gray-500">{discountPercent}% off</span>
       </div>
       {creditBalance > 0 && (
-        <p className="text-[14px] text-gray-700 mb-2">💳 ${creditBalance.toFixed(2)} credit available</p>
+        <p className="text-[14px] text-gray-700 mb-2 flex items-center gap-1.5">
+          <CreditCard style={{ width: '14px', height: '14px' }} fill="currentColor" strokeWidth={1} />
+          ${creditBalance.toFixed(2)} credit available
+        </p>
       )}
       {nextTier && nextThreshold != null && (
         <p className="text-[13px] text-gray-400">
@@ -143,8 +148,9 @@ function HistoryCard({ order }: { order: Order }) {
             Paid
           </span>
           {order.job_status && (
-            <span className="text-[11px] font-medium text-gray-500">
-              {JOB_STATUS_LABEL[order.job_status]}
+            <span className="text-[11px] font-medium text-gray-500 flex items-center gap-1">
+              {(() => { const S = JOB_STATUS_LABEL[order.job_status].icon; return <S style={{ width: '12px', height: '12px' }} fill="currentColor" strokeWidth={1} /> })()}
+              {JOB_STATUS_LABEL[order.job_status].text}
             </span>
           )}
         </div>

@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     await sendEmail({
       to: owners,
       subject: isEscalation
-        ? `⚠️ ${customerName}'s invoice is now ${daysSinceSent} days overdue`
+        ? `Overdue: ${customerName}'s invoice is now ${daysSinceSent} days overdue`
         : `Reminder: ${customerName} hasn't paid yet`,
       html: renderBrandedEmail({
         bodyHtml: `
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     if (isEscalation && superAdminEmails.length) {
       await sendEmail({
         to: superAdminEmails,
-        subject: `🚩 Escalation: ${businessName} has an invoice ${daysSinceSent} days overdue`,
+        subject: `Escalation: ${businessName} has an invoice ${daysSinceSent} days overdue`,
         html: renderBrandedEmail({
           bodyHtml: `
             <p style="margin:0 0 4px;font-size:20px;font-weight:800;">Tenant invoice escalation</p>

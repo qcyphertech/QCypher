@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Trophy } from 'lucide-react'
+import { BundleIcon } from '@/lib/bundle-icons'
 import type { PortalSession } from '@/lib/actions/portal'
 import { initHelcimCheckout, validateAndRecordPayment, initStripeCheckout, confirmStripePayment } from '@/lib/actions/portal'
 import { getLoyaltyCheckoutInfo, redeemLoyaltyAtCheckout } from '@/lib/actions/loyalty'
@@ -419,7 +420,7 @@ export function InvoicePayPage({
         {hasLoyaltyBenefit && (
           <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-amber-100 bg-amber-50 flex items-center gap-2">
-              <span className="text-[16px]">🏆</span>
+              <Trophy style={{ width: '16px', height: '16px' }} fill="currentColor" strokeWidth={1} className="text-amber-600" />
               <h2 className="text-[15px] font-semibold text-gray-900 capitalize">{loyalty!.tier} member benefits</h2>
             </div>
             <div className="px-6 py-4 space-y-2">
@@ -442,7 +443,7 @@ export function InvoicePayPage({
         {upsell && !upsellDismissed && (
           <div className="bg-white rounded-2xl border border-cyan-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-cyan-100 bg-cyan-50 flex items-center gap-2">
-              <span className="text-[16px]">{upsell.rule.bundle_emoji_icon ?? '💡'}</span>
+              <BundleIcon iconKey={upsell.rule.bundle_emoji_icon} style={{ width: '16px', height: '16px' }} className="text-cyan-600" />
               <h2 className="text-[15px] font-semibold text-gray-900">Recommended for you</h2>
             </div>
             <div className="px-6 py-4 space-y-3">

@@ -44,14 +44,19 @@ function findingFingerprint(f: Finding): string {
 async function sendCriticalAlert(scan: { id: string; critical_count: number; high_count: number; medium_count: number; low_count: number; scan_date: string; environment: string; reportUrl?: string }) {
   await sendEmail({
     to: ALERT_RECIPIENTS,
-    subject: `🚨 QCypher Security Scan: ${scan.critical_count} critical, ${scan.high_count} high finding(s)`,
+    subject: `QCypher Security Scan: ${scan.critical_count} critical, ${scan.high_count} high finding(s)`,
     html: renderBrandedEmail({
       bodyHtml: `
         <p style="margin:0 0 16px;font-size:20px;font-weight:800;color:#171a2b;">Weekly security scan found issues</p>
         <p style="margin:0 0 8px;"><strong>Scan date:</strong> ${scan.scan_date}</p>
         <p style="margin:0 0 8px;"><strong>Environment:</strong> ${scan.environment}</p>
         <p style="margin:0 0 16px;">
-          🔴 Critical: ${scan.critical_count} &nbsp; 🟠 High: ${scan.high_count} &nbsp; 🟡 Medium: ${scan.medium_count} &nbsp; 🔵 Low: ${scan.low_count}
+          ${[
+            ['#dc2626', 'Critical', scan.critical_count],
+            ['#ea580c', 'High', scan.high_count],
+            ['#eab308', 'Medium', scan.medium_count],
+            ['#0ea5e9', 'Low', scan.low_count],
+          ].map(([color, label, count]) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px;"></span>${label}: ${count}`).join('&nbsp;&nbsp;')}
         </p>
         <p style="margin:16px 0 0;">Review findings in the Admin Console within 24 hours and prioritize by severity.</p>
       `,

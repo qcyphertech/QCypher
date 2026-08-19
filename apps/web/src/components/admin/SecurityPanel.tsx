@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { ShieldAlert, ShieldCheck, ChevronDown } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, ChevronDown, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { listVulnerabilityScans, getScanFindings, listFindingGroups, resolveFindingGroup, type VulnerabilityScan, type VulnerabilityFinding, type VulnerabilityFindingGroup } from '@/lib/actions/security-scans'
 import { SectionHeader, EmptyState, PanelSkeleton } from '@/components/admin/AdminPanelUI'
 import { MfaDevicesPanel } from '@/components/admin/MfaDevicesPanel'
@@ -218,7 +218,11 @@ export function SecurityPanel() {
           </div>
           <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] px-4 py-3.5">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">Status</p>
-            <p className="text-[15px] font-bold">{latest.status === 'completed' ? '✅ Completed' : '⚠️ Failed'}</p>
+            <p className="text-[15px] font-bold flex items-center gap-1.5">
+              {latest.status === 'completed'
+                ? <><CheckCircle2 style={{ width: '15px', height: '15px' }} fill="currentColor" strokeWidth={1} className="text-emerald-600" /> Completed</>
+                : <><AlertTriangle style={{ width: '15px', height: '15px' }} fill="currentColor" strokeWidth={1} className="text-red-600" /> Failed</>}
+            </p>
           </div>
         </div>
       )}

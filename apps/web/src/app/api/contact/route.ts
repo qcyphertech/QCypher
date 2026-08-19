@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Customer confirmation email
     const customerEmailHtml = renderBrandedEmail({
       bodyHtml: `
-        <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#171a2b;">Request received ✓</p>
+        <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#171a2b;">Request received <svg width="16" height="16" viewBox="0 0 24 24" fill="#059669" style="vertical-align:-2px;" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.2 14.6-4.4-4.4 1.4-1.4 3 3 6-6 1.4 1.4z"/></svg></p>
         <p style="margin:0 0 20px;color:#5b6072;">Thank you for your interest in QCypher</p>
         <p style="margin:0 0 16px;">Hi ${businessName},</p>
         <p style="margin:0 0 20px;">We've received your request and we're excited to help grow your business. Our team will review your information and reach out within 24 hours to discuss your needs.</p>
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // Team lead notification email
     const teamEmailHtml = renderBrandedEmail({
       bodyHtml: `
-        <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#171a2b;">New lead received 🎉</p>
+        <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#171a2b;">New lead received</p>
         <p style="margin:0 0 20px;color:#5b6072;">A prospect is interested in QCypher</p>
         <div style="background:#f8f9fc;border-radius:12px;padding:20px 24px;margin:20px 0;border:1px solid rgba(26,48,112,0.08);">
           ${infoRow('Business name', businessName)}

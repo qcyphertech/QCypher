@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { createUpsellRule, updateUpsellRule, toggleUpsellRule, type UpsellRule } from '@/lib/actions/upsells'
+import { BUNDLE_ICON_OPTIONS, BundleIcon } from '@/lib/bundle-icons'
 
 const card: React.CSSProperties = { borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', overflow: 'hidden' }
 const inputCls = 'w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2.5 text-[15px] outline-none transition-shadow focus:ring-2 focus:ring-accent/40 focus:border-accent'
@@ -119,8 +120,11 @@ function RuleForm({ initial, catalogItems, onSaved, onCancel }: {
           </select>
         </div>
         <div className="space-y-1">
-          <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>Emoji (optional)</label>
-          <input value={form.bundle_emoji_icon} onChange={e => setForm(f => ({ ...f, bundle_emoji_icon: e.target.value }))} placeholder="🔧" className={inputCls} style={{ color: 'hsl(var(--foreground))' }} />
+          <label className={labelCls} style={{ color: 'hsl(var(--muted-foreground))' }}>Icon (optional)</label>
+          <select value={form.bundle_emoji_icon} onChange={e => setForm(f => ({ ...f, bundle_emoji_icon: e.target.value }))} className={inputCls} style={{ color: 'hsl(var(--foreground))' }}>
+            <option value="">— Default —</option>
+            {BUNDLE_ICON_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
         </div>
       </div>
 
@@ -191,8 +195,9 @@ export function UpsellRulesPanel({ initial, catalogItems }: { initial: UpsellRul
             ) : (
               <div key={rule.id} className="px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[15px] font-semibold truncate" style={{ color: 'hsl(var(--foreground))' }}>
-                    {rule.bundle_emoji_icon ? `${rule.bundle_emoji_icon} ` : ''}{rule.rule_name}
+                  <p className="text-[15px] font-semibold truncate flex items-center gap-1.5" style={{ color: 'hsl(var(--foreground))' }}>
+                    <BundleIcon iconKey={rule.bundle_emoji_icon} style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                    {rule.rule_name}
                   </p>
                   <p className="text-[13px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     Suggests {itemName(rule.suggested_catalog_item_id)} · {rule.bundle_discount_percent}% off

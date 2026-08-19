@@ -82,12 +82,12 @@ export function TemplateForm({ template }: { template?: Template }) {
       <div className="space-y-1.5">
         <label className="text-[15px] font-medium">Category</label>
         <select value={form.category} onChange={set('category')} className={input}>
-          <option value="Lead & Inquiry">🎯 Lead &amp; Inquiry</option>
-          <option value="Booking & Scheduling">📅 Booking &amp; Scheduling</option>
-          <option value="Service & Fulfillment">🔧 Service &amp; Fulfillment</option>
-          <option value="Payment">💳 Payment</option>
-          <option value="Follow-Up & Retention">🤝 Follow-Up &amp; Retention</option>
-          <option value="General">💬 General</option>
+          <option value="Lead & Inquiry">Lead &amp; Inquiry</option>
+          <option value="Booking & Scheduling">Booking &amp; Scheduling</option>
+          <option value="Service & Fulfillment">Service &amp; Fulfillment</option>
+          <option value="Payment">Payment</option>
+          <option value="Follow-Up & Retention">Follow-Up &amp; Retention</option>
+          <option value="General">General</option>
         </select>
       </div>
 

@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
+import { Zap } from 'lucide-react'
 import { PoweredByFooter, BRAND_GRADIENT_BAR } from '@/components/shared/PoweredByFooter'
 
 function db() {
@@ -62,10 +63,11 @@ export default async function TenantBlogPostPage({ params }: { params: { slug: s
           {article.disclose_ai_assistance && (
             <span style={{
               position: 'absolute', top: '16px', right: '16px',
+              display: 'flex', alignItems: 'center', gap: '4px',
               fontSize: '11px', fontWeight: 700, color: '#0c4a6e', background: '#f0f9ff',
               border: '1px solid rgba(14,165,233,0.3)', borderRadius: '999px', padding: '4px 10px',
             }}>
-              ⚡ AI-Assisted
+              <Zap size={11} fill="currentColor" strokeWidth={1} /> AI-Assisted
             </span>
           )}
           <p style={{ fontSize: '13px', color: '#8a90a3', margin: '0 0 16px' }}>
