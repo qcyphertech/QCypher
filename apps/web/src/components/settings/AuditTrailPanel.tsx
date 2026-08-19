@@ -11,7 +11,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   note_created: 'Note added',
   template_created: 'Template created', template_updated: 'Template updated', template_deleted: 'Template deleted',
   login: 'Signed in', logout: 'Signed out', credentials_set: 'Finished account setup',
-  invite_sent: 'Invite sent', role_changed: 'Role changed', user_removed: 'User removed',
+  invite_sent: 'Invite sent', role_changed: 'Role changed', user_removed: 'User removed', user_deleted: 'User login deleted',
   data_exported: 'Data exported', deletion_requested: 'Deletion requested',
   deletion_cancelled: 'Deletion cancelled', account_deleted: 'Account deleted',
   pricing_override_set: 'Pricing override set', pricing_override_cleared: 'Pricing override cleared',

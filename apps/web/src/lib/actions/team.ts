@@ -63,7 +63,7 @@ async function requireManage(targetTenantId: string) {
 
 async function logTeamAudit(
   caller: { userId: string; tenant_id: string },
-  action: 'role_changed' | 'user_removed',
+  action: 'role_changed' | 'user_removed' | 'user_deleted',
   resource_id: string,
   details?: Record<string, unknown>,
 ) {
@@ -180,4 +180,22 @@ export async function removeMember(memberId: string, tenantId?: string) {
     app_metadata: { ...user.app_metadata, tenant_id: null, role: null },
   })
   await logTeamAudit({ userId: caller.userId, tenant_id: targetTenantId }, 'user_removed', memberId, { email: user.email })
+}
+
+// Hard delete — actually removes the login, unlike removeMember above (which
+// only orphans it from the tenant, still leaving the email/account live).
+// Super-admin only: this is meaningfully more destructive than a tenant
+// owner's usual "remove a colleague" action, and frees the email up for
+// reuse elsewhere, so it's kept out of the self-service Settings → Team
+// panel entirely and only surfaced from the admin console's tenant view.
+export async function deleteMember(memberId: string, tenantId: string) {
+  const admin = createAdminClient()
+  const { data: { user } } = await admin.auth.admin.getUserById(memberId)
+  if (!user || user.app_metadata?.tenant_id !== tenantId) throw new Error('Forbidden')
+
+  const caller = await requireManage(tenantId)
+  if (!caller.isSuperAdmin) throw new Error('Super admin only')
+
+  await admin.auth.admin.deleteUser(memberId)
+  await logTeamAudit({ userId: caller.userId, tenant_id: tenantId }, 'user_deleted', memberId, { email: user.email })
 }

@@ -12,7 +12,7 @@ export type AuditAction =
   | 'note_created'
   | 'template_created' | 'template_updated' | 'template_deleted'
   | 'login' | 'logout' | 'credentials_set'
-  | 'invite_sent' | 'role_changed' | 'user_removed'
+  | 'invite_sent' | 'role_changed' | 'user_removed' | 'user_deleted'
   | 'data_exported' | 'deletion_requested' | 'deletion_cancelled' | 'account_deleted'
   | 'pricing_override_set' | 'pricing_override_cleared'
   | 'invoice_created' | 'invoice_sent' | 'invoice_paid' | 'invoice_voided' | 'invoice_marked_paid'

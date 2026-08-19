@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { UserPlus, X, Clock, Crown, User, Eye, ChevronDown, MapPin, RotateCw, Check } from 'lucide-react'
+import { UserPlus, X, Clock, Crown, User, Eye, ChevronDown, MapPin, RotateCw, Check, Trash2 } from 'lucide-react'
 import type { TeamMember, PendingInvite, Role } from '@/lib/actions/team'
-import { revokeInvite, updateMemberRole, removeMember } from '@/lib/actions/team'
+import { revokeInvite, updateMemberRole, removeMember, deleteMember } from '@/lib/actions/team'
 import { setStaffLocationAssignment, removeStaffLocationAssignment, type StaffLocationAssignment } from '@/lib/actions/staff-locations'
 
 type LocationOption = { id: string; location_name: string }
@@ -172,6 +172,19 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
     })
   }
 
+  // Admin-console-only (tenantId set): actually deletes the login instead of
+  // just orphaning it from the tenant. Confirmed inline since there's no
+  // undo — matches the lightweight window.confirm pattern used elsewhere
+  // in this codebase for one-off destructive actions.
+  function handleDelete(memberId: string, email: string) {
+    if (!tenantId) return
+    if (!confirm(`Permanently delete the login for ${email}? This can't be undone — they won't be able to sign back in, and the email will be free to sign up again.`)) return
+    startTransition(async () => {
+      await deleteMember(memberId, tenantId)
+      setMembers(prev => prev.filter(m => m.id !== memberId))
+    })
+  }
+
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [resentId, setResentId] = useState<string | null>(null)
   const [resentKind, setResentKind] = useState<'invite' | 'password_setup' | null>(null)
@@ -292,13 +305,24 @@ export function TeamPanel({ members: initialMembers, pending: initialPending, cu
                       </select>
                       <ChevronDown style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: '12px', height: '12px', pointerEvents: 'none', color: 'hsl(var(--muted-foreground))' }} />
                     </div>
-                    <button
-                      onClick={() => handleRemove(m.id)}
-                      disabled={isPending}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
-                    >
-                      <X style={{ width: '14px', height: '14px', color: 'hsl(var(--muted-foreground))' }} />
-                    </button>
+                    {tenantId ? (
+                      <button
+                        onClick={() => handleDelete(m.id, m.email)}
+                        disabled={isPending}
+                        title="Permanently delete this login"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+                      >
+                        <Trash2 style={{ width: '14px', height: '14px', color: 'hsl(var(--muted-foreground))' }} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRemove(m.id)}
+                        disabled={isPending}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+                      >
+                        <X style={{ width: '14px', height: '14px', color: 'hsl(var(--muted-foreground))' }} />
+                      </button>
+                    )}
                   </>
                 )}
               </div>
