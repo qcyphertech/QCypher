@@ -48,24 +48,24 @@
     --badge-tag-bg:      #e8eef8; --badge-tag-text:      #1a3070;
   }
 
-  /* Dark mode — applied via html.dark class. Navy-blue hue (222, matching
-     the brand navy #0d2454 used in the marketing hero and chat widgets)
-     at higher saturation than before — the old values (222 28% 10% etc.)
-     read as generic dark gray rather than an on-brand navy. */
+  /* Dark mode — applied via html.dark class. "Rich brand navy": hue 221,
+     saturation pushed well past the old greyish values so the surfaces
+     read as navy blue rather than slate — closest of the palette options
+     to the marketing hero's #0d2454. */
   html.dark {
     --heading: #ffffff;
-    --background: 222 46% 8%;
-    --card: 222 38% 12%;
-    --foreground: 220 20% 94%;
-    --muted: 222 34% 15%;
-    --muted-foreground: 220 14% 62%;
-    --border: 222 28% 20%;
-    --sidebar-bg: #0a1230;
-    --sidebar-border: rgba(255,255,255,0.06);
-    --sidebar-text: rgba(255,255,255,0.60);
+    --background: 221 68% 9%;
+    --card: 221 55% 15%;
+    --foreground: 216 30% 96%;
+    --muted: 221 48% 18%;
+    --muted-foreground: 216 22% 68%;
+    --border: 221 45% 26%;
+    --sidebar-bg: #081540;
+    --sidebar-border: rgba(255,255,255,0.07);
+    --sidebar-text: rgba(255,255,255,0.65);
     --sidebar-text-active: #ffffff;
-    --sidebar-active-bg: rgba(42,82,160,0.25);
-    --sidebar-hover-bg: rgba(255,255,255,0.06);
+    --sidebar-active-bg: rgba(74,157,181,0.22);
+    --sidebar-hover-bg: rgba(255,255,255,0.07);
 
     /* Status / badge semantic colors (dark mode — deeper, less blinding) */
     --badge-lead-bg:     rgba(251,191,36,0.18);  --badge-lead-text:     #fcd34d;
