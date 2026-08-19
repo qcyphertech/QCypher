@@ -101,7 +101,7 @@ export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageS
       <div className="flex items-center justify-between px-0.5">
         <p className="text-[13px] text-[hsl(var(--muted-foreground))]">
           {filteredCount === 0
-            ? `No matching clients${totalClients ? ` out of ${totalClients}` : ''}`
+            ? `No matching tenants${totalClients ? ` out of ${totalClients}` : ''}`
             : `Showing ${rangeStart}–${rangeEnd} of ${filteredCount}${filteredCount !== totalClients ? ` (${totalClients} total)` : ''}`}
         </p>
         {hasActiveFilters && (
@@ -118,7 +118,7 @@ export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageS
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] shadow-soft overflow-hidden">
         {tenants.length === 0 && !hasActiveFilters && totalClients === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-[15px] text-[hsl(var(--muted-foreground))]">No client tenants yet. Invite your first client.</p>
+            <p className="text-[15px] text-[hsl(var(--muted-foreground))]">No tenants yet. Invite your first tenant.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -236,7 +236,7 @@ export function ClientsPanel({ tenants, totalClients, filteredCount, page, pageS
                 {tenants.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-5 py-12 text-center text-[15px] text-[hsl(var(--muted-foreground))]">
-                      No clients match your filters.
+                      No tenants match your filters.
                     </td>
                   </tr>
                 ) : (

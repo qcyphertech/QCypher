@@ -23,7 +23,7 @@ type Tenant = {
 }
 
 const TABS = [
-  { id: 'clients', label: 'Clients', icon: Users, color: '#2a52a0' },
+  { id: 'clients', label: 'Tenants', icon: Users, color: '#2a52a0' },
   { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck, color: '#a855f7' },
   { id: 'incidents', label: 'Incidents', icon: AlertTriangle, color: '#ef4444' },
   { id: 'security', label: 'Security', icon: ShieldAlert, color: '#f97316' },
@@ -103,7 +103,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
             Admin Portal
           </h1>
           <p className="text-[14px] text-[hsl(var(--muted-foreground))] mt-1">
-            {totalClients} client workspace{totalClients !== 1 ? 's' : ''}
+            {totalClients} tenant workspace{totalClients !== 1 ? 's' : ''}
           </p>
         </div>
         {tab === 'clients' && (
@@ -112,7 +112,7 @@ export function AdminDashboard({ tenants, totalClients, filteredCount, page, pag
             className="flex items-center gap-2 bg-gradient-to-r from-[#2a52a0] to-[#4a9db5] text-white text-[14px] font-semibold px-4 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:brightness-105 transition-all"
           >
             <Plus className="w-4 h-4" />
-            Invite client
+            Invite tenant
           </button>
         )}
       </div>
@@ -270,7 +270,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full sm:max-w-md bg-[hsl(var(--card))] rounded-t-2xl sm:rounded-2xl shadow-card" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-[hsl(var(--border))]">
-          <h2 className="text-[15px] font-semibold">Invite new client</h2>
+          <h2 className="text-[15px] font-semibold">Invite new tenant</h2>
         </div>
         {success || resent ? (
           <div className="p-8 text-center">

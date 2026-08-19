@@ -101,7 +101,7 @@ export function TenantDetail({ tenant, stats, members, pendingInvites, currentUs
           onClick={() => router.push('/admin')}
           className="flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-4 transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" /> All clients
+          <ChevronLeft className="w-4 h-4" /> All tenants
         </button>
         <div className="flex items-center gap-4">
           <div
