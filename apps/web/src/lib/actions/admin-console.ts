@@ -77,11 +77,14 @@ export async function deleteTenantAccount(tenantId: string, confirmName: string)
 // email up to sign up again, which the data purge alone doesn't do (an
 // orphaned 'deleted' tenant with a live auth user still owns that email).
 //
-// approval_requests and incidents are the only two tables that reference
-// tenants(id) without ON DELETE CASCADE (checked against every migration —
-// everything else either cascades or has no FK at all, e.g. audit_logs),
-// so those two get purged explicitly first or the final tenant row delete
-// would fail on a leftover foreign key.
+// approval_requests, impersonation_logs, and incidents are the only three
+// tables that reference tenants(id) without ON DELETE CASCADE (checked
+// against every migration — everything else either cascades or has no FK
+// at all, e.g. audit_logs), so those three get purged explicitly first or
+// the final tenant row delete fails on a leftover foreign key. (First pass
+// at this list missed impersonation_logs — same file as approval_requests,
+// a second `references tenants(id)` a few lines down for a different
+// table, not a duplicate of the first.)
 export async function permanentlyRemoveTenant(tenantId: string, confirmName: string): Promise<DeleteTenantResult> {
   let caller: Awaited<ReturnType<typeof requireSuperAdmin>>
   try {
@@ -105,6 +108,7 @@ export async function permanentlyRemoveTenant(tenantId: string, confirmName: str
     }
 
     await admin.from('approval_requests').delete().eq('tenant_id', tenantId)
+    await admin.from('impersonation_logs').delete().eq('tenant_id', tenantId)
     await admin.from('incidents').delete().eq('tenant_id', tenantId)
 
     const { error: deleteErr } = await admin.from('tenants').delete().eq('id', tenantId)
