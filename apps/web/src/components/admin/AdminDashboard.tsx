@@ -207,6 +207,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({ name: '', slug: '', email: '', referredByTenantId: '' })
   const [referrerOptions, setReferrerOptions] = useState<TenantSummary[]>([])
+  const [slugTouched, setSlugTouched] = useState(false)
 
   useEffect(() => {
     listTenants().then(setReferrerOptions)
@@ -221,6 +222,17 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 
   function autoSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  }
+
+  // Appends -1, -2, etc. until the slug doesn't collide with an existing
+  // tenant — keeps the prefill usable without the admin having to notice
+  // and resolve a collision by hand.
+  function uniqueSlug(base: string) {
+    const existing = new Set(referrerOptions.map(t => t.slug))
+    if (!base || !existing.has(base)) return base
+    let n = 1
+    while (existing.has(`${base}-${n}`)) n++
+    return `${base}-${n}`
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -287,7 +299,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
                 required value={form.name}
                 onChange={e => {
                   const name = e.target.value
-                  setForm(prev => ({ ...prev, name, slug: prev.slug || autoSlug(name) }))
+                  setForm(prev => ({ ...prev, name, slug: slugTouched ? prev.slug : uniqueSlug(autoSlug(name)) }))
                 }}
                 placeholder="Acme Plumbing"
                 className={inputCls}
@@ -295,7 +307,12 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1.5">
               <label className="text-[15px] font-medium">Workspace slug *</label>
-              <input required value={form.slug} onChange={set('slug')} placeholder="acme-plumbing" className={inputCls} />
+              <input
+                required value={form.slug}
+                onChange={e => { setSlugTouched(true); set('slug')(e) }}
+                placeholder="acme-plumbing"
+                className={inputCls}
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-[15px] font-medium">Owner email *</label>
