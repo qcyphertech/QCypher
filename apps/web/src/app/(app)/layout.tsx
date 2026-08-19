@@ -10,6 +10,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  // Invited users (both tenant invites and team-member invites) are
+  // authenticated by the magic link alone — this never proves they can log
+  // back in on their own. needs_credential_setup forces them through
+  // Google-link-or-password before any (app) route renders, checked fresh
+  // via the admin client since the session JWT can be stale right after an
+  // Admin API metadata stamp (same reasoning as getTenantId() below).
+  const { data: { user: freshUser } } = await createAdminClient().auth.admin.getUserById(user.id)
+  if (freshUser?.app_metadata?.needs_credential_setup === true) redirect('/auth/complete-signup')
+
   // RLS-scoped query relies on the JWT's tenant_id claim, which can be
   // stale (set via Admin API after initial sign-in) — getTenantId()
   // re-fetches fresh from the DB when that happens, and the tenant row

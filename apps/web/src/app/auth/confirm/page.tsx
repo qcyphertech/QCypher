@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { completeCredentialSetup } from '@/lib/actions/onboarding'
 
 // Handles ALL Supabase auth email flows:
 //   1. Hash fragment (#access_token=…&type=recovery) — implicit/legacy
@@ -22,6 +23,28 @@ export default function ConfirmPage() {
 
     const supabase = createClient()
 
+    // Invited users land here still flagged needs_credential_setup — the
+    // (app) layout's redirect gate would just bounce them straight back to
+    // /auth/complete-signup. The one case that should clear the flag from
+    // here is a Google OAuth round-trip: reaching this page with a linked
+    // google identity IS "signed up via Google", so there's nothing left to
+    // gate. A plain magic-link/email session does NOT satisfy the
+    // requirement — leave the flag alone and let the gate redirect them.
+    async function clearSetupFlagIfGoogleLinked() {
+      const { data: { user } } = await supabase.auth.getUser()
+      const needsSetup = user?.app_metadata?.needs_credential_setup === true
+      const hasGoogle = user?.identities?.some(i => i.provider === 'google') ?? false
+      if (needsSetup && hasGoogle) {
+        try { await completeCredentialSetup() } catch { /* gate will just redirect again — not fatal */ }
+      }
+    }
+
+    async function finishSuccess(recoveryHint: boolean) {
+      if (recoveryHint) { router.replace('/auth/reset-password'); return }
+      await clearSetupFlagIfGoogleLinked()
+      router.replace('/dashboard')
+    }
+
     async function handle() {
       // A second load of this page (Safari's background tab-preview reload,
       // a duplicate redirect, etc.) arrives with the SAME single-use code —
@@ -31,7 +54,7 @@ export default function ConfirmPage() {
       const { data: { session: existingSession } } = await supabase.auth.getSession()
       if (existingSession) {
         const recoveryHint = window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery')
-        router.replace(recoveryHint ? '/auth/reset-password' : '/dashboard')
+        await finishSuccess(recoveryHint)
         return
       }
 
@@ -54,10 +77,8 @@ export default function ConfirmPage() {
           access_token: accessToken,
           refresh_token: refreshToken,
         })
-        if (!error && hashType === 'recovery') {
-          router.replace('/auth/reset-password')
-        } else if (!error) {
-          router.replace('/dashboard')
+        if (!error) {
+          await finishSuccess(hashType === 'recovery')
         } else {
           router.replace(`/auth/login?error=auth_failed${hashType ? `&type=${hashType}` : ''}`)
         }
@@ -71,7 +92,7 @@ export default function ConfirmPage() {
           type: queryType as 'recovery' | 'email' | 'signup',
         })
         if (!error) {
-          router.replace(queryType === 'recovery' ? '/auth/reset-password' : '/dashboard')
+          await finishSuccess(queryType === 'recovery')
         } else {
           router.replace(`/auth/login?error=auth_failed&type=${queryType}`)
         }
@@ -82,7 +103,7 @@ export default function ConfirmPage() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
-          router.replace(queryType === 'recovery' ? '/auth/reset-password' : '/dashboard')
+          await finishSuccess(queryType === 'recovery')
         } else {
           router.replace(`/auth/login?error=auth_failed${queryType ? `&type=${queryType}` : ''}`)
         }

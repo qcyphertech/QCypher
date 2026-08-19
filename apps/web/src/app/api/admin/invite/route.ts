@@ -96,9 +96,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: inviteErr.message }, { status: 422 })
   }
 
-  // 3. Stamp tenant_id into app_metadata so auth.tenant_id() resolves correctly in RLS
+  // 3. Stamp tenant_id into app_metadata so auth.tenant_id() resolves correctly
+  // in RLS. needs_credential_setup forces the invitee through /auth/complete-signup
+  // (Google link or password creation) before they can use the app — the invite
+  // magic link alone authenticates them but never makes them prove they can log
+  // back in on their own, which this closes.
   await admin.auth.admin.updateUserById(invite.user.id, {
-    app_metadata: { tenant_id: tenant.id },
+    app_metadata: { tenant_id: tenant.id, needs_credential_setup: true },
   })
 
   // 4. Record the tenant referral (Layer 2 loyalty) — tracked for manual fulfillment

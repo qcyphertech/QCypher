@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   const invited = users.find(u => u.email?.toLowerCase() === email.trim().toLowerCase())
   if (invited) {
     await admin.auth.admin.updateUserById(invited.id, {
-      app_metadata: { tenant_id, role, provider: 'email', providers: ['email'] },
+      app_metadata: { tenant_id, role, provider: 'email', providers: ['email'], needs_credential_setup: true },
     })
   }
 
