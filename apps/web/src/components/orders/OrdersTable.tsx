@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Filter } from 'lucide-react'
+import { Filter, SquarePen, Trash2, Loader2 } from 'lucide-react'
+import { deleteOrder } from '@/lib/actions/orders'
 
 type Order = {
   id: string
@@ -28,13 +29,32 @@ const STATUS_OPTIONS = [
   { value: 'refunded', label: 'Refunded' },
 ]
 
-export function OrdersTable({ orders }: { orders: Order[] }) {
-  const [orderQuery, setOrderQuery] = useState('')
+export function OrdersTable({ orders: initialOrders }: { orders: Order[] }) {
+  const [orders,       setOrders]       = useState(initialOrders)
+  const [orderQuery,   setOrderQuery]   = useState('')
   const [customerQuery, setCustomerQuery] = useState('')
-  const [amountQuery, setAmountQuery] = useState('')
-  const [status, setStatus] = useState('all')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [amountQuery,  setAmountQuery]  = useState('')
+  const [status,       setStatus]       = useState('all')
+  const [dateFrom,     setDateFrom]     = useState('')
+  const [dateTo,       setDateTo]       = useState('')
+  const [confirmDeleteOrder, setConfirmDeleteOrder] = useState<Order | null>(null)
+  const [deleting,     setDeleting]     = useState<string | null>(null)
+  const [deleteError,  setDeleteError]  = useState<string | null>(null)
+
+  async function confirmAndDeleteOrder() {
+    if (!confirmDeleteOrder) return
+    const target = confirmDeleteOrder
+    setConfirmDeleteOrder(null)
+    setDeleting(target.id)
+    setDeleteError(null)
+    const result = await deleteOrder(target.id)
+    if (result.ok) {
+      setOrders(prev => prev.filter(o => o.id !== target.id))
+    } else {
+      setDeleteError(result.error)
+    }
+    setDeleting(null)
+  }
 
   const hasFilters = !!(orderQuery || customerQuery || amountQuery || status !== 'all' || dateFrom || dateTo)
 
@@ -76,6 +96,12 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
       <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
         {filtered.length} of {orders.length} order{orders.length === 1 ? '' : 's'}
       </p>
+
+      {deleteError && (
+        <div className="px-4 py-2.5 rounded-xl text-[13px] font-semibold" style={{ background: 'rgba(220,38,38,0.08)', color: '#dc2626' }}>
+          {deleteError}
+        </div>
+      )}
 
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
         <div className="overflow-x-auto">
@@ -131,25 +157,39 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                       style={{ color: 'hsl(var(--foreground))' }} />
                   </div>
                 </th>
+                <th className="px-5 py-3 text-right align-top" style={{ minWidth: '56px' }} />
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <td colSpan={6} className="px-5 py-10 text-center text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     No orders match your filters.
                   </td>
                 </tr>
               ) : filtered.map(o => {
                 const s = STATUS_STYLE[o.payment_status] ?? STATUS_STYLE.draft
+                const isDraft = o.payment_status === 'draft'
+                const isDeleting = deleting === o.id
                 return (
                   <tr key={o.id} className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--muted))] transition-colors">
                     <td className="px-5 py-3.5">
-                      <Link href={`/orders/${o.id}`}
-                        className="text-[15px] font-bold hover:text-[#1a3070] transition-colors"
-                        style={{ color: 'hsl(var(--foreground))' }}>
-                        #{String(o.order_number ?? 0).padStart(4, '0')}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/orders/${o.id}`}
+                          className="text-[15px] font-bold hover:text-[#1a3070] transition-colors"
+                          style={{ color: 'hsl(var(--foreground))' }}>
+                          #{String(o.order_number ?? 0).padStart(4, '0')}
+                        </Link>
+                        <Link href={`/orders/${o.id}`}
+                          title="Open order"
+                          className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
+                          style={{ background: 'rgba(42,82,160,0.10)', color: '#2a52a0' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#2a52a0,#4a9db5)'; e.currentTarget.style.color = '#fff' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(42,82,160,0.10)'; e.currentTarget.style.color = '#2a52a0' }}
+                        >
+                          <SquarePen className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </td>
                     <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
                       {o.contact ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.trim() : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
@@ -172,6 +212,23 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-3.5 text-[15px] hidden sm:table-cell" style={{ color: 'hsl(var(--muted-foreground))' }}>
                       {new Date(o.created_at).toLocaleDateString()}
                     </td>
+                    <td className="px-5 py-3.5 text-right">
+                      {isDraft && (
+                        <button
+                          onClick={() => setConfirmDeleteOrder(o)}
+                          disabled={isDeleting}
+                          title="Delete draft order"
+                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center transition-colors"
+                          style={{ color: 'hsl(var(--muted-foreground))', cursor: isDeleting ? 'wait' : 'pointer' }}
+                          onMouseEnter={e => { if (!isDeleting) { e.currentTarget.style.background = 'rgba(220,38,38,0.10)'; e.currentTarget.style.color = '#dc2626' } }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'hsl(var(--muted-foreground))' }}
+                        >
+                          {isDeleting
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 )
               })}
@@ -179,6 +236,43 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
           </table>
         </div>
       </div>
+
+      {confirmDeleteOrder && (
+        <div
+          onClick={() => setConfirmDeleteOrder(null)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-5"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="rounded-2xl p-6 w-full max-w-[360px]"
+            style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' }}
+          >
+            <p className="text-[15px] font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>
+              Delete draft order?
+            </p>
+            <p className="text-[14px] mb-5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              Order #{String(confirmDeleteOrder.order_number ?? 0).padStart(4, '0')} and everything on it (line items, photos) will be permanently removed. This can't be undone.
+            </p>
+            <div className="flex gap-2.5 justify-end">
+              <button
+                onClick={() => setConfirmDeleteOrder(null)}
+                className="px-4 py-2 rounded-xl text-[14px] font-semibold"
+                style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAndDeleteOrder}
+                className="px-4 py-2 rounded-xl text-[14px] font-bold text-white"
+                style={{ background: '#dc2626' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

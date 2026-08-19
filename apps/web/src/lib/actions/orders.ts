@@ -92,6 +92,37 @@ export async function createOrder(input: {
   return data.id as string
 }
 
+// Draft-only by design — an order that's been sent, signed, or paid has
+// real downstream state (a customer may have seen it, a payment may
+// exist) that deleting shouldn't silently erase. A tenant who needs to
+// undo further along than that should cancel/refund instead, not delete.
+export async function deleteOrder(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient()
+
+  const { data: order, error: fetchErr } = await supabase
+    .from('orders')
+    .select('id, payment_status')
+    .eq('id', id)
+    .single()
+  if (fetchErr || !order) return { ok: false, error: 'Order not found' }
+  if (order.payment_status !== 'draft') return { ok: false, error: 'Only draft orders can be deleted' }
+
+  // Best-effort: clean up any job photo files in storage before the row
+  // (and its job_photos rows) cascade-delete — otherwise the files
+  // themselves become orphaned, since storage isn't foreign-keyed to
+  // the table that references it.
+  const { data: photos } = await supabase.from('job_photos').select('storage_path').eq('order_id', id)
+  if (photos && photos.length > 0) {
+    await supabase.storage.from('job-photos').remove(photos.map(p => p.storage_path))
+  }
+
+  const { error } = await supabase.from('orders').delete().eq('id', id)
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/orders')
+  return { ok: true }
+}
+
 export async function updateOrderStatus(id: string, payment_status: Order['payment_status']) {
   const supabase = await createClient()
   const { error } = await supabase
