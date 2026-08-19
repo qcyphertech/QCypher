@@ -84,7 +84,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
     { key: 'payments', label: 'Payments', icon: <CreditCard className="w-4 h-4" />, count: orders.length },
     { key: 'activity', label: 'Order Activity', icon: <ActivityIcon className="w-4 h-4" />, count: activity.length },
     { key: 'recurring', label: 'Recurring Jobs', icon: <Repeat className="w-4 h-4" />, count: recurringJobs.length },
-    { key: 'timeline', label: 'Timeline', icon: <Clock className="w-4 h-4" />, count: interactions.length },
+    { key: 'timeline', label: 'Customer Notes', icon: <Clock className="w-4 h-4" />, count: interactions.length },
     ...(isAdmin ? [{ key: 'automation' as TabKey, label: 'Automation', icon: <Zap className="w-4 h-4" /> }] : []),
   ]
 
@@ -259,7 +259,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
           {tab === 'timeline' && (
             <div className="space-y-6">
               <h2 className="text-[15px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                Customer Interactions
+                Customer Notes
               </h2>
               <AddInteractionForm contactId={contact.id} />
               <InteractionTimeline interactions={interactions} />
