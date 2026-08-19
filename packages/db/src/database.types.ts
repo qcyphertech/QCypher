@@ -1604,6 +1604,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           label: string | null
+          name: string | null
           order_id: string
           storage_path: string
           tenant_id: string
@@ -1614,6 +1615,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           label?: string | null
+          name?: string | null
           order_id: string
           storage_path: string
           tenant_id: string
@@ -1624,6 +1626,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           label?: string | null
+          name?: string | null
           order_id?: string
           storage_path?: string
           tenant_id?: string

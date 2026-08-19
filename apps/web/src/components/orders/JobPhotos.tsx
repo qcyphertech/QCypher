@@ -1,20 +1,32 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
-import { Camera, X, Trash2, Plus, Loader2, ImageIcon } from 'lucide-react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { Camera, Upload, X, Trash2, Loader2, ImageIcon, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { saveJobPhoto, deleteJobPhoto } from '@/lib/actions/photos'
+import { saveJobPhoto, deleteJobPhoto, renameJobPhoto } from '@/lib/actions/photos'
 import type { JobPhoto } from '@/lib/actions/photos'
 
 const LABEL_OPTIONS = ['Before', 'After', 'Other']
 const MAX_PHOTOS_SOFT_WARN = 12
 const MAX_DIMENSION = 1600   // px — longer edge capped here
 const JPEG_QUALITY  = 0.82   // ~82% — good quality/size balance
+const GRID_COLS = 'repeat(auto-fill, minmax(126px, 1fr))'
 
 type Props = {
   orderId: string
   initialPhotos: JobPhoto[]
   tenantId: string
+}
+
+// A photo the user has picked but not yet saved — named and labeled here,
+// in step 2, before it ever touches Supabase Storage or the database.
+type PendingPhoto = {
+  localId: string
+  file: File
+  blob: Blob
+  previewUrl: string
+  name: string
+  label: string
 }
 
 // iPhones default to saving camera captures as HEIC/HEIF (the file
@@ -62,73 +74,188 @@ async function compressImage(file: File): Promise<Blob> {
   })
 }
 
+function LabelPicker({ value, onChange, size = 'md' }: { value: string; onChange: (v: string) => void; size?: 'sm' | 'md' }) {
+  const pad = size === 'sm' ? '6px 4px' : '7px 6px'
+  const font = size === 'sm' ? '10.5px' : '11.5px'
+  return (
+    <div style={{ display: 'flex', gap: '5px' }}>
+      {LABEL_OPTIONS.map(opt => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          style={{
+            flex: 1, padding: pad, borderRadius: '8px',
+            border: opt === value ? 'none' : '1px solid hsl(var(--border))',
+            background: opt === value ? 'linear-gradient(135deg,#2a52a0,#4a9db5)' : 'hsl(var(--background))',
+            color: opt === value ? '#fff' : 'hsl(var(--muted-foreground))',
+            fontSize: font, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// Editable name field shared by both the pending-review grid and the
+// saved gallery — a plain input that looks like text until focused.
+function NameField({ value, placeholder, onChange, onBlur, disabled }: {
+  value: string
+  placeholder: string
+  onChange: (v: string) => void
+  onBlur?: () => void
+  disabled?: boolean
+}) {
+  return (
+    <input
+      value={value}
+      placeholder={placeholder}
+      disabled={disabled}
+      onChange={e => onChange(e.target.value)}
+      onBlur={onBlur}
+      onClick={e => e.stopPropagation()}
+      style={{
+        width: '100%', border: '1px solid transparent', background: 'transparent',
+        borderRadius: '8px', padding: '5px 7px', margin: 0,
+        fontSize: '12.5px', fontWeight: 700, color: 'hsl(var(--foreground))',
+        fontFamily: 'inherit',
+      }}
+      onFocus={e => { e.currentTarget.style.background = 'hsl(var(--muted))'; e.currentTarget.style.borderColor = 'hsl(var(--border))' }}
+      onMouseLeave={e => { if (document.activeElement !== e.currentTarget) { e.currentTarget.style.background = 'transparent' } }}
+    />
+  )
+}
+
 export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
   const [photos,        setPhotos]        = useState<JobPhoto[]>(initialPhotos)
-  const [uploading,     setUploading]     = useState(false)
+  const [pending,        setPending]       = useState<PendingPhoto[]>([])
+  const [preparing,     setPreparing]     = useState(false)
+  const [saving,        setSaving]        = useState(false)
   const [uploadError,   setUploadError]   = useState<string | null>(null)
   const [deleting,      setDeleting]      = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<JobPhoto | null>(null)
   const [lightbox,      setLightbox]      = useState<JobPhoto | null>(null)
-  const [pendingLabel,  setPendingLabel]  = useState('Before')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Pending previews are local blob: URLs — must be revoked or they leak
+  // for the life of the tab, and definitely on unmount.
+  useEffect(() => () => { pending.forEach(p => URL.revokeObjectURL(p.previewUrl)) }, [])
 
   const grouped = LABEL_OPTIONS.reduce<Record<string, JobPhoto[]>>((acc, label) => {
     acc[label] = photos.filter(p => (p.label ?? 'Other').toLowerCase() === label.toLowerCase())
     return acc
   }, { Before: [], After: [], Other: [] })
 
+  // Step 1 → 2: pick photos, convert/compress them, and hold them locally
+  // for naming — nothing touches Supabase Storage or the database yet.
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files?.length) return
     setUploadError(null)
-
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setUploadError('Not signed in'); return }
-
-    setUploading(true)
+    setPreparing(true)
     try {
+      const prepared: PendingPhoto[] = []
       for (const file of Array.from(files)) {
         if (!file.type.startsWith('image/')) continue
-
         const normalized = await maybeConvertHeic(file)
         const compressed = await compressImage(normalized)
         console.info(`[job-photos] compression: ${(file.size / 1024).toFixed(1)} KB → ${(compressed.size / 1024).toFixed(1)} KB (${Math.round((1 - compressed.size / file.size) * 100)}% reduction)`)
-        const ext        = 'jpg'
-        const filename   = `${crypto.randomUUID()}.${ext}`
-        const path       = `${tenantId}/${orderId}/${filename}`
+        prepared.push({
+          localId: crypto.randomUUID(),
+          file: normalized,
+          blob: compressed,
+          previewUrl: URL.createObjectURL(compressed),
+          name: '',
+          label: 'Before',
+        })
+      }
+      setPending(prev => [...prev, ...prepared])
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Could not prepare photo')
+    } finally {
+      setPreparing(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }, [])
+
+  function updatePending(localId: string, patch: Partial<PendingPhoto>) {
+    setPending(prev => prev.map(p => p.localId === localId ? { ...p, ...patch } : p))
+  }
+
+  function removePending(localId: string) {
+    setPending(prev => {
+      const target = prev.find(p => p.localId === localId)
+      if (target) URL.revokeObjectURL(target.previewUrl)
+      return prev.filter(p => p.localId !== localId)
+    })
+  }
+
+  function cancelPending() {
+    pending.forEach(p => URL.revokeObjectURL(p.previewUrl))
+    setPending([])
+    setUploadError(null)
+  }
+
+  // Step 2 → 3: actually upload + persist every pending photo, in the
+  // order the user reviewed them, then drop them into the saved gallery.
+  async function confirmPending() {
+    if (pending.length === 0) return
+    setUploadError(null)
+    setSaving(true)
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setUploadError('Not signed in'); setSaving(false); return }
+
+    const saved: JobPhoto[] = []
+    try {
+      for (const item of pending) {
+        const path = `${tenantId}/${orderId}/${crypto.randomUUID()}.jpg`
 
         const { error: uploadErr } = await supabase.storage
           .from('job-photos')
-          .upload(path, compressed, { contentType: 'image/jpeg', upsert: false })
-
+          .upload(path, item.blob, { contentType: 'image/jpeg', upsert: false })
         if (uploadErr) throw uploadErr
 
-        // Get a signed URL for immediate display
         const { data: signed } = await supabase.storage
           .from('job-photos')
           .createSignedUrl(path, 3600)
 
-        const saved = await saveJobPhoto({ orderId, storagePath: path, label: pendingLabel })
+        const result = await saveJobPhoto({ orderId, storagePath: path, label: item.label, name: item.name })
 
-        const newPhoto: JobPhoto = {
-          id:           saved.id,
-          tenant_id:    tenantId,
-          order_id:     orderId,
+        saved.push({
+          id: result.id,
+          tenant_id: tenantId,
+          order_id: orderId,
           storage_path: path,
-          label:        pendingLabel,
-          uploaded_by:  user.id,
-          created_at:   new Date().toISOString(),
-          url:          signed?.signedUrl ?? undefined,
-        }
-        setPhotos(prev => [...prev, newPhoto])
+          label: item.label,
+          name: item.name.trim() || null,
+          uploaded_by: user.id,
+          created_at: new Date().toISOString(),
+          url: signed?.signedUrl ?? undefined,
+        })
       }
+      setPhotos(prev => [...prev, ...saved])
+      pending.forEach(p => URL.revokeObjectURL(p.previewUrl))
+      setPending([])
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : 'Upload failed')
+      // Whatever made it through stays saved; drop only the photos that
+      // never got persisted so the user isn't stuck re-entering names
+      // for ones that already succeeded.
+      if (saved.length > 0) {
+        setPhotos(prev => [...prev, ...saved])
+        const savedCount = saved.length
+        setPending(prev => {
+          prev.slice(0, savedCount).forEach(p => URL.revokeObjectURL(p.previewUrl))
+          return prev.slice(savedCount)
+        })
+      }
     } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      setSaving(false)
     }
-  }, [orderId, tenantId, pendingLabel])
+  }
 
   async function confirmAndDelete() {
     if (!confirmDelete) return
@@ -146,7 +273,19 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
     }
   }
 
+  async function handleRename(photo: JobPhoto, name: string) {
+    const trimmed = name.trim()
+    if ((photo.name ?? '') === trimmed) return
+    setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, name: trimmed || null } : p))
+    try {
+      await renameJobPhoto(photo.id, orderId, trimmed)
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Could not save the name')
+    }
+  }
+
   const atSoftLimit = photos.length >= MAX_PHOTOS_SOFT_WARN
+  const busy = preparing || saving
 
   return (
     <>
@@ -158,72 +297,59 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
       }}>
         {/* Header */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 16px',
-          borderBottom: photos.length ? '1px solid hsl(var(--border))' : 'none',
+          position: 'relative', overflow: 'hidden',
+          padding: '16px 18px',
+          background: 'linear-gradient(120deg, #0d1f45 0%, #1a3070 45%, #2a52a0 80%, #4a9db5 130%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(60% 140% at 90% 0%, rgba(255,255,255,0.16), transparent 60%)',
+          }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative', zIndex: 1 }}>
             <div style={{
               width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
-              background: 'rgba(42,82,160,0.10)',
+              background: 'rgba(255,255,255,0.14)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Camera style={{ width: '16px', height: '16px', color: '#2a52a0' }} />
+              <Camera style={{ width: '16px', height: '16px', color: '#fff' }} />
             </div>
             <div>
-              <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)' }}>
                 Job Photos
               </p>
-              <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))', marginTop: '1px' }}>
-                {photos.length === 0 ? 'No photos yet' : `${photos.length} photo${photos.length !== 1 ? 's' : ''}`}
+              <p style={{ fontSize: '14.5px', fontWeight: 700, color: '#fff', marginTop: '1px' }}>
+                {photos.length === 0 ? 'No photos yet' : `${photos.length} photo${photos.length !== 1 ? 's' : ''} on this job`}
               </p>
             </div>
           </div>
 
-          {/* Upload controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Label picker */}
-            <select
-              value={pendingLabel}
-              onChange={e => setPendingLabel(e.target.value)}
-              style={{
-                padding: '6px 10px', borderRadius: '10px',
-                border: '1px solid hsl(var(--border))',
-                background: 'hsl(var(--muted))',
-                fontSize: '13px', fontWeight: 600,
-                color: 'hsl(var(--foreground))', cursor: 'pointer',
-              }}
-            >
-              {LABEL_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              capture="environment"
-              style={{ display: 'none' }}
-              onChange={e => handleFiles(e.target.files)}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '7px 14px', borderRadius: '10px',
-                background: 'linear-gradient(135deg,#2a52a0,#4a9db5)',
-                color: '#fff', fontSize: '13px', fontWeight: 700,
-                border: 'none', cursor: uploading ? 'wait' : 'pointer',
-                opacity: uploading ? 0.6 : 1,
-              }}
-            >
-              {uploading
-                ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
-                : <Plus style={{ width: '14px', height: '14px' }} />}
-              {uploading ? 'Uploading…' : 'Add photo'}
-            </button>
-          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={e => handleFiles(e.target.files)}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            style={{
+              position: 'relative', zIndex: 1,
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '9px 16px', borderRadius: '10px',
+              background: '#fff', color: '#2a52a0', fontSize: '13px', fontWeight: 700,
+              border: 'none', cursor: busy ? 'wait' : 'pointer',
+              opacity: busy ? 0.7 : 1,
+            }}
+          >
+            {preparing
+              ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
+              : <Upload style={{ width: '14px', height: '14px' }} />}
+            {preparing ? 'Preparing…' : 'Upload'}
+          </button>
         </div>
 
         {uploadError && (
@@ -240,7 +366,94 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
           </div>
         )}
 
-        {/* Gallery grouped by label */}
+        {/* Step 2 — name & label before saving */}
+        {pending.length > 0 && (
+          <div style={{ padding: '16px', borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--muted) / 0.4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '12px' }}>
+              <div style={{
+                width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+                background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', color: '#fff',
+                fontSize: '11px', fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>2</div>
+              <div>
+                <p style={{ fontSize: '13.5px', fontWeight: 800, color: 'hsl(var(--foreground))' }}>
+                  Name &amp; label — {pending.length} photo{pending.length !== 1 ? 's' : ''} picked
+                </p>
+                <p style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', marginTop: '1px' }}>
+                  Set before saving, or leave blank and rename later
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '14px' }}>
+              {pending.map(item => (
+                <div key={item.localId} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{
+                    position: 'relative', borderRadius: '12px', overflow: 'hidden',
+                    aspectRatio: '1', background: 'hsl(var(--muted))',
+                    outline: '2px dashed hsl(var(--border))', outlineOffset: '2px',
+                  }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    <button
+                      onClick={() => removePending(item.localId)}
+                      disabled={saving}
+                      style={{
+                        position: 'absolute', top: '6px', right: '6px',
+                        width: '26px', height: '26px', borderRadius: '8px',
+                        background: 'rgba(0,0,0,0.55)', border: 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                      }}
+                    >
+                      <X style={{ width: '13px', height: '13px', color: '#fff' }} />
+                    </button>
+                  </div>
+                  <NameField
+                    value={item.name}
+                    placeholder="Name this photo…"
+                    onChange={v => updatePending(item.localId, { name: v })}
+                    disabled={saving}
+                  />
+                  <LabelPicker value={item.label} onChange={v => updatePending(item.localId, { label: v })} size="sm" />
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+              <button
+                onClick={confirmPending}
+                disabled={saving}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '9px 16px', borderRadius: '10px',
+                  background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', color: '#fff',
+                  fontSize: '13px', fontWeight: 700, border: 'none',
+                  cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving
+                  ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
+                  : <Check style={{ width: '14px', height: '14px' }} />}
+                {saving ? 'Saving…' : `Save ${pending.length} Photo${pending.length !== 1 ? 's' : ''}`}
+              </button>
+              <button
+                onClick={cancelPending}
+                disabled={saving}
+                style={{
+                  padding: '9px 16px', borderRadius: '10px',
+                  background: 'hsl(var(--background))', color: 'hsl(var(--muted-foreground))',
+                  fontSize: '13px', fontWeight: 700, border: '1px solid hsl(var(--border))',
+                  cursor: saving ? 'wait' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Saved gallery, grouped by label */}
         {photos.length > 0 && (
           <div style={{ padding: '16px' }}>
             {LABEL_OPTIONS.filter(label => grouped[label].length > 0).map(label => (
@@ -252,42 +465,45 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
                 }}>
                   {label}
                 </p>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
-                  gap: '8px',
-                }}>
+                <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '14px' }}>
                   {grouped[label].map(photo => (
-                    <div
-                      key={photo.id}
-                      style={{
-                        position: 'relative', borderRadius: '10px', overflow: 'hidden',
-                        aspectRatio: '1', background: 'hsl(var(--muted))',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photo.url}
-                        alt={photo.label ?? 'Job photo'}
-                        onClick={() => setLightbox(photo)}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                      />
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmDelete(photo) }}
-                        disabled={deleting === photo.id}
+                    <div key={photo.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div
                         style={{
-                          position: 'absolute', top: '6px', right: '6px',
-                          width: '28px', height: '28px', borderRadius: '8px',
-                          background: 'rgba(0,0,0,0.55)', border: 'none',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          cursor: deleting === photo.id ? 'wait' : 'pointer',
+                          position: 'relative', borderRadius: '10px', overflow: 'hidden',
+                          aspectRatio: '1', background: 'hsl(var(--muted))',
+                          cursor: 'pointer',
                         }}
                       >
-                        {deleting === photo.id
-                          ? <Loader2 style={{ width: '13px', height: '13px', color: '#fff', animation: 'spin 1s linear infinite' }} />
-                          : <Trash2 style={{ width: '13px', height: '13px', color: '#fff' }} />}
-                      </button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.url}
+                          alt={photo.name ?? photo.label ?? 'Job photo'}
+                          onClick={() => setLightbox(photo)}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDelete(photo) }}
+                          disabled={deleting === photo.id}
+                          style={{
+                            position: 'absolute', top: '6px', right: '6px',
+                            width: '28px', height: '28px', borderRadius: '8px',
+                            background: 'rgba(0,0,0,0.55)', border: 'none',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: deleting === photo.id ? 'wait' : 'pointer',
+                          }}
+                        >
+                          {deleting === photo.id
+                            ? <Loader2 style={{ width: '13px', height: '13px', color: '#fff', animation: 'spin 1s linear infinite' }} />
+                            : <Trash2 style={{ width: '13px', height: '13px', color: '#fff' }} />}
+                        </button>
+                      </div>
+                      <NameField
+                        value={photo.name ?? ''}
+                        placeholder="Name this photo…"
+                        onChange={v => setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, name: v } : p))}
+                        onBlur={() => handleRename(photo, photo.name ?? '')}
+                      />
                     </div>
                   ))}
                 </div>
@@ -297,7 +513,7 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
         )}
 
         {/* Empty state */}
-        {photos.length === 0 && !uploading && (
+        {photos.length === 0 && pending.length === 0 && !busy && (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             padding: '32px 16px', gap: '10px',
@@ -333,19 +549,26 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
           >
             <X style={{ width: '20px', height: '20px', color: '#fff' }} />
           </button>
-          {lightbox.label && (
-            <span style={{
-              position: 'absolute', top: '18px', left: '50%', transform: 'translateX(-50%)',
-              fontSize: '13px', fontWeight: 700, letterSpacing: '0.08em',
-              textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)',
-            }}>
-              {lightbox.label}
-            </span>
-          )}
+          <div style={{
+            position: 'absolute', top: '18px', left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+          }}>
+            {lightbox.name && (
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>{lightbox.name}</span>
+            )}
+            {lightbox.label && (
+              <span style={{
+                fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em',
+                textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)',
+              }}>
+                {lightbox.label}
+              </span>
+            )}
+          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={lightbox.url}
-            alt={lightbox.label ?? 'Job photo'}
+            alt={lightbox.name ?? lightbox.label ?? 'Job photo'}
             onClick={e => e.stopPropagation()}
             style={{
               maxWidth: '100%', maxHeight: '90vh',
@@ -381,7 +604,7 @@ export function JobPhotos({ orderId, initialPhotos, tenantId }: Props) {
               Delete photo?
             </p>
             <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginBottom: '20px' }}>
-              This {confirmDelete.label ? `"${confirmDelete.label}" photo` : 'photo'} will be permanently removed. This can't be undone.
+              This {confirmDelete.name ? `"${confirmDelete.name}"` : confirmDelete.label ? `"${confirmDelete.label}" photo` : 'photo'} will be permanently removed. This can't be undone.
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button

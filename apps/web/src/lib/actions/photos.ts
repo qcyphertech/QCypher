@@ -9,6 +9,7 @@ export type JobPhoto = {
   order_id: string
   storage_path: string
   label: string | null
+  name: string | null
   uploaded_by: string | null
   created_at: string
   url?: string
@@ -47,6 +48,7 @@ export async function saveJobPhoto(input: {
   orderId: string
   storagePath: string
   label: string | null
+  name?: string | null
 }): Promise<{ id: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -62,6 +64,7 @@ export async function saveJobPhoto(input: {
       order_id:     input.orderId,
       storage_path: input.storagePath,
       label:        input.label,
+      name:         input.name?.trim() || null,
       uploaded_by:  user.id,
     })
     .select('id')
@@ -70,6 +73,17 @@ export async function saveJobPhoto(input: {
   if (error) throw error
   revalidatePath(`/orders/${input.orderId}`)
   return data
+}
+
+export async function renameJobPhoto(photoId: string, orderId: string, name: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('job_photos')
+    .update({ name: name.trim() || null })
+    .eq('id', photoId)
+
+  if (error) throw error
+  revalidatePath(`/orders/${orderId}`)
 }
 
 export async function deleteJobPhoto(photoId: string, orderId: string): Promise<void> {
