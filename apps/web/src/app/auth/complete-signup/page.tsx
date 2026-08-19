@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { getOnboardingContext } from '@/lib/actions/onboarding'
 import { CompleteSignupForm } from '@/components/auth/CompleteSignupForm'
 import type { Metadata } from 'next'
@@ -10,6 +11,13 @@ export const metadata: Metadata = { title: 'Finish setting up your account — Q
 // navigation away on purpose: the caller (the (app) layout's server-side
 // redirect gate) only sends people here who still need to finish setup.
 export default async function CompleteSignupPage() {
+  // Checked directly rather than letting getOnboardingContext()'s "Not
+  // authenticated" throw bubble up — an unauthenticated direct visit should
+  // land on the login page, not Next's generic error page.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
   const ctx = await getOnboardingContext()
   if (!ctx.needsSetup) redirect('/dashboard')
 

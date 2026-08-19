@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logAudit } from '@/lib/actions/audit'
 
 export type OnboardingContext = {
   email: string
@@ -35,7 +36,7 @@ export async function getOnboardingContext(): Promise<OnboardingContext> {
 // Called either right after the invitee sets a password, or from
 // /auth/confirm once a Google OAuth round-trip lands them back with a
 // linked google identity.
-export async function completeCredentialSetup(): Promise<void> {
+export async function completeCredentialSetup(method: 'google' | 'password'): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -49,4 +50,6 @@ export async function completeCredentialSetup(): Promise<void> {
   await admin.auth.admin.updateUserById(user.id, {
     app_metadata: { ...fresh?.app_metadata, needs_credential_setup: false },
   })
+
+  await logAudit({ action: 'credentials_set', resource_type: 'auth', details: { method } })
 }

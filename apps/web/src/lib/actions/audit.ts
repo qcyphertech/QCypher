@@ -11,7 +11,7 @@ export type AuditAction =
   | 'event_created' | 'event_updated' | 'event_deleted'
   | 'note_created'
   | 'template_created' | 'template_updated' | 'template_deleted'
-  | 'login' | 'logout'
+  | 'login' | 'logout' | 'credentials_set'
   | 'invite_sent' | 'role_changed' | 'user_removed'
   | 'data_exported' | 'deletion_requested' | 'deletion_cancelled' | 'account_deleted'
   | 'pricing_override_set' | 'pricing_override_cleared'

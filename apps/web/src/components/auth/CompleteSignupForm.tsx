@@ -29,7 +29,15 @@ export function CompleteSignupForm({ email, tenantName }: { email: string; tenan
 
   async function handleGoogle() {
     setLoading(true); setError(null)
-    const { error } = await supabase.auth.signInWithOAuth({
+    // linkIdentity (not signInWithOAuth) — this page is reached already
+    // authenticated as the invited user, and the point is to attach Google
+    // to THAT account. signInWithOAuth has sign-in semantics: depending on
+    // the project's identity-linking settings it can silently start a
+    // second, separate auth user with none of the invited tenant_id/role
+    // metadata instead of linking to the current one. linkIdentity
+    // explicitly attaches the identity to the current session's user,
+    // regardless of that setting.
+    const { error } = await supabase.auth.linkIdentity({
       provider: 'google',
       options: { redirectTo: `${location.origin}/auth/confirm` },
     })
@@ -46,7 +54,7 @@ export function CompleteSignupForm({ email, tenantName }: { email: string; tenan
     if (pwError) { setError(pwError.message); setLoading(false); return }
 
     try {
-      await completeCredentialSetup()
+      await completeCredentialSetup('password')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong finishing setup.')
       setLoading(false)

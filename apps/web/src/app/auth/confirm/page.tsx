@@ -35,7 +35,7 @@ export default function ConfirmPage() {
       const needsSetup = user?.app_metadata?.needs_credential_setup === true
       const hasGoogle = user?.identities?.some(i => i.provider === 'google') ?? false
       if (needsSetup && hasGoogle) {
-        try { await completeCredentialSetup() } catch { /* gate will just redirect again — not fatal */ }
+        try { await completeCredentialSetup('google') } catch { /* gate will just redirect again — not fatal */ }
       }
     }
 

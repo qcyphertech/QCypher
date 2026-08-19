@@ -10,7 +10,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   event_created: 'Event created', event_updated: 'Event updated', event_deleted: 'Event deleted',
   note_created: 'Note added',
   template_created: 'Template created', template_updated: 'Template updated', template_deleted: 'Template deleted',
-  login: 'Signed in', logout: 'Signed out',
+  login: 'Signed in', logout: 'Signed out', credentials_set: 'Finished account setup',
   invite_sent: 'Invite sent', role_changed: 'Role changed', user_removed: 'User removed',
   data_exported: 'Data exported', deletion_requested: 'Deletion requested',
   deletion_cancelled: 'Deletion cancelled', account_deleted: 'Account deleted',

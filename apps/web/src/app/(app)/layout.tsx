@@ -13,11 +13,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Invited users (both tenant invites and team-member invites) are
   // authenticated by the magic link alone — this never proves they can log
   // back in on their own. needs_credential_setup forces them through
-  // Google-link-or-password before any (app) route renders, checked fresh
-  // via the admin client since the session JWT can be stale right after an
-  // Admin API metadata stamp (same reasoning as getTenantId() below).
-  const { data: { user: freshUser } } = await createAdminClient().auth.admin.getUserById(user.id)
-  if (freshUser?.app_metadata?.needs_credential_setup === true) redirect('/auth/complete-signup')
+  // Google-link-or-password before any (app) route renders.
+  //
+  // The flag is only ever set to true BEFORE a user's first session exists
+  // (at invite time, via the Admin API), so a session's own JWT is never
+  // falsely "true" — it can only be falsely stale in the other direction,
+  // right after completeCredentialSetup() clears it: that session's current
+  // JWT still carries the old "true" claim until its next refresh. So the
+  // cheap JWT-based value from getUser() is trustworthy whenever it's not
+  // true, and only needs a fresh re-check (same admin re-fetch pattern as
+  // getTenantId() below) in the one case where it says true — which also
+  // covers "just cleared it, JWT hasn't refreshed yet" correctly. This
+  // keeps the extra Admin API round-trip off the hot path for every
+  // ordinary page load, not just ones for users mid-setup.
+  if (user.app_metadata?.needs_credential_setup === true) {
+    const { data: { user: freshUser } } = await createAdminClient().auth.admin.getUserById(user.id)
+    if (freshUser?.app_metadata?.needs_credential_setup === true) redirect('/auth/complete-signup')
+  }
 
   // RLS-scoped query relies on the JWT's tenant_id claim, which can be
   // stale (set via Admin API after initial sign-in) — getTenantId()
