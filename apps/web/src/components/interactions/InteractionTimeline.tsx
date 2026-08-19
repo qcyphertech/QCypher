@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from 'date-fns'
+import { format } from 'date-fns'
 import { Phone, Mail, MapPin, FileText } from 'lucide-react'
 import type { Tables } from '@/types/database'
 
@@ -34,7 +34,7 @@ export function InteractionTimeline({ interactions }: { interactions: Interactio
               <div className="flex items-center gap-2">
                 <span className="text-[15px] font-semibold">{meta.label}</span>
                 <span className="text-[15px] text-[hsl(var(--muted-foreground))]">
-                  {formatDistanceToNow(new Date(item.occurred_at), { addSuffix: true })}
+                  {format(new Date(item.occurred_at), 'MMM d, yyyy · h:mm a')}
                 </span>
               </div>
               <p className="text-[15px] mt-1 whitespace-pre-wrap">{item.body}</p>
