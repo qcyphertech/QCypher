@@ -7,6 +7,7 @@ import { TenantModulesPanel } from '@/components/admin/TenantModulesPanel'
 import { TenantPricingPanel } from '@/components/admin/TenantPricingPanel'
 import { RenewalReminderPanel } from '@/components/admin/RenewalReminderPanel'
 import { TeamPanel } from '@/components/settings/TeamPanel'
+import { DeleteTenantPanel } from '@/components/admin/DeleteTenantPanel'
 import type { ServiceStat, ServiceName } from '@/lib/actions/admin'
 import type { TeamMember, PendingInvite } from '@/lib/actions/team'
 
@@ -235,6 +236,9 @@ export function TenantDetail({ tenant, stats, members, pendingInvites, currentUs
           )}
         </form>
       </div>
+
+      {/* Immediate hard delete — super admin only, bypasses the owner-side grace period */}
+      <DeleteTenantPanel tenantId={tenant.id} tenantName={tenant.name} status={tenant.status} />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { purgeTenantData } from '@/lib/tenant-purge'
 import { sendEmail } from '@/lib/email/send'
 import { renderBrandedEmail } from '@/lib/email/brand'
 
@@ -33,30 +34,7 @@ export async function GET(request: NextRequest) {
 
   for (const tenant of (due ?? []) as { id: string; name: string }[]) {
     try {
-      await admin.from('interactions').delete().eq('tenant_id', tenant.id)
-      await admin.from('events').delete().eq('tenant_id', tenant.id)
-      await admin.from('contacts').delete().eq('tenant_id', tenant.id)
-
-      await admin
-        .from('tenants')
-        .update({
-          status: 'deleted',
-          deleted_at: new Date().toISOString(),
-          deletion_requested_at: null,
-          deletion_scheduled_at: null,
-        })
-        .eq('id', tenant.id)
-
-      const { error: auditError } = await admin.from('audit_logs').insert({
-        tenant_id: tenant.id,
-        user_id: null,
-        user_email: 'system',
-        action: 'account_deleted',
-        resource_type: 'account',
-        resource_id: tenant.id,
-        resource_name: tenant.name,
-        details: { executed_by: 'system' },
-      })
+      await purgeTenantData(admin, tenant.id, tenant.name, 'system')
 
       const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
       const owners = users.filter(u => u.app_metadata?.tenant_id === tenant.id && u.app_metadata?.role === 'owner')
@@ -76,7 +54,7 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      results.push({ tenantId: tenant.id, ok: true, ...(auditError ? { auditLogError: auditError.message } : {}) })
+      results.push({ tenantId: tenant.id, ok: true })
     } catch (e) {
       results.push({ tenantId: tenant.id, ok: false, error: e instanceof Error ? e.message : String(e) })
     }
