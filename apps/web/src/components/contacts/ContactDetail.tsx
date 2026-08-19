@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
@@ -49,9 +49,12 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   recurringJobs?: RecurringJob[]
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const { canEdit, isAdmin } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
-  const [tab, setTab] = useState<TabKey>('timeline')
+  const initialTab = searchParams.get('tab')
+  const highlightOrderId = searchParams.get('order')
+  const [tab, setTab] = useState<TabKey>(initialTab === 'payments' || initialTab === 'recurring' || initialTab === 'automation' ? initialTab : 'timeline')
   const [creatingOrder, setCreatingOrder] = useState(false)
 
   async function handleDelete() {
@@ -222,7 +225,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
             </div>
           )}
           {tab === 'payments' && (
-            <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} />
+            <PaymentRequestSection orders={orders} hasPhone={!!contact.phone} hasEmail={!!contact.email} highlightOrderId={highlightOrderId} />
           )}
           {tab === 'recurring' && (
             <RecurringJobsSection

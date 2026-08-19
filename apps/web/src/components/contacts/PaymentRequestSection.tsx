@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Copy, MessageSquare, Mail, CheckCircle2, Filter, ArrowUpRight } from 'lucide-react'
 import { createPaymentLink, sendPaymentLinkSms, sendPaymentLinkEmail } from '@/lib/actions/payment-requests'
@@ -38,7 +38,7 @@ function orderLabel(order: { order_number: number | null; notes: string | null }
   return order.notes || `Order #${String(order.order_number ?? 0).padStart(4, '0')}`
 }
 
-export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: Order[]; hasPhone: boolean; hasEmail: boolean }) {
+export function PaymentRequestSection({ orders, hasPhone, hasEmail, highlightOrderId = null }: { orders: Order[]; hasPhone: boolean; hasEmail: boolean; highlightOrderId?: string | null }) {
   const { isAdmin } = useUserRole()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
@@ -97,7 +97,8 @@ export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: 
       {unpaid.length > 0 && (
         <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] divide-y divide-[hsl(var(--border))] overflow-hidden">
           {unpaid.map(order => (
-            <OrderRow key={order.id} order={order} isAdmin={isAdmin} hasPhone={hasPhone} hasEmail={hasEmail} />
+            <OrderRow key={order.id} order={order} isAdmin={isAdmin} hasPhone={hasPhone} hasEmail={hasEmail}
+              highlighted={order.id === highlightOrderId} />
           ))}
         </div>
       )}
@@ -105,19 +106,7 @@ export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: 
       {paid.length > 0 && (
         <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] divide-y divide-[hsl(var(--border))] overflow-hidden">
           {paid.map(order => (
-            <Link
-              key={order.id}
-              href={`/orders/${order.id}`}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-[hsl(var(--muted))] transition-colors group"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-medium">${Number(order.total_amount).toFixed(2)}</p>
-                <p className="text-[13px] text-[hsl(var(--muted-foreground))]">{orderLabel(order)}</p>
-              </div>
-              <span className={`text-[13px] px-2.5 py-1 rounded-full font-medium ${STATUS_STYLE.paid}`}>Paid</span>
-              <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'hsl(var(--muted-foreground))' }} />
-            </Link>
+            <PaidOrderRow key={order.id} order={order} highlighted={order.id === highlightOrderId} />
           ))}
         </div>
       )}
@@ -125,7 +114,36 @@ export function PaymentRequestSection({ orders, hasPhone, hasEmail }: { orders: 
   )
 }
 
-function OrderRow({ order, isAdmin, hasPhone, hasEmail }: { order: Order; isAdmin: boolean; hasPhone: boolean; hasEmail: boolean }) {
+function useHighlightRef<T extends HTMLElement>(highlighted: boolean) {
+  const ref = useRef<T | null>(null)
+  useEffect(() => {
+    if (highlighted && ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [highlighted])
+  return ref
+}
+
+function PaidOrderRow({ order, highlighted }: { order: Order; highlighted: boolean }) {
+  const ref = useHighlightRef<HTMLAnchorElement>(highlighted)
+  return (
+    <Link
+      ref={ref}
+      href={`/orders/${order.id}`}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-[hsl(var(--muted))] transition-colors group"
+      style={highlighted ? { background: 'rgba(42,82,160,0.08)', boxShadow: 'inset 3px 0 0 #2a52a0' } : undefined}
+    >
+      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[15px] font-medium">${Number(order.total_amount).toFixed(2)}</p>
+        <p className="text-[13px] text-[hsl(var(--muted-foreground))]">{orderLabel(order)}</p>
+      </div>
+      <span className={`text-[13px] px-2.5 py-1 rounded-full font-medium ${STATUS_STYLE.paid}`}>Paid</span>
+      <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'hsl(var(--muted-foreground))' }} />
+    </Link>
+  )
+}
+
+function OrderRow({ order, isAdmin, hasPhone, hasEmail, highlighted = false }: { order: Order; isAdmin: boolean; hasPhone: boolean; hasEmail: boolean; highlighted?: boolean }) {
+  const ref = useHighlightRef<HTMLDivElement>(highlighted)
   const [busy, setBusy] = useState<'sms' | 'email' | 'copy' | 'cancel' | null>(null)
   const [copied, setCopied] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
@@ -156,7 +174,7 @@ function OrderRow({ order, isAdmin, hasPhone, hasEmail }: { order: Order; isAdmi
   }
 
   return (
-    <div className="p-4 space-y-2">
+    <div ref={ref} className="p-4 space-y-2" style={highlighted ? { background: 'rgba(42,82,160,0.08)', boxShadow: 'inset 3px 0 0 #2a52a0' } : undefined}>
       <Link href={`/orders/${order.id}`} className="flex items-center justify-between gap-2 group">
         <div className="min-w-0 flex items-center gap-1.5">
           <div>

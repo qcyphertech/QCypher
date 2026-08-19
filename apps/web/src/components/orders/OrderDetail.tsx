@@ -267,17 +267,8 @@ export function OrderDetail({
 
         {/* Actions row */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={handleSaveDraft} disabled={savingDraft}
-            className="no-print flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold transition-colors"
-            style={draftSaved
-              ? { background: 'rgba(16,185,129,0.12)', color: '#059669' }
-              : { background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))', opacity: savingDraft ? 0.6 : 1 }}>
-            {draftSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-            {draftSaved ? 'Draft saved' : savingDraft ? 'Saving…' : 'Save draft'}
-          </button>
-
           {contact && (
-            <Link href={`/contacts/${contact.id}#payments`}
+            <Link href={`/contacts/${contact.id}?tab=payments&order=${order.id}`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold transition-colors no-print"
               style={{ background: 'rgba(42,82,160,0.10)', color: '#2a52a0' }}
               title="View payments for this customer">
@@ -300,6 +291,15 @@ export function OrderDetail({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[hsl(var(--border))] text-[15px] font-semibold hover:bg-[hsl(var(--muted))] transition-colors"
             style={{ color: 'hsl(var(--muted-foreground))' }}>
             <Printer className="w-3.5 h-3.5" /> Print invoice
+          </button>
+
+          <button onClick={handleSaveDraft} disabled={savingDraft}
+            className="no-print flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold transition-colors"
+            style={draftSaved
+              ? { background: 'rgba(16,185,129,0.12)', color: '#059669' }
+              : { background: 'rgba(42,82,160,0.10)', color: '#2a52a0', opacity: savingDraft ? 0.6 : 1 }}>
+            {draftSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+            {draftSaved ? 'Draft saved' : savingDraft ? 'Saving…' : 'Save draft'}
           </button>
         </div>
       </div>

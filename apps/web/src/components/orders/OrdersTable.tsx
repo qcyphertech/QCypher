@@ -192,14 +192,18 @@ export function OrdersTable({ orders: initialOrders }: { orders: Order[] }) {
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
-                      {o.contact ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.trim() : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
+                      {o.contact ? (
+                        <Link href={`/contacts/${o.contact.id}`} className="font-semibold hover:text-[#1a3070] transition-colors">
+                          {`${o.contact.first_name} ${o.contact.last_name ?? ''}`.trim()}
+                        </Link>
+                      ) : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}
                     </td>
                     <td className="px-5 py-3.5 text-[15px] font-bold hidden sm:table-cell" style={{ color: 'hsl(var(--foreground))' }}>
                       ${Number(o.total_amount).toFixed(2)}
                     </td>
                     <td className="px-5 py-3.5">
                       {o.contact ? (
-                        <Link href={`/contacts/${o.contact.id}#payments`}
+                        <Link href={`/contacts/${o.contact.id}?tab=payments&order=${o.id}`}
                           className="text-[15px] font-bold px-2.5 py-1 rounded-full capitalize hover:opacity-80 transition-opacity"
                           style={s} title="View payments for this customer">
                           {o.payment_status}
