@@ -94,7 +94,7 @@ export function AdminAuditTrailPanel({ tenants }: { tenants: TenantSummary[] }) 
   const chatbotRangeEnd = Math.min(chatbotPage * PAGE_SIZE, chatbotTotal)
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-[70rem] mx-auto">
       {openFilter && <div className="fixed inset-0 z-10" onClick={() => setOpenFilter(null)} />}
 
       <div className="flex gap-1 p-1 rounded-2xl bg-[hsl(var(--muted))]/60 w-fit mb-3">
@@ -113,7 +113,7 @@ export function AdminAuditTrailPanel({ tenants }: { tenants: TenantSummary[] }) 
       </div>
 
       {view === 'chatbot' && (
-        <div className="max-w-4xl">
+        <div className="max-w-[70rem] mx-auto">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <p className="text-[13px] text-[hsl(var(--muted-foreground))]">
               {chatbotTotal === 0 ? 'No interactions found' : `Showing ${chatbotRangeStart}–${chatbotRangeEnd} of ${chatbotTotal} ${chatbotTotal === 1 ? 'entry' : 'entries'}`}

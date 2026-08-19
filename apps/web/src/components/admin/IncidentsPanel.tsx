@@ -55,7 +55,7 @@ export function IncidentsPanel({ tenants }: { tenants: TenantSummary[] }) {
   const resolved = incidents.filter(i => i.status === 'resolved')
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-[60rem] mx-auto">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Incidents</h2>
         <button

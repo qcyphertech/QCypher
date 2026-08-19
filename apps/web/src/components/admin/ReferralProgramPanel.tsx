@@ -66,7 +66,7 @@ export function ReferralProgramPanel() {
   if (loading) return <PanelSkeleton />
 
   return (
-    <div className="space-y-3 max-w-3xl">
+    <div className="space-y-3 max-w-[60rem] mx-auto">
       <SectionHeader icon={Gift} label="Tenant Referrals" count={referrals.length} accent />
       {referrals.length === 0 ? (
         <EmptyState icon={Gift} message="No tenant referrals yet." />

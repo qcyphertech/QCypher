@@ -50,7 +50,7 @@ export function ReferQCypherPanel({ initial }: { initial: TenantReferral[] }) {
   const [referrals, setReferrals] = useState(initial)
 
   return (
-    <div style={{ maxWidth: '640px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <p className="text-[14px] mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>
         Know another service business that could use QCypher? Have a QCypher admin tag your referral when they invite them —
         once they're onboarded, you can claim your reward here. QCypher applies it by hand within a few business days.

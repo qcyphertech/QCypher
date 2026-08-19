@@ -46,7 +46,7 @@ export function ApprovalRequestsPanel() {
   if (loading) return <PanelSkeleton />
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-[60rem] mx-auto">
       <div>
         <SectionHeader icon={Inbox} label="Pending" count={pending.length} accent />
         {pending.length === 0 ? (

@@ -100,7 +100,7 @@ export default async function SettingsPage() {
   // ── Tab content blocks (server-rendered, passed as props) ──────────────────
 
   const workspaceTab = (
-    <div style={{ maxWidth: '640px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <SettingsSection label="Appearance">
         <div style={{ borderRadius: '16px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', overflow: 'hidden' }}>
           <SettingsRow icon={<Sun style={{ width: '15px', height: '15px' }} />} iconColor="#2a52a0" label="Theme" hint="Light or dark mode" right={<ThemeToggle />} />
@@ -118,7 +118,7 @@ export default async function SettingsPage() {
   )
 
   const teamTab = (
-    <div style={{ maxWidth: '640px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <SettingsSection label="Team" hint="Invite colleagues to your workspace. They'll see the same contacts, orders, and inventory.">
         <TeamPanel members={members} pending={pendingInvites} currentUserId={user.id} locations={locations.filter(l => l.is_active).map(l => ({ id: l.id, location_name: l.location_name }))} staffAssignments={staffAssignments} />
       </SettingsSection>
@@ -189,7 +189,7 @@ export default async function SettingsPage() {
   )
 
   const accountTab = (
-    <div style={{ maxWidth: '640px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <SettingsSection label="Profile">
         <ProfileForm
           initial={{

@@ -122,7 +122,7 @@ export function LocationsPanel({ initial }: { initial: TenantLocation[] }) {
   }
 
   return (
-    <div style={{ maxWidth: '720px' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       {locations.length === 0 && !creating && (
         <div className="rounded-2xl border border-dashed border-[hsl(var(--border))] px-4 py-8 text-center text-[14px] mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
           No locations yet.

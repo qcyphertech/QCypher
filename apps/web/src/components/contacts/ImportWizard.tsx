@@ -87,7 +87,7 @@ export function ImportWizard() {
   const dupes = parsed.filter(r => r._duplicate)
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-[52.5rem] mx-auto space-y-6">
       {/* Step indicator */}
       <div className="flex items-center gap-2 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
         {(['upload', 'map', 'preview', 'done'] as Step[]).map((s, i) => (

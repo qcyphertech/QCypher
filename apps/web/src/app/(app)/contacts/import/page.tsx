@@ -11,7 +11,7 @@ export default async function ImportPage() {
   const imports = await listImports()
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-[52.5rem] mx-auto space-y-8">
       <div>
         <Link
           href="/contacts"

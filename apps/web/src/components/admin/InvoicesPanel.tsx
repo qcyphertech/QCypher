@@ -38,7 +38,7 @@ export function InvoicesPanel({ tenants }: { tenants: TenantSummary[] }) {
   const paid = invoices.filter(i => i.status === 'paid')
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-[60rem] mx-auto">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Invoices</h2>
         <button

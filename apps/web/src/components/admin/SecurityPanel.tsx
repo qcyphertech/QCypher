@@ -197,7 +197,7 @@ export function SecurityPanel() {
   const latest = scans[0]
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-[60rem] mx-auto">
       <MfaDevicesPanel />
 
       <SectionHeader icon={ShieldAlert} label="Vulnerability Scans" count={scans.length} accent />

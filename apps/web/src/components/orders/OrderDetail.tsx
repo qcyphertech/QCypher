@@ -150,7 +150,7 @@ export function OrderDetail({
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-[60rem] mx-auto">
       {/* Print-only header */}
       <style>{`
         @media print {
@@ -205,8 +205,8 @@ export function OrderDetail({
             <div className="flex items-center gap-2 flex-wrap mt-1.5">
               {contact ? (
                 <Link href={`/contacts/${contact.id}`}
-                  className="text-[15px] font-semibold hover:text-[#1a3070] transition-colors"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  className="text-[13px] font-bold text-white px-2.5 py-1 rounded-full hover:opacity-90 transition-opacity"
+                  style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}>
                   {contact.first_name} {contact.last_name}
                 </Link>
               ) : contacts.length > 0 && (
@@ -295,9 +295,7 @@ export function OrderDetail({
 
           <button onClick={handleSaveDraft} disabled={savingDraft}
             className="no-print flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold transition-colors"
-            style={draftSaved
-              ? { background: 'rgba(16,185,129,0.12)', color: '#059669' }
-              : { background: 'rgba(42,82,160,0.10)', color: '#2a52a0', opacity: savingDraft ? 0.6 : 1 }}>
+            style={{ background: 'rgba(16,185,129,0.12)', color: '#059669', opacity: savingDraft ? 0.6 : 1 }}>
             {draftSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
             {draftSaved ? 'Draft saved' : savingDraft ? 'Saving…' : 'Save draft'}
           </button>

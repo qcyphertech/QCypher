@@ -49,7 +49,7 @@ export function PaymentAccountPanel({ account }: { account: PaymentAccount }) {
   }
 
   return (
-    <div style={{ maxWidth: '640px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       {justConnected && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', background: 'var(--badge-green-bg)', color: 'var(--badge-green-text)', marginBottom: '20px', fontSize: '15px', fontWeight: 600 }}>
           <CheckCircle2 style={{ width: '16px', height: '16px' }} /> Stripe account connected successfully.

@@ -34,7 +34,7 @@ type Section = {
 
 export default function DataRetentionPage() {
   return (
-    <div className="max-w-2xl space-y-6 pb-10">
+    <div className="max-w-[52.5rem] mx-auto space-y-6 pb-10">
       <BackLink href="/support" label="Help & Support" />
 
       <div>

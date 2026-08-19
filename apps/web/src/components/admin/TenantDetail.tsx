@@ -93,7 +93,7 @@ export function TenantDetail({ tenant, stats, members, pendingInvites, currentUs
   const isActive = tenant.status === 'active'
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-[60rem] mx-auto">
       {/* Header */}
       <div>
         <button

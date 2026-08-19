@@ -19,7 +19,7 @@ export async function UpsellAnalyticsPanel({ tenantId }: { tenantId: string }) {
   ])
 
   return (
-    <div style={{ maxWidth: '720px' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <StatTile label="Shown (30d)" value={String(summary.shown)} />
         <StatTile label="Accepted" value={`${summary.accepted} (${summary.acceptanceRate}%)`} />

@@ -58,7 +58,7 @@ export function LoyaltyRewardsPanel({ initial }: { initial: LoyaltySettings }) {
   }
 
   return (
-    <div style={{ maxWidth: '640px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <p className="text-[13px] font-bold uppercase tracking-wider mb-3 px-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
         Customer tiers
       </p>

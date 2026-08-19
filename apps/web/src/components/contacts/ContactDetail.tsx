@@ -83,7 +83,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   ]
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header card */}
       <div
         className="bg-[hsl(var(--card))] rounded-3xl border border-[hsl(var(--border))] p-6"

@@ -191,9 +191,11 @@ export function OrdersTable({ orders: initialOrders }: { orders: Order[] }) {
                         </Link>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>
+                    <td className="px-5 py-3.5 text-[15px]">
                       {o.contact ? (
-                        <Link href={`/contacts/${o.contact.id}`} className="font-semibold hover:text-[#1a3070] transition-colors">
+                        <Link href={`/contacts/${o.contact.id}`}
+                          className="text-[13px] font-bold text-white px-2.5 py-1 rounded-full hover:opacity-90 transition-opacity inline-block"
+                          style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)' }}>
                           {`${o.contact.first_name} ${o.contact.last_name ?? ''}`.trim()}
                         </Link>
                       ) : <span style={{ color: 'hsl(var(--muted-foreground))' }}>—</span>}

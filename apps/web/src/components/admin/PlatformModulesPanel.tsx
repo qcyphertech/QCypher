@@ -29,7 +29,7 @@ export function PlatformModulesPanel() {
   if (loading) return <p className="text-[15px] text-[hsl(var(--muted-foreground))]">Loading…</p>
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-[52.5rem] mx-auto">
       <div className="mb-4">
         <h2 className="text-[15px] font-semibold">Modules</h2>
         <p className="text-[15px] text-[hsl(var(--muted-foreground))] mt-0.5">

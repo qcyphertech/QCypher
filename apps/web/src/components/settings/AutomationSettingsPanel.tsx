@@ -129,7 +129,7 @@ export function AutomationSettingsPanel({ initial }: { initial: WorkflowSettings
   const AMBER = '#f59e0b'
 
   return (
-    <div style={{ maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
       {/* Invoice escalation */}
       <div>
         <SectionLabel color={BLUE}>Invoice Escalation</SectionLabel>

@@ -29,7 +29,7 @@ export default async function ExportDataPage() {
       <div className="flex flex-col md:flex-row" style={{ gap: '32px', alignItems: 'flex-start' }}>
         <SettingsMenuBar active="export" />
 
-        <div style={{ flex: 1, minWidth: 0, width: '100%', maxWidth: '640px' }}>
+        <div style={{ flex: 1, minWidth: 0, width: '100%', maxWidth: '800px', margin: '0 auto' }}>
           <SettingsSection label="Export" hint="Choose what to include, then download a copy of your workspace data.">
             <div style={{
               borderRadius: '18px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
