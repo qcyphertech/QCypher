@@ -17,10 +17,14 @@ export type JobPhoto = {
 export async function getJobPhotos(orderId: string): Promise<JobPhoto[]> {
   const supabase = await createClient()
 
+  // deleted_at filtering happens here, not in RLS — see
+  // 20260830000009_fix_job_photos_delete_rls.sql for why baking "not
+  // deleted" into the SELECT policy actually broke soft-deleting a row.
   const { data: photos, error } = await supabase
     .from('job_photos')
     .select('*')
     .eq('order_id', orderId)
+    .is('deleted_at', null)
     .order('created_at')
 
   if (error) throw error
