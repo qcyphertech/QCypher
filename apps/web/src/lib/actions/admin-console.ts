@@ -103,7 +103,24 @@ export async function permanentlyRemoveTenant(tenantId: string, confirmName: str
   try {
     const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
     const tenantUsers = users.filter(u => u.app_metadata?.tenant_id === tenantId)
-    for (const u of tenantUsers) {
+
+    // A team member removed (soft-remove — see lib/actions/team.ts removeMember)
+    // before the tenant was deleted no longer carries this tenant_id, so the
+    // filter above misses them and they'd otherwise survive as an orphaned
+    // login with no tenant, permanently squatting on their email. Audit_logs
+    // still has a 'user_removed' record naming them for this tenant, so use
+    // that to catch anyone still orphaned (never reassigned to another
+    // tenant since) and sweep them up too.
+    const { data: removedLogs } = await admin
+      .from('audit_logs')
+      .select('resource_id')
+      .eq('tenant_id', tenantId)
+      .eq('action', 'user_removed')
+    const removedIds = new Set((removedLogs ?? []).map(l => l.resource_id).filter(Boolean))
+    const orphanedUsers = users.filter(u => removedIds.has(u.id) && !u.app_metadata?.tenant_id)
+
+    const usersToDelete = [...tenantUsers, ...orphanedUsers]
+    for (const u of usersToDelete) {
       await admin.auth.admin.deleteUser(u.id)
     }
 
@@ -122,7 +139,7 @@ export async function permanentlyRemoveTenant(tenantId: string, confirmName: str
       resource_type: 'account',
       resource_id: tenantId,
       resource_name: t.name,
-      details: { executed_by: caller.email ?? caller.id, permanent: true, users_removed: tenantUsers.length },
+      details: { executed_by: caller.email ?? caller.id, permanent: true, users_removed: usersToDelete.length },
     })
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Removal failed' }
