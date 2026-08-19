@@ -45,28 +45,18 @@ export function SendPortalLinkButton({
   }
 
   if (iconOnly) {
+    if (!hasEmail) return null
     return (
       <div className="flex items-center gap-1.5 flex-wrap relative">
-        {hasEmail && (
-          <button
-            onClick={handleEmail}
-            disabled={busy !== null}
-            title="Send client portal link via email"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-accent/10 hover:text-accent transition-colors disabled:opacity-50"
-          >
-            <Mail className="w-3.5 h-3.5" />
-          </button>
-        )}
-        {hasPhone && (
-          <button
-            onClick={handleSms}
-            disabled={busy !== null}
-            title="Send client portal link via SMS"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-accent/10 hover:text-accent transition-colors disabled:opacity-50"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-          </button>
-        )}
+        <button
+          onClick={handleEmail}
+          disabled={busy !== null}
+          title="Send client portal link via email"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] text-[12.5px] font-semibold hover:bg-accent/10 hover:text-accent transition-colors disabled:opacity-50"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          {busy === 'email' ? 'Sending…' : 'Send portal link'}
+        </button>
         {result && (
           <p className={`absolute top-full left-0 mt-1 text-[12.5px] font-medium whitespace-nowrap ${result.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
             {result.message}
