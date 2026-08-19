@@ -104,6 +104,22 @@ export default function ConfirmPage() {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
           await finishSuccess(queryType === 'recovery')
+          return
+        }
+
+        // Admin-issued links (invite, or a resend of one) are never
+        // initiated from this browser, so there's no code_verifier on hand
+        // for the PKCE exchange above — it fails on the very first genuine
+        // click, not because the link actually expired. Supabase still
+        // accepts the same value as a one-time OTP token in that case, so
+        // retry that way before giving up. A real "invalid or expired" only
+        // surfaces once this also fails (e.g. token TTL passed, or reused).
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: code,
+          type: (queryType as 'invite' | 'recovery' | 'email' | 'signup') || 'invite',
+        })
+        if (!otpError) {
+          await finishSuccess(queryType === 'recovery')
         } else {
           router.replace(`/auth/login?error=auth_failed${queryType ? `&type=${queryType}` : ''}`)
         }
