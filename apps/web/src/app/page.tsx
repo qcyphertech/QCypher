@@ -1609,7 +1609,7 @@ export default function HomePage() {
                     <li><span className="chk">✓</span><span><strong>Custom Website</strong> <em>(your business info, photos, and contact details live online — Google finds you)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>Appointment Scheduling</strong> <em>(customers book directly from your website, auto-synced to your calendar)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>Basic Inventory</strong> <em>(track products and services you sell — who bought what, when)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>Google Integration</strong> <em>(claim your business listing, show hours and services on Google Maps)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Google Integration</strong> <em>(claim your business listing, show hours, services, and reviews on Google Maps)</em></span></li>
                     <li><span className="chk crm-chk">✓</span><span><strong>Customer Management Tool</strong> <em>(included free with this plan)</em></span></li>
                   </ul>
                 </div>
