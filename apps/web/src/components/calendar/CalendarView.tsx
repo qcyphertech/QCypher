@@ -452,9 +452,14 @@ export function CalendarView({
   const days = getDays(view, anchor)
 
   function openSlot(date: Date, hour?: number, minute = 0) {
+    // Month view passes just a day (midnight, no time component) when a
+    // date cell is clicked — default that to the current time of day
+    // instead of leaving it at 00:00. The time-grid views already pass an
+    // explicit hour/minute for the slot clicked.
+    const now = new Date()
     const d = hour !== undefined
       ? new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute)
-      : date
+      : new Date(date.getFullYear(), date.getMonth(), date.getDate(), now.getHours(), now.getMinutes())
     setModal({ date: d })
   }
 
@@ -571,10 +576,13 @@ export function CalendarView({
         )}
       </div>
 
-      {/* FAB */}
+      {/* FAB — sits to the left of the QBot widget (fixed, bottom-right,
+          52px, z-index 100 — see CrmBotWidget.tsx) at the same bottom
+          offsets so the two sit side by side instead of overlapping,
+          with QBot hiding this button underneath it. */}
       <button
         onClick={() => setShowSheet(true)}
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6"
+        className="fixed bottom-[84px] md:bottom-5 right-[84px]"
         style={{
           background: FX.activePill,
           color: '#fff', border: 'none', cursor: 'pointer',
@@ -584,6 +592,7 @@ export function CalendarView({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '12px', fontWeight: 800, letterSpacing: '0.04em',
           transition: 'all 0.15s',
+          zIndex: 90,
         }}
       >
         <Plus size={20} />
