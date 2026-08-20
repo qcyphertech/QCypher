@@ -33,10 +33,12 @@ export function AppShell({
       {/* Desktop collapsible sidebar */}
       <Sidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} settings={settings} dark={dark} />
 
-      {/* Fixed top bar — starts to the right of the sidebar (see
-          .app-topbar-fixed), not spanning the full viewport, so it doesn't
-          paint over the sidebar's logo row. */}
-      <div className="app-topbar-fixed fixed top-0 right-0 z-50 print:hidden">
+      {/* Fixed top bar — spans the full viewport width and sits above
+          everything else in the app, including in-page modals (most of
+          which are z-50, tying the header, or z-[9999] for a couple of
+          full-screen viewers) — see .app-header-fixed. The sidebar starts
+          below it (top: 64px) instead of sharing the same top line. */}
+      <div className="app-header-fixed fixed top-0 inset-x-0 print:hidden">
         <TopBar
           onOpenCmd={() => setCmdOpen(true)}
           dark={dark}

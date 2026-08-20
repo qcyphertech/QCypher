@@ -43,12 +43,12 @@ export function TopBar({
         className="flex items-center gap-2.5 flex-shrink-0 hover:opacity-90 transition-opacity bg-transparent border-0 cursor-pointer p-0"
       >
         {/* Mobile: icon only, no wordmark/pill text */}
-        <img src="/qcypher-logo.png" alt="QCypher" className="h-[26px] sm:hidden" style={{ width: 'auto', display: 'block' }} />
+        <img src="/qcypher-logo.png" alt="QCypher" className="h-[30px] sm:hidden" style={{ width: 'auto', display: 'block' }} />
         {/* sm+: full wordmark, swapped by theme, plus the CRM badge */}
         <img
           src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
           alt="QCypher"
-          className="hidden sm:block h-[28px]"
+          className="hidden sm:block h-[34px]"
           style={{ width: 'auto' }}
         />
         <span

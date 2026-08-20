@@ -36,7 +36,7 @@ export function Sidebar({
 
   return (
     <aside
-      className="qc-sidebar hidden md:flex fixed top-0 left-0 h-full flex-col z-40 print:hidden overflow-hidden"
+      className="qc-sidebar hidden md:flex fixed left-0 flex-col z-40 print:hidden overflow-hidden"
       style={{
         background: 'hsl(var(--card))',
         transition: 'width 0.15s ease',
@@ -46,14 +46,17 @@ export function Sidebar({
           collapsed, full wordmark (swapped by theme, bigger once
           expanded) once expanded. A thin rule underneath separates it
           from the nav, same style as the rules between nav groups below,
-          instead of a vertical border down the sidebar's edge. */}
+          instead of a vertical border down the sidebar's edge. Sits below
+          the header now (.qc-sidebar's top offset), so no overlap risk
+          with the header's own logo despite the header spanning full
+          width above everything. */}
       <Link href="/dashboard" className="flex items-center flex-shrink-0 px-4 pt-3 pb-2">
-        <img src="/qcypher-logo.png" alt="QCypher" className="qc-sidebar-icon-only" style={{ height: '28px', width: 'auto', flexShrink: 0 }} />
+        <img src="/qcypher-logo.png" alt="QCypher" className="qc-sidebar-icon-only" style={{ height: '32px', width: 'auto', flexShrink: 0 }} />
         <img
           src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
           alt="QCypher"
           className="qc-sidebar-label"
-          style={{ height: '42px', width: 'auto', flexShrink: 0 }}
+          style={{ height: '50px', width: 'auto', flexShrink: 0 }}
         />
       </Link>
       <div className="mx-3 h-px flex-shrink-0" style={{ background: 'hsl(var(--border))' }} />

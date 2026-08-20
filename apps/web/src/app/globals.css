@@ -141,7 +141,7 @@
      fixed sidebar overlays content on hover rather than reflowing it, so
      .app-main only reserves space for the COLLAPSED width — matches the
      Supabase-style pattern this was modeled on. */
-  .qc-sidebar { width: 64px; }
+  .qc-sidebar { width: 64px; top: 64px; height: calc(100% - 64px); }
   .qc-sidebar-label { display: none; }
   .qc-sidebar-icon-only { display: block; }
   @media (min-width: 1280px) {
@@ -163,15 +163,10 @@
     .app-main-offset { padding-left: calc(224px + 1.5rem); }
   }
 
-  /* The header's fixed wrapper starts to the right of the sidebar (via
-     .app-topbar-fixed's `left`) instead of spanning the full viewport and
-     padding its content — spanning full width would paint the header's
-     own translucent/blurred background on top of the sidebar. */
-  .app-topbar-fixed { left: 0; }
-  @media (min-width: 768px) {
-    .app-topbar-fixed { left: 64px; }
-  }
-  @media (min-width: 1280px) {
-    .app-topbar-fixed { left: 224px; }
-  }
+  /* The header sits above literally everything else in the app — every
+     in-page modal, the couple of full-screen viewers that go as high as
+     z-index 9999, all of it. Picked well clear of any z-index used
+     anywhere else in the codebase. The sidebar starts below it (see
+     .qc-sidebar's top/height below) instead of sharing its top line. */
+  .app-header-fixed { z-index: 10000; }
 }
