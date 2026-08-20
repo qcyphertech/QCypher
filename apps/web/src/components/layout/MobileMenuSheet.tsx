@@ -6,7 +6,7 @@ import { LogOut } from 'lucide-react'
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
-import { HOME_ITEM, SECONDARY_NAV, ADMIN_ITEM, type NavItem } from './navItems'
+import { HOME_ITEM, PRIMARY_NAV, SECONDARY_NAV, ADMIN_ITEM, type NavItem } from './navItems'
 
 // Mobile-only bottom sheet, opened from BottomNav's hamburger button.
 // Sheets up from the bottom (drag-handle, rounded top) instead of the
@@ -28,6 +28,7 @@ export function MobileMenuSheet({
   const pathname = usePathname()
   const router = useRouter()
   const active = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  const visiblePrimary = PRIMARY_NAV.filter(i => i.href !== '/dashboard' && (i.flag === null || settings[i.flag]))
   const visibleSecondary = SECONDARY_NAV.filter(i => i.flag === null || settings[i.flag])
 
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -70,6 +71,12 @@ export function MobileMenuSheet({
 
         <div className="flex-1 overflow-y-auto pb-safe px-3 py-2">
           <SheetItem item={HOME_ITEM} active={active('/dashboard')} />
+          {visiblePrimary.map(item => (
+            <SheetItem key={item.href} item={item} active={active(item.href)} />
+          ))}
+
+          <div className="mx-2 my-2 h-px" style={{ background: 'hsl(var(--border))' }} />
+
           {visibleSecondary.map(item => (
             <SheetItem key={item.href} item={item} active={active(item.href)} />
           ))}
