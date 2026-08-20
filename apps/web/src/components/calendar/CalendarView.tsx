@@ -41,17 +41,11 @@ const HOURS     = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_STAR
 
 // Futuristic palette — works on top of the app theme
 const FX = {
-  cyan:        '#2a52a0',
-  violet:      '#1a3070',
-  pink:        '#2a52a0',
   border:      'rgba(42,82,160,0.18)',
   borderMed:   'rgba(42,82,160,0.30)',
   glow:        '0 0 18px rgba(42,82,160,0.18)',
   glowStrong:  '0 0 18px rgba(42,82,160,0.28)',
   gridLine:    'rgba(42,82,160,0.14)',
-  todayRing:   'rgba(42,82,160,0.55)',
-  eventBg:     'rgba(42,82,160,0.16)',
-  eventBorder: '#2a52a0',
   headerGrad:  'linear-gradient(135deg, rgba(26,48,112,0.08) 0%, rgba(42,82,160,0.12) 100%)',
   activePill:  'linear-gradient(135deg, #1a3070 0%, #2a52a0 100%)',
 }
@@ -163,7 +157,7 @@ function MonthView({ anchor, events, onClickDay, onClickEvent }: {
       <div className="grid grid-cols-7" style={{ borderBottom: `1px solid ${FX.border}` }}>
         {['SUN','MON','TUE','WED','THU','FRI','SAT'].map(d => (
           <div key={d} className="text-center py-2.5"
-            style={{ color: FX.cyan, fontSize: '11px', fontWeight: 800, letterSpacing: '0.10em' }}>
+            style={{ color: 'var(--cal-accent)', fontSize: '11px', fontWeight: 800, letterSpacing: '0.10em' }}>
             {d}
           </div>
         ))}
@@ -192,9 +186,9 @@ function MonthView({ anchor, events, onClickDay, onClickEvent }: {
                     fontSize: '12px', fontWeight: 700,
                     width: '22px', height: '22px',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    borderRadius: '50%',
-                    background: today ? FX.cyan : 'transparent',
-                    color: today ? '#000' : 'hsl(var(--foreground))',
+                    borderRadius: '6px',
+                    background: today ? 'var(--cal-marker-bg)' : 'transparent',
+                    color: today ? 'var(--cal-marker-fg)' : 'hsl(var(--foreground))',
                     boxShadow: 'none',
                     fontVariantNumeric: 'tabular-nums',
                   }}>
@@ -208,21 +202,21 @@ function MonthView({ anchor, events, onClickDay, onClickEvent }: {
                       className="w-full text-left truncate transition-all"
                       style={{
                         fontSize: '11px', fontWeight: 700,
-                        background: FX.eventBg,
-                        color: FX.cyan,
-                        borderRadius: '4px',
+                        background: 'var(--cal-event-bg)',
+                        color: 'var(--cal-event-fg)',
+                        borderRadius: '6px',
                         padding: '2px 6px',
-                        borderLeft: `2px solid ${FX.cyan}`,
+                        borderLeft: '2px solid var(--cal-accent)',
                         letterSpacing: '0.01em',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(42,82,160,0.18)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = FX.eventBg)}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'var(--cal-event-bg)')}
                     >
                       {ev.title}
                     </button>
                   ))}
                   {dayEvs.length > 2 && (
-                    <p style={{ fontSize: '11px', color: FX.violet, fontWeight: 700, paddingLeft: '4px' }}>
+                    <p style={{ fontSize: '11px', color: 'var(--cal-accent)', fontWeight: 700, paddingLeft: '4px' }}>
                       +{dayEvs.length - 2} more
                     </p>
                   )}
@@ -258,12 +252,12 @@ function TimeGrid({ days, events, onClickSlot, onClickEvent }: {
           return (
             <div key={day.toISOString()} className="flex-1 text-center py-3"
               style={{ borderLeft: `1px solid ${FX.border}` }}>
-              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.10em', color: today ? FX.cyan : 'hsl(var(--muted-foreground))' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.10em', color: today ? 'var(--cal-accent)' : 'hsl(var(--muted-foreground))' }}>
                 {format(day, 'EEE').toUpperCase()}
               </p>
               <p style={{
                 fontSize: '18px', fontWeight: 900, lineHeight: 1.1, marginTop: '2px',
-                color: today ? FX.cyan : 'hsl(var(--foreground))',
+                color: today ? 'var(--cal-accent)' : 'hsl(var(--foreground))',
                 textShadow: 'none',
                 fontVariantNumeric: 'tabular-nums',
               }}>
@@ -285,7 +279,7 @@ function TimeGrid({ days, events, onClickSlot, onClickEvent }: {
                 <span style={{
                   position: 'absolute', top: -9, right: 8,
                   fontSize: '11px', fontWeight: 700,
-                  color: '#2a52a0',
+                  color: 'var(--cal-accent)',
                   letterSpacing: '0.04em',
                 }}>
                   {format(new Date(2000, 0, 1, h), 'ha').toLowerCase()}
@@ -352,8 +346,8 @@ function TimeGrid({ days, events, onClickSlot, onClickEvent }: {
                         left: `calc(${col * pct}% + 2px)`,
                         width: `calc(${pct}% - 4px)`,
                         top, height,
-                        background: 'rgba(42,82,160,0.18)',
-                        borderLeft: `3px solid #2a52a0`,
+                        background: 'var(--cal-event-bg)',
+                        borderLeft: '3px solid var(--cal-accent)',
                         borderRadius: '6px',
                         boxShadow: `0 0 10px rgba(42,82,160,0.20)`,
                         zIndex: 10,
@@ -363,13 +357,13 @@ function TimeGrid({ days, events, onClickSlot, onClickEvent }: {
                         backdropFilter: 'blur(4px)',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(42,82,160,0.30)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(42,82,160,0.18)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'var(--cal-event-bg)')}
                     >
-                      <p style={{ fontSize: '12px', fontWeight: 800, color: '#2a52a0', lineHeight: 1.2, letterSpacing: '0.02em' }} className="truncate">
+                      <p style={{ fontSize: '12px', fontWeight: 800, color: 'var(--cal-event-fg)', lineHeight: 1.2, letterSpacing: '0.02em' }} className="truncate">
                         {ev.title}
                       </p>
                       {height > 30 && (
-                        <p style={{ fontSize: '11px', color: 'rgba(42,82,160,0.75)', marginTop: '1px' }}>
+                        <p style={{ fontSize: '11px', color: 'var(--cal-event-fg)', opacity: 0.75, marginTop: '1px' }}>
                           {format(parseISO(ev.starts_at), 'h:mm')}–{format(parseISO(ev.ends_at), 'h:mma')}
                         </p>
                       )}
@@ -486,7 +480,7 @@ export function CalendarView({
             <button onClick={() => setAnchor(d => navigate(view, d, -1))}
               style={{
                 padding: '6px', borderRadius: '8px', border: `1px solid ${FX.border}`,
-                background: 'transparent', cursor: 'pointer', color: FX.cyan, transition: 'all 0.15s',
+                background: 'transparent', cursor: 'pointer', color: 'var(--cal-accent)', transition: 'all 0.15s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(42,82,160,0.10)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -497,7 +491,7 @@ export function CalendarView({
               style={{
                 padding: '5px 12px', borderRadius: '8px', border: `1px solid ${FX.border}`,
                 background: 'transparent', cursor: 'pointer',
-                fontSize: '12px', fontWeight: 700, color: FX.cyan, letterSpacing: '0.04em',
+                fontSize: '12px', fontWeight: 700, color: 'var(--cal-accent)', letterSpacing: '0.04em',
                 transition: 'all 0.15s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(42,82,160,0.10)')}
@@ -508,7 +502,7 @@ export function CalendarView({
             <button onClick={() => setAnchor(d => navigate(view, d, 1))}
               style={{
                 padding: '6px', borderRadius: '8px', border: `1px solid ${FX.border}`,
-                background: 'transparent', cursor: 'pointer', color: FX.cyan, transition: 'all 0.15s',
+                background: 'transparent', cursor: 'pointer', color: 'var(--cal-accent)', transition: 'all 0.15s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(42,82,160,0.10)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -542,7 +536,7 @@ export function CalendarView({
                   cursor: 'pointer', transition: 'all 0.15s',
                   borderRight: i < VIEWS.length - 1 ? `1px solid ${FX.border}` : 'none',
                   background: view === v.key ? FX.activePill : 'transparent',
-                  color: view === v.key ? '#fff' : FX.cyan,
+                  color: view === v.key ? '#fff' : 'var(--cal-accent)',
                   textShadow: view === v.key ? '0 0 8px rgba(255,255,255,0.4)' : 'none',
                   boxShadow: view === v.key ? '0 0 16px rgba(42,82,160,0.30)' : 'none',
                 }}

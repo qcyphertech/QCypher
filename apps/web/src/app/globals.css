@@ -46,6 +46,16 @@
     --badge-red-bg:      #fee2e2; --badge-red-text:      #991b1b;
     --badge-green-bg:    #dcfce7; --badge-green-text:    #166534;
     --badge-tag-bg:      #e8eef8; --badge-tag-text:      #1a3070;
+
+    /* Calendar accents — separate from --heading because the today/
+       selected-day marker needs to INVERT (blue fill/white text in light
+       mode, white fill/dark text in dark mode) rather than just swap one
+       color, which --heading's single-value pattern can't express. */
+    --cal-accent:    #2a52a0;
+    --cal-marker-bg: #2a52a0;
+    --cal-marker-fg: #ffffff;
+    --cal-event-bg:  rgba(42,82,160,0.14);
+    --cal-event-fg:  #1a3070;
   }
 
   /* Dark mode — applied via html.dark class. "Rich brand navy": hue 221,
@@ -78,6 +88,15 @@
     --badge-red-bg:      rgba(239,68,68,0.18);   --badge-red-text:      #fca5a5;
     --badge-green-bg:    rgba(34,197,94,0.18);   --badge-green-text:    #86efac;
     --badge-tag-bg:      rgba(42,82,160,0.20);  --badge-tag-text:      #a5b4fc;
+
+    /* Calendar: light-blue text (readable on navy) + an inverted, white
+       today/selected-day marker instead of the light-mode blue fill,
+       which would be nearly invisible against this dark background. */
+    --cal-accent:    #7dd3f7;
+    --cal-marker-bg: #ffffff;
+    --cal-marker-fg: #1a3070;
+    --cal-event-bg:  rgba(125,211,247,0.16);
+    --cal-event-fg:  #bfe7fb;
   }
 
   * { border-color: hsl(var(--border)); }
