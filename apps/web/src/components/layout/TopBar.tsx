@@ -6,6 +6,11 @@ import { useState } from 'react'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { NotificationBell } from './NotificationBell'
 
+// Desktop branding lives in the sidebar (see Sidebar.tsx) — the sidebar is
+// hidden on mobile though, so mobile keeps its own small logo/exit-trigger
+// here. On desktop this left cell is empty; a 3-column grid (empty left /
+// search / right controls) keeps the search bar at the header's true
+// center regardless of the right controls' width.
 export function TopBar({
   onOpenCmd,
   dark,
@@ -23,28 +28,26 @@ export function TopBar({
 
   return (
     <header
-      className="app-topbar-offset flex-shrink-0 flex items-center gap-3 pr-4 md:pr-5 border-b"
+      className="flex-shrink-0 grid items-center gap-3 pl-4 pr-4 md:pl-5 md:pr-5 border-b"
       style={{
         height: '64px',
+        gridTemplateColumns: '1fr auto 1fr',
         background: 'hsl(var(--card) / 0.85)',
         backdropFilter: 'blur(16px) saturate(180%)',
         WebkitBackdropFilter: 'blur(16px) saturate(180%)',
         borderColor: 'hsl(var(--border))',
       }}
     >
-      {/* Logo — full wordmark, swapped by theme (navy text on light, white text on dark) */}
-      <button
-        onClick={() => setExitPrompt(true)}
-        className="flex items-center flex-shrink-0 hover:opacity-90 transition-opacity mr-2 bg-transparent border-0 cursor-pointer p-0"
-      >
-        <img
-          src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
-          alt="QCypher"
-          style={{ height: '26px', width: 'auto', display: 'block' }}
-        />
-      </button>
+      <div className="flex items-center">
+        <button
+          onClick={() => setExitPrompt(true)}
+          className="flex md:hidden items-center flex-shrink-0 hover:opacity-90 transition-opacity bg-transparent border-0 cursor-pointer p-0"
+        >
+          <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '38px', width: 'auto', display: 'block' }} />
+        </button>
+      </div>
 
-      {/* Exit confirmation dialog */}
+      {/* Exit confirmation dialog — mobile-only trigger above, desktop's is in the sidebar */}
       {exitPrompt && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -85,10 +88,6 @@ export function TopBar({
         </div>
       )}
 
-      {/* Left spacer — with the right spacer below, centers the search bar
-          on the header's own midpoint regardless of logo/controls width. */}
-      <div className="flex-1" />
-
       {/* Search */}
       <button onClick={onOpenCmd}
         className="flex items-center gap-2.5 rounded-full border transition-all group flex-shrink-0"
@@ -104,10 +103,8 @@ export function TopBar({
         <span className="flex-1 text-left truncate" style={{ fontSize: '14px', fontWeight: 500 }}>Search…</span>
       </button>
 
-      <div className="flex-1" />
-
       {/* Right controls */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0 justify-self-end">
         <button onClick={onToggleDark}
           className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))] transition-colors"
           title={dark ? 'Light mode' : 'Dark mode'}>

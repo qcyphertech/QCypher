@@ -14,10 +14,12 @@ export function Sidebar({
   isAdmin = false,
   isSuperAdmin = false,
   settings = DEFAULT_SETTINGS,
+  dark = false,
 }: {
   isAdmin?:      boolean
   isSuperAdmin?: boolean
   settings?:     TenantSettings
+  dark?:         boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -41,12 +43,17 @@ export function Sidebar({
         transition: 'width 0.15s ease',
       }}
     >
-      {/* Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0 px-4" style={{ height: '64px' }}>
-        <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '32px', width: 'auto', flexShrink: 0 }} />
-        <span className="qc-sidebar-label font-black text-[15px] whitespace-nowrap" style={{ color: 'var(--heading)' }}>
-          QCypher
-        </span>
+      {/* Logo — icon-only mark while the rail is collapsed, full wordmark
+          (swapped by theme) once expanded; see .qc-sidebar-icon-only /
+          .qc-sidebar-label in globals.css for which shows when. */}
+      <Link href="/dashboard" className="flex items-center flex-shrink-0 px-4" style={{ height: '64px' }}>
+        <img src="/qcypher-logo.png" alt="QCypher" className="qc-sidebar-icon-only" style={{ height: '33px', width: 'auto', flexShrink: 0 }} />
+        <img
+          src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
+          alt="QCypher"
+          className="qc-sidebar-label"
+          style={{ height: '33px', width: 'auto', flexShrink: 0 }}
+        />
       </Link>
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-3 space-y-0.5">

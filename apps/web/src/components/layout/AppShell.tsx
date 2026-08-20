@@ -31,10 +31,12 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
       {/* Desktop collapsible sidebar */}
-      <Sidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} settings={settings} />
+      <Sidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} settings={settings} dark={dark} />
 
-      {/* Fixed top bar */}
-      <div className="fixed top-0 inset-x-0 z-50 print:hidden">
+      {/* Fixed top bar — starts to the right of the sidebar (see
+          .app-topbar-fixed), not spanning the full viewport, so it doesn't
+          paint over the sidebar's logo row. */}
+      <div className="app-topbar-fixed fixed top-0 right-0 z-50 print:hidden">
         <TopBar
           onOpenCmd={() => setCmdOpen(true)}
           dark={dark}

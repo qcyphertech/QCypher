@@ -143,13 +143,16 @@
      Supabase-style pattern this was modeled on. */
   .qc-sidebar { width: 64px; }
   .qc-sidebar-label { display: none; }
+  .qc-sidebar-icon-only { display: block; }
   @media (min-width: 1280px) {
     .qc-sidebar { width: 224px; }
     .qc-sidebar-label { display: inline; }
+    .qc-sidebar-icon-only { display: none; }
   }
   @media (min-width: 768px) and (max-width: 1279px) {
     .qc-sidebar:hover { width: 224px; }
     .qc-sidebar:hover .qc-sidebar-label { display: inline; }
+    .qc-sidebar:hover .qc-sidebar-icon-only { display: none; }
   }
 
   .app-main-offset { padding-left: 1rem; padding-right: 1rem; }
@@ -160,11 +163,16 @@
     .app-main-offset { padding-left: calc(224px + 1.5rem); }
   }
 
-  .app-topbar-offset { padding-left: 1rem; }
+  /* The header's fixed wrapper now starts to the right of the sidebar
+     (via .app-topbar-fixed's `left`) instead of spanning the full
+     viewport and padding its content — spanning full width put the
+     header's own translucent/blurred background on top of the
+     sidebar's logo row, hiding it. */
+  .app-topbar-fixed { left: 0; }
   @media (min-width: 768px) {
-    .app-topbar-offset { padding-left: calc(64px + 1.25rem); }
+    .app-topbar-fixed { left: 64px; }
   }
   @media (min-width: 1280px) {
-    .app-topbar-offset { padding-left: calc(224px + 1.25rem); }
+    .app-topbar-fixed { left: 224px; }
   }
 }
