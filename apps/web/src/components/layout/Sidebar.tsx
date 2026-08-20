@@ -34,17 +34,17 @@ export function Sidebar({
 
   return (
     <aside
-      className="qc-sidebar hidden md:flex fixed top-0 left-0 h-full flex-col z-40 print:hidden overflow-hidden"
+      className="qc-sidebar hidden md:flex fixed top-0 left-0 h-full flex-col z-40 print:hidden overflow-hidden border-r"
       style={{
-        background: '#081540',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
+        background: 'hsl(var(--card))',
+        borderColor: 'hsl(var(--border))',
         transition: 'width 0.15s ease',
       }}
     >
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0 px-4" style={{ height: '64px' }}>
         <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '32px', width: 'auto', flexShrink: 0 }} />
-        <span className="qc-sidebar-label font-black text-[15px] whitespace-nowrap" style={{ color: '#fff' }}>
+        <span className="qc-sidebar-label font-black text-[15px] whitespace-nowrap" style={{ color: 'var(--heading)' }}>
           QCypher
         </span>
       </Link>
@@ -55,7 +55,7 @@ export function Sidebar({
           <SidebarItem key={item.href} item={item} active={active(item.href)} />
         ))}
 
-        <div className="my-2 mx-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+        <div className="my-2 mx-1 h-px" style={{ background: 'hsl(var(--border))' }} />
 
         {visibleSecondary.map(item => (
           <SidebarItem key={item.href} item={item} active={active(item.href)} />
@@ -63,15 +63,15 @@ export function Sidebar({
 
         {(isAdmin || isSuperAdmin) && (
           <>
-            <div className="my-2 mx-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <div className="my-2 mx-1 h-px" style={{ background: 'hsl(var(--border))' }} />
             <SidebarItem item={ADMIN_ITEM} active={active('/admin')} />
           </>
         )}
       </nav>
 
-      <div className="flex-shrink-0 px-3 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="flex-shrink-0 px-3 py-3 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
         <button onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-2 py-2 rounded-xl transition-colors hover:bg-white/5">
+          className="w-full flex items-center gap-3 px-2 py-2 rounded-xl transition-colors hover:bg-[hsl(var(--muted))]">
           <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.14)' }}>
             <LogOut style={{ width: '14px', height: '14px', color: '#f87171' }} strokeWidth={2} />
           </span>
@@ -89,14 +89,14 @@ function SidebarItem({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link href={href}
       className="flex items-center gap-3 px-2 py-2 rounded-xl transition-colors"
-      style={{ background: active ? 'rgba(255,255,255,0.08)' : 'transparent' }}
+      style={{ background: active ? 'hsl(var(--muted))' : 'transparent' }}
     >
       <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: active ? color : 'rgba(255,255,255,0.06)' }}>
-        <Icon style={{ width: '15px', height: '15px', color: active ? '#fff' : 'rgba(255,255,255,0.65)' }} strokeWidth={2} />
+        style={{ background: active ? color : 'hsl(var(--muted))' }}>
+        <Icon style={{ width: '15px', height: '15px', color: active ? '#fff' : 'hsl(var(--muted-foreground))' }} strokeWidth={2} />
       </span>
       <span className="qc-sidebar-label text-[13.5px] font-semibold whitespace-nowrap"
-        style={{ color: active ? '#fff' : 'rgba(255,255,255,0.7)' }}>
+        style={{ color: active ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' }}>
         {label}
       </span>
     </Link>
