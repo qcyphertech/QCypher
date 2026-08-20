@@ -33,6 +33,16 @@ async function requireFullTier() {
   return { admin: createAdminClient(), user, tenant_id }
 }
 
+// createRental/returnRental use this instead — getRentals stays viewable
+// for read-only accounts, matching "view allowed, write blocked" elsewhere.
+async function requireFullTierWriter() {
+  const result = await requireFullTier()
+  const { data: { user: fresh } } = await result.admin.auth.admin.getUserById(result.user.id)
+  const role = (fresh?.app_metadata?.role ?? 'member') as 'owner' | 'member' | 'read_only'
+  if (role === 'read_only') throw new Error('Read-only accounts cannot manage rentals')
+  return result
+}
+
 export async function getRentals(): Promise<CatalogRental[]> {
   const { admin, tenant_id } = await requireFullTier()
   const { data, error } = await admin
@@ -50,7 +60,7 @@ export async function createRental(input: {
   due_date: string
   notes?: string
 }) {
-  const { admin, user, tenant_id } = await requireFullTier()
+  const { admin, user, tenant_id } = await requireFullTierWriter()
   const { error } = await admin.from('catalog_rentals').insert({
     tenant_id,
     catalog_item_id: input.catalog_item_id,
@@ -64,7 +74,7 @@ export async function createRental(input: {
 }
 
 export async function returnRental(id: string, condition: 'good' | 'needs_repair' | 'damaged') {
-  const { admin, tenant_id } = await requireFullTier()
+  const { admin, tenant_id } = await requireFullTierWriter()
   const { data: rental } = await admin.from('catalog_rentals').select('catalog_item_id, catalog_items(name)').eq('id', id).eq('tenant_id', tenant_id).single()
   const { error } = await admin
     .from('catalog_rentals')

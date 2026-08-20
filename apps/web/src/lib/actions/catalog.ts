@@ -42,6 +42,18 @@ async function getAuthedTenant() {
   return { admin, user, tenant_id }
 }
 
+// Every write below runs through the admin (service-role) client, which
+// bypasses catalog_items' own RLS read_only check entirely — so unlike a
+// normal RLS-scoped write, read-only enforcement has to happen here
+// explicitly, same pattern as requireTenantWriter() in lib/actions/blog.ts.
+async function getAuthedTenantWriter() {
+  const { admin, user, tenant_id } = await getAuthedTenant()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  const role = (fresh?.app_metadata?.role ?? 'member') as 'owner' | 'member' | 'read_only'
+  if (role === 'read_only') throw new Error('Read-only accounts cannot manage inventory')
+  return { admin, user, tenant_id }
+}
+
 // Phase 42 — Lite/Full inventory tier. Stored directly on `tenants` (not
 // the platform_modules/tenant_module_access system used for other feature
 // toggles): that system defaults every module to "granted unless a super
@@ -125,7 +137,7 @@ function stripToTier<T extends Record<string, unknown>>(input: T, tier: Inventor
 
 export async function createCatalogItem(input: CatalogItemInput) {
   try {
-    const { admin, tenant_id } = await getAuthedTenant()
+    const { admin, tenant_id } = await getAuthedTenantWriter()
     const tier = await getInventoryTier()
     const payload = stripToTier(input, tier)
     const { data, error } = await admin.from('catalog_items').insert({ ...payload, tenant_id }).select('id').single()
@@ -140,7 +152,7 @@ export async function createCatalogItem(input: CatalogItemInput) {
 
 export async function updateCatalogItem(id: string, input: Partial<CatalogItemInput & { is_active: boolean }>) {
   try {
-    const { admin, tenant_id } = await getAuthedTenant()
+    const { admin, tenant_id } = await getAuthedTenantWriter()
     const tier = await getInventoryTier()
     const payload = stripToTier(input, tier)
     const { error } = await admin
@@ -182,7 +194,7 @@ export async function adjustCatalogQuantity(catalog_item_id: string, tenant_id: 
 }
 
 export async function deleteCatalogItem(id: string) {
-  const { admin, tenant_id } = await getAuthedTenant()
+  const { admin, tenant_id } = await getAuthedTenantWriter()
   const { data: item } = await admin.from('catalog_items').select('name').eq('id', id).eq('tenant_id', tenant_id).single()
   const { error } = await admin.from('catalog_items').delete().eq('id', id).eq('tenant_id', tenant_id)
   if (error) throw new Error(error.message ?? 'Failed to delete item')
