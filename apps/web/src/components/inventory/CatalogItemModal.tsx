@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { createCatalogItem, updateCatalogItem, type CatalogItem, type InventoryTier } from '@/lib/actions/catalog'
 import { type TenantSettings } from '@/lib/types/settings'
 import { X } from 'lucide-react'
+import { CatalogImageUpload } from './CatalogImageUpload'
 
 type Props = {
   item?: CatalogItem
@@ -16,6 +17,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
   const [pending, startTransition] = useTransition()
   const [type, setType] = useState<'good' | 'service' | 'rental'>(item?.item_type ?? 'service')
   const [requiresDeposit, setRequiresDeposit] = useState(item?.requires_deposit ?? false)
+  const [imageUrl, setImageUrl] = useState(item?.image_url ?? '')
   const [error, setError] = useState<string | null>(null)
 
   const isFull = tier === 'full'
@@ -37,7 +39,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
       unit_of_measure: isFull && fd.get('unit_of_measure') ? (fd.get('unit_of_measure') as string) : undefined,
       reorder_point: isFull && fd.get('reorder_point') ? parseInt(fd.get('reorder_point') as string, 10) : undefined,
       expiry_date: isFull && fd.get('expiry_date') ? (fd.get('expiry_date') as string) : undefined,
-      image_url: isFull && fd.get('image_url') ? (fd.get('image_url') as string) : undefined,
+      image_url: isFull && imageUrl ? imageUrl : undefined,
     }
     setError(null)
     startTransition(async () => {
@@ -150,10 +152,8 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
           )}
 
           {isFull && toggles?.inventory_enable_images && (
-            <Field label="Image URL">
-              <input name="image_url" type="url" defaultValue={item?.image_url ?? ''} placeholder="https://…"
-                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
-                style={{ color: 'hsl(var(--foreground))' }} />
+            <Field label="Photo">
+              <CatalogImageUpload value={imageUrl} onChange={setImageUrl} />
             </Field>
           )}
 
