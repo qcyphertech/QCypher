@@ -254,24 +254,18 @@ export default function AboutPage() {
         }
         footer .wrap { position: relative; }
         footer .nav-logo { color: #fff; }
-        .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 20px; margin-bottom: 12px; }
-        @media (max-width: 680px) { .foot-grid { grid-template-columns: 1fr; gap: 14px; } }
-        .foot-brand p { font-size: 13px; color: rgba(255,255,255,0.55); max-width: 260px; margin-top: 4px; line-height: 1.45; }
-        .foot-col h5 {
+        .foot-compact { display: flex; flex-wrap: wrap; gap: 32px 40px; margin-bottom: 12px; }
+        .foot-contact { flex-shrink: 0; min-width: 170px; }
+        .foot-contact h5, .foot-links h5 {
           font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
-          color: rgba(255,255,255,0.4); margin-bottom: 6px; font-weight: 700;
+          color: rgba(255,255,255,0.4); margin-bottom: 8px; font-weight: 700;
         }
-        .foot-col a {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 13px; color: rgba(255,255,255,0.75); margin-bottom: 3px; font-weight: 500;
-          transition: color .15s, transform .15s; width: fit-content;
-        }
-        .foot-col a:hover { color: #fff; transform: translateX(3px); }
-        .foot-col a::after {
-          content: '→'; opacity: 0; transform: translateX(-4px);
-          transition: opacity .15s, transform .15s; font-size: 11px; color: var(--cyan);
-        }
-        .foot-col a:hover::after { opacity: 1; transform: translateX(0); }
+        .foot-contact a { display: block; font-size: 13px; font-weight: 600; color: var(--cyan); margin-bottom: 2px; }
+        .foot-contact p { font-size: 12px; color: rgba(255,255,255,0.55); margin: 4px 0 0; }
+        .foot-links { flex: 1; min-width: 220px; }
+        .foot-links-row { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+        .foot-links-row a { font-size: 13px; color: rgba(255,255,255,0.75); font-weight: 500; transition: color .15s; }
+        .foot-links-row a:hover { color: #fff; }
         .foot-bottom {
           border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;
           display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
@@ -529,29 +523,25 @@ export default function AboutPage() {
       {/* FOOTER — same as homepage */}
       <footer id="contact">
         <div className="wrap">
-          <div className="foot-grid">
-            <div className="foot-brand">
-              <div className="nav-logo" style={{ marginBottom: 0 }}>
-                <img src="/qcypher-logo-footer.png" alt="QCypher Technologies" />
-              </div>
-              <p>Simple tech solutions for local businesses. No jargon, just results.</p>
-            </div>
-            <div className="foot-col">
+          <div className="foot-compact">
+            <div className="foot-contact">
               <h5>Contact Us</h5>
               <a href="mailto:info@qcyphertech.com">info@qcyphertech.com</a>
-              <a href="tel:+18042505066" style={{ fontWeight: 600, color: 'var(--cyan)', marginBottom: '4px' }}>(804) 250-5066</a>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', margin: '0' }}>Ask for Felix or Thomas.</p>
+              <a href="tel:+18042505066">(804) 250-5066</a>
+              <p>Ask for Felix or Thomas.</p>
             </div>
-            <div className="foot-col">
+            <div className="foot-links">
               <h5>Quick Links</h5>
-              <Link href="/#packages">Packages</Link>
-              <Link href="/#crm">Customer Management</Link>
-              <Link href="/about">About Us</Link>
-              <Link href="/security">Security</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <Link href="/faq">FAQs</Link>
-              <Link href="/auth/login">Client Login</Link>
+              <div className="foot-links-row">
+                <Link href="/#packages">Packages</Link>
+                <Link href="/#crm">Customer Management</Link>
+                <Link href="/about">About Us</Link>
+                <Link href="/security">Security</Link>
+                <Link href="/privacy">Privacy Policy</Link>
+                <Link href="/terms">Terms of Service</Link>
+                <Link href="/faq">FAQs</Link>
+                <Link href="/auth/login">Client Login</Link>
+              </div>
             </div>
           </div>
 

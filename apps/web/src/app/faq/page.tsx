@@ -142,12 +142,15 @@ export default function FaqPage() {
         footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--cyan), var(--mint), transparent); opacity: 0.7; }
         footer .wrap { position: relative; max-width: 1060px; }
         footer .nav-logo { color: #fff; }
-        .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 20px; margin-bottom: 12px; }
-        @media (max-width: 680px) { .foot-grid { grid-template-columns: 1fr; gap: 14px; } }
-        .foot-brand p { font-size: 13px; color: rgba(255,255,255,0.55); max-width: 260px; margin-top: 4px; line-height: 1.45; }
-        .foot-col h5 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,0.4); margin-bottom: 6px; font-weight: 700; }
-        .foot-col a { display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.75); margin-bottom: 3px; font-weight: 500; transition: color .15s, transform .15s; width: fit-content; }
-        .foot-col a:hover { color: #fff; transform: translateX(3px); }
+        .foot-compact { display: flex; flex-wrap: wrap; gap: 32px 40px; margin-bottom: 12px; }
+        .foot-contact { flex-shrink: 0; min-width: 170px; }
+        .foot-contact h5, .foot-links h5 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,0.4); margin-bottom: 8px; font-weight: 700; }
+        .foot-contact a { display: block; font-size: 13px; font-weight: 600; color: var(--cyan); margin-bottom: 2px; }
+        .foot-contact p { font-size: 12px; color: rgba(255,255,255,0.55); margin: 4px 0 0; }
+        .foot-links { flex: 1; min-width: 220px; }
+        .foot-links-row { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+        .foot-links-row a { font-size: 13px; color: rgba(255,255,255,0.75); font-weight: 500; transition: color .15s; }
+        .foot-links-row a:hover { color: #fff; }
         .foot-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 13px; color: rgba(255,255,255,0.4); }
         .integrations-section { padding: 0.85rem 0; margin-bottom: 10px; border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); }
         .integrations-headline { text-align: center; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 14px; }
@@ -213,24 +216,22 @@ export default function FaqPage() {
 
       <footer>
         <div className="wrap">
-          <div className="foot-grid">
-            <div className="foot-brand">
-              <div className="nav-logo" style={{ marginBottom: 0 }}><img src="/qcypher-logo-footer.png" alt="QCypher Technologies" /></div>
-              <p>Simple tech solutions for local businesses. No jargon, just results.</p>
-            </div>
-            <div className="foot-col">
+          <div className="foot-compact">
+            <div className="foot-contact">
               <h5>Contact Us</h5>
               <a href="mailto:info@qcyphertech.com">info@qcyphertech.com</a>
-              <a href="tel:+18042505066" style={{ fontWeight: 600, color: 'var(--cyan)', marginBottom: '4px' }}>(804) 250-5066</a>
+              <a href="tel:+18042505066">(804) 250-5066</a>
             </div>
-            <div className="foot-col">
+            <div className="foot-links">
               <h5>Quick Links</h5>
-              <Link href="/about">About</Link>
-              <Link href="/security">Security</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
-              <Link href="/faq">FAQs</Link>
-              <Link href="/auth/login">Client Login</Link>
+              <div className="foot-links-row">
+                <Link href="/about">About</Link>
+                <Link href="/security">Security</Link>
+                <Link href="/privacy">Privacy</Link>
+                <Link href="/terms">Terms</Link>
+                <Link href="/faq">FAQs</Link>
+                <Link href="/auth/login">Client Login</Link>
+              </div>
             </div>
           </div>
           <div className="integrations-section" role="region" aria-label="Integration partners">
