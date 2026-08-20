@@ -249,11 +249,20 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
         </div>
       </td>
       <td className="px-5 py-3.5">
-        <span className="inline-flex items-center gap-1.5 text-[15px] font-bold px-2.5 py-1 rounded-full"
-          style={{ background: bg, color }}>
-          <Icon className="w-3 h-3" />
-          {label}
-        </span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 text-[15px] font-bold px-2.5 py-1 rounded-full"
+            style={{ background: bg, color }}>
+            <Icon className="w-3 h-3" />
+            {label}
+          </span>
+          {item.is_rentable && (
+            <span className="inline-flex items-center gap-1.5 text-[15px] font-bold px-2.5 py-1 rounded-full"
+              style={{ background: TYPE_META.rental.bg, color: TYPE_META.rental.color }}>
+              <Key className="w-3 h-3" />
+              Rentable
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-5 py-3.5">
         {qStatus ? (

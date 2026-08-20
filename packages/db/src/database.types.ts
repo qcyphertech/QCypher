@@ -526,6 +526,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          is_rentable: boolean
           item_type: Database["public"]["Enums"]["item_type"]
           location_id: string | null
           name: string
@@ -547,6 +548,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_rentable?: boolean
           item_type: Database["public"]["Enums"]["item_type"]
           location_id?: string | null
           name: string
@@ -568,6 +570,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_rentable?: boolean
           item_type?: Database["public"]["Enums"]["item_type"]
           location_id?: string | null
           name?: string

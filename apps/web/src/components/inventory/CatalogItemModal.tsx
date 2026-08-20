@@ -16,6 +16,7 @@ type Props = {
 export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Props) {
   const [pending, startTransition] = useTransition()
   const [type, setType] = useState<'good' | 'service' | 'rental'>(item?.item_type ?? 'service')
+  const [isRentable, setIsRentable] = useState(item?.is_rentable ?? false)
   const [requiresDeposit, setRequiresDeposit] = useState(item?.requires_deposit ?? false)
   const [imageUrl, setImageUrl] = useState(item?.image_url ?? '')
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +31,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
       name: fd.get('name') as string,
       description: fd.get('description') as string || undefined,
       item_type: fd.get('item_type') as 'good' | 'service' | 'rental',
+      is_rentable: type === 'good' && isRentable,
       base_price: parseFloat(fd.get('base_price') as string) || 0,
       billing_unit: fd.get('billing_unit') as 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly',
       taxable: fd.has('taxable'),
@@ -157,12 +159,20 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
             </Field>
           )}
 
+          {type === 'good' && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={isRentable}
+                onChange={e => setIsRentable(e.target.checked)} className="rounded" />
+              <span className="text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>Also available to rent</span>
+            </label>
+          )}
+
           <div className="flex gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="taxable" defaultChecked={item?.taxable} className="rounded" />
               <span className="text-[15px]" style={{ color: 'hsl(var(--foreground))' }}>Taxable</span>
             </label>
-            {type !== 'good' && (
+            {(type !== 'good' || isRentable) && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" name="requires_deposit"
                   defaultChecked={item?.requires_deposit}
@@ -172,7 +182,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
             )}
           </div>
 
-          {requiresDeposit && type !== 'good' && (
+          {requiresDeposit && (type !== 'good' || isRentable) && (
             <Field label="Deposit amount ($)">
               <input name="deposit_amount" type="number" step="0.01" min="0"
                 defaultValue={item?.deposit_amount ?? ''}

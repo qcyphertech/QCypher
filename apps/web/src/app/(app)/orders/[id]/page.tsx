@@ -28,7 +28,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       .order('created_at'),
     supabase
       .from('catalog_items')
-      .select('id, name, base_price, billing_unit, item_type')
+      .select('id, name, base_price, billing_unit, item_type, is_rentable')
       .eq('is_active', true)
       .order('name'),
     supabase

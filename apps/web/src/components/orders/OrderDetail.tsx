@@ -51,7 +51,7 @@ function UpsellSuggestionCard({ suggestion, onAccept, onDismiss }: {
   )
 }
 
-type CatalogItem = { id: string; name: string; base_price: number; billing_unit: string; item_type: string }
+type CatalogItem = { id: string; name: string; base_price: number; billing_unit: string; item_type: string; is_rentable?: boolean }
 type Contact     = { id: string; first_name: string; last_name: string | null }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -837,7 +837,7 @@ function AddLineModal({ orderId, catalogItems, onClose }: {
   function handleCatalogSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const item = catalogItems.find(i => i.id === e.target.value) ?? null
     setSelected(item)
-    setIsRental(item?.item_type === 'rental')
+    setIsRental(item?.item_type === 'rental' || !!item?.is_rentable)
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

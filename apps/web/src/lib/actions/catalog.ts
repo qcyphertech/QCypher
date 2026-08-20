@@ -12,6 +12,7 @@ export type CatalogItem = {
   name: string
   description: string | null
   item_type: 'good' | 'service' | 'rental'
+  is_rentable: boolean
   base_price: number
   billing_unit: 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly'
   is_active: boolean
@@ -111,6 +112,7 @@ type CatalogItemInput = {
   name: string
   description?: string
   item_type: 'good' | 'service' | 'rental'
+  is_rentable?: boolean
   base_price: number
   billing_unit: 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly'
   taxable?: boolean
