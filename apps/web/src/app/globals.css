@@ -143,13 +143,16 @@
      Supabase-style pattern this was modeled on. */
   .qc-sidebar { width: 64px; }
   .qc-sidebar-label { display: none; }
+  .qc-sidebar-icon-only { display: block; }
   @media (min-width: 1280px) {
     .qc-sidebar { width: 224px; }
     .qc-sidebar-label { display: inline; }
+    .qc-sidebar-icon-only { display: none; }
   }
   @media (min-width: 768px) and (max-width: 1279px) {
     .qc-sidebar:hover { width: 224px; }
     .qc-sidebar:hover .qc-sidebar-label { display: inline; }
+    .qc-sidebar:hover .qc-sidebar-icon-only { display: none; }
   }
 
   .app-main-offset { padding-left: 1rem; padding-right: 1rem; }

@@ -42,25 +42,29 @@ export function TopBar({
         onClick={() => setExitPrompt(true)}
         className="flex items-center gap-2.5 flex-shrink-0 hover:opacity-90 transition-opacity bg-transparent border-0 cursor-pointer p-0"
       >
+        {/* Mobile: icon only, no wordmark/pill text */}
+        <img src="/qcypher-logo.png" alt="QCypher" className="h-[26px] sm:hidden" style={{ width: 'auto', display: 'block' }} />
+        {/* sm+: full wordmark, swapped by theme, plus the CRM badge */}
         <img
           src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
           alt="QCypher"
-          className="h-[20px] sm:h-[28px]"
-          style={{ width: 'auto', display: 'block' }}
+          className="hidden sm:block h-[28px]"
+          style={{ width: 'auto' }}
         />
         <span
-          className="hidden sm:inline-flex"
+          className="hidden sm:inline-flex items-center"
           style={{
             fontFamily: 'var(--font-space-grotesk)',
             fontWeight: 700,
             fontSize: '11px',
-            letterSpacing: '0.08em',
-            padding: '4px 10px',
+            letterSpacing: '0.06em',
+            padding: '4px 10px 4px 8px',
             borderRadius: '999px',
-            color: '#fff',
-            background: 'linear-gradient(135deg,#1a3070,#4a9db5)',
+            color: 'var(--heading)',
+            background: 'rgba(74,157,181,0.14)',
           }}
         >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00a87a', display: 'inline-block', marginRight: '5px' }} />
           CRM
         </span>
       </button>

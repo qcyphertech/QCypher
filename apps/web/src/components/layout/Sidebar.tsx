@@ -14,10 +14,12 @@ export function Sidebar({
   isAdmin = false,
   isSuperAdmin = false,
   settings = DEFAULT_SETTINGS,
+  dark = false,
 }: {
   isAdmin?:      boolean
   isSuperAdmin?: boolean
   settings?:     TenantSettings
+  dark?:         boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -40,11 +42,20 @@ export function Sidebar({
         transition: 'width 0.15s ease',
       }}
     >
-      {/* Branding lives in the header now (see TopBar.tsx) — this is just
-          a header-height spacer so the nav below lines up with the top
-          bar, separated by a horizontal rule rather than a vertical
-          border down the sidebar's edge. */}
-      <div className="flex-shrink-0" style={{ height: '64px' }} />
+      {/* Logo, directly above the nav — icon-only while the rail is
+          collapsed, full wordmark (swapped by theme, bigger once
+          expanded) once expanded. A thin rule underneath separates it
+          from the nav, same style as the rules between nav groups below,
+          instead of a vertical border down the sidebar's edge. */}
+      <Link href="/dashboard" className="flex items-center flex-shrink-0 px-4 pt-3 pb-2">
+        <img src="/qcypher-logo.png" alt="QCypher" className="qc-sidebar-icon-only" style={{ height: '28px', width: 'auto', flexShrink: 0 }} />
+        <img
+          src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
+          alt="QCypher"
+          className="qc-sidebar-label"
+          style={{ height: '42px', width: 'auto', flexShrink: 0 }}
+        />
+      </Link>
       <div className="mx-3 h-px flex-shrink-0" style={{ background: 'hsl(var(--border))' }} />
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-3 space-y-0.5">
