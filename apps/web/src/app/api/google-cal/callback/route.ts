@@ -20,57 +20,68 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=state_mismatch`)
   }
 
-  // Exchange code for tokens
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      code,
-      client_id:     process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri:  `${process.env.APP_URL}/api/google-cal/callback`,
-      grant_type:    'authorization_code',
-    }),
-  })
+  // Everything past this point can throw (bad/missing env vars, a malformed
+  // Google response, an encryption key that isn't actually 64 hex chars in
+  // this environment, etc.) — without a catch here, an uncaught exception
+  // crashes the function mid-response instead of producing a normal HTTP
+  // response, which shows up in the browser as ERR_INVALID_RESPONSE rather
+  // than a readable error. Redirect with a diagnosable error code instead.
+  try {
+    // Exchange code for tokens
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id:     process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri:  `${process.env.APP_URL}/api/google-cal/callback`,
+        grant_type:    'authorization_code',
+      }),
+    })
 
-  const tokenBody = await tokenRes.json()
-  if (!tokenRes.ok || !tokenBody.access_token) {
-    console.error('[google-cal/callback] token exchange failed', JSON.stringify(tokenBody))
-    const reason = tokenBody.error ?? 'token_exchange'
-    return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=${encodeURIComponent(reason)}`)
+    const tokenBody = await tokenRes.json()
+    if (!tokenRes.ok || !tokenBody.access_token) {
+      console.error('[google-cal/callback] token exchange failed', JSON.stringify(tokenBody))
+      const reason = tokenBody.error ?? 'token_exchange'
+      return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=${encodeURIComponent(reason)}`)
+    }
+
+    const { access_token, refresh_token, expires_in } = tokenBody
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.redirect(`${process.env.APP_URL}/auth/login`)
+
+    const tenantId = (user.app_metadata?.tenant_id ?? user.user_metadata?.tenant_id) as string
+    if (!tenantId) return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=no_tenant`)
+
+    const expiresAt = expires_in
+      ? new Date(Date.now() + expires_in * 1000).toISOString()
+      : null
+
+    const { error: dbErr } = await supabase.from('tenant_integrations').upsert({
+      tenant_id:         tenantId,
+      provider:          'google_calendar',
+      access_token_enc:  encryptToken(access_token),
+      refresh_token_enc: refresh_token ? encryptToken(refresh_token) : null,
+      token_expires_at:  expiresAt,
+      updated_at:        new Date().toISOString(),
+    }, { onConflict: 'tenant_id,provider' })
+
+    if (dbErr) {
+      console.error('[google-cal/callback] db error', dbErr)
+      return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=save_failed`)
+    }
+
+    // Trigger an immediate sync so events appear right away
+    await syncGoogleEvents(tenantId, access_token, supabase)
+
+    return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_connected=1`)
+  } catch (err) {
+    console.error('[google-cal/callback] unhandled error', err)
+    return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=unexpected`)
   }
-
-  const { access_token, refresh_token, expires_in } = tokenBody
-
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.redirect(`${process.env.APP_URL}/auth/login`)
-
-  const tenantId = (user.app_metadata?.tenant_id ?? user.user_metadata?.tenant_id) as string
-  if (!tenantId) return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=no_tenant`)
-
-  const expiresAt = expires_in
-    ? new Date(Date.now() + expires_in * 1000).toISOString()
-    : null
-
-  const { error: dbErr } = await supabase.from('tenant_integrations').upsert({
-    tenant_id:         tenantId,
-    provider:          'google_calendar',
-    access_token_enc:  encryptToken(access_token),
-    refresh_token_enc: refresh_token ? encryptToken(refresh_token) : null,
-    token_expires_at:  expiresAt,
-    updated_at:        new Date().toISOString(),
-  }, { onConflict: 'tenant_id,provider' })
-
-  if (dbErr) {
-    console.error('[google-cal/callback] db error', dbErr)
-    return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=save_failed`)
-  }
-
-  // Trigger an immediate sync so events appear right away
-  await syncGoogleEvents(tenantId, access_token, supabase)
-
-  return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_connected=1`)
 }
 
 async function syncGoogleEvents(tenantId: string, accessToken: string, supabase: Awaited<ReturnType<typeof createClient>>) {
