@@ -8,6 +8,9 @@ import { renderBrandedEmail } from '@/lib/email/brand'
 import { revalidatePath } from 'next/cache'
 import type { Json } from '@qcypher/db'
 import { BASE_PRICING, type PriceTier, type PricingReason } from '@/lib/pricing-constants'
+import { planModuleDefaults, planInventoryTier } from '@/lib/plan-defaults'
+import { setTenantModuleAccess } from '@/lib/actions/platform-modules'
+import { setTenantInventoryTier } from '@/lib/actions/catalog'
 
 export type { PriceTier, PricingReason }
 
@@ -63,6 +66,20 @@ export async function getTenantPricing(tenantId: string): Promise<CustomerPricin
   return data as CustomerPricing | null
 }
 
+// Applies this tier's default module access + inventory tier — reuses the
+// same functions the Modules/Inventory-tier admin panels call directly, so
+// this is just "press those same buttons on the tenant's behalf," not a
+// parallel enforcement path. Runs once, at the moment a super admin sets
+// the tier; doesn't re-run or re-assert itself afterward, so a manual
+// override made afterward (e.g. flipping one module back off) sticks.
+async function applyPlanDefaults(tenantId: string, tier: PriceTier) {
+  const moduleDefaults = planModuleDefaults(tier)
+  for (const [key, enabled] of Object.entries(moduleDefaults)) {
+    await setTenantModuleAccess(tenantId, key, enabled)
+  }
+  await setTenantInventoryTier(tenantId, planInventoryTier(tier))
+}
+
 export async function setTenantPricing(tenantId: string, input: {
   base_price_tier: PriceTier
   override_monthly_amount: number | null
@@ -94,6 +111,8 @@ export async function setTenantPricing(tenantId: string, input: {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'tenant_id' })
   if (error) throw new Error(error.message)
+
+  await applyPlanDefaults(tenantId, input.base_price_tier)
 
   const effectiveMonthly = input.override_monthly_amount ?? BASE_PRICING[input.base_price_tier].monthly
 
