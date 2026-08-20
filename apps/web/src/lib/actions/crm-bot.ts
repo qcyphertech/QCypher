@@ -109,8 +109,8 @@ const CRM_BOT_TOOLS: ChatTool[] = [
       properties: {
         metric: {
           type: 'string',
-          enum: ['revenue_this_month', 'unpaid_invoices', 'lead_count', 'active_customer_count', 'upcoming_events_count', 'expenses_this_month'],
-          description: 'Which metric to fetch',
+          enum: ['revenue_this_month', 'unpaid_invoices', 'lead_count', 'active_customer_count', 'upcoming_events_count', 'expenses_this_month', 'low_stock_count', 'active_rentals_count'],
+          description: 'Which metric to fetch. low_stock_count and active_rentals_count only apply to tenants on the Full inventory tier — if the tenant is on Lite, say so plainly instead of guessing.',
         },
       },
       required: ['metric'],
@@ -314,6 +314,22 @@ async function runBusinessQuery(admin: AdminClient, tenantId: string, metric: st
       const { data } = await admin.from('expenses').select('amount').eq('tenant_id', tenantId).gte('date', startOfMonthIso.slice(0, 10))
       const total = (data ?? []).reduce((s, e) => s + (e.amount ?? 0), 0)
       return `Expenses this month so far: ${money(total)}.`
+    }
+    // Phase 42 — Full inventory tier only. The tool schema offers these
+    // metric names to every tenant (a static array — see CRM_BOT_TOOLS),
+    // so the actual tier check happens here at execution time instead.
+    case 'low_stock_count': {
+      const { data: tenantRow } = await admin.from('tenants').select('inventory_tier').eq('id', tenantId).single()
+      if (tenantRow?.inventory_tier !== 'full') return "Stock tracking is part of the Full inventory tier, which isn't enabled for this workspace."
+      const { data } = await admin.from('catalog_items').select('id, quantity, reorder_point').eq('tenant_id', tenantId).eq('is_active', true).not('quantity', 'is', null)
+      const low = (data ?? []).filter(i => i.quantity !== null && i.quantity <= (i.reorder_point ?? 3))
+      return low.length === 0 ? 'Nothing is low on stock right now.' : `${low.length} item${low.length === 1 ? ' is' : 's are'} low on stock.`
+    }
+    case 'active_rentals_count': {
+      const { data: tenantRow } = await admin.from('tenants').select('inventory_tier').eq('id', tenantId).single()
+      if (tenantRow?.inventory_tier !== 'full') return "Rental tracking is part of the Full inventory tier, which isn't enabled for this workspace."
+      const { count } = await admin.from('catalog_rentals').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).is('returned_date', null)
+      return `${count ?? 0} rental${count === 1 ? '' : 's'} currently out.`
     }
     default:
       return "I don't have that metric available."

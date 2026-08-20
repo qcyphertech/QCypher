@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { ThemeToggle } from '@/components/settings/ThemeToggle'
 import { SignOutButton } from '@/components/settings/SignOutButton'
 import { ModuleToggles } from '@/components/settings/ModuleToggles'
+import { InventoryToggles } from '@/components/settings/InventoryToggles'
+import { getInventoryTier } from '@/lib/actions/catalog'
 import { MissedCallSetup } from '@/components/settings/MissedCallSetup'
 import { ProfileForm } from '@/components/account/ProfileForm'
 import { SecurityPanel } from '@/components/account/SecurityPanel'
@@ -88,6 +90,7 @@ export default async function SettingsPage() {
   ]) : [[], []]
   const locations = isAdmin && tenantId ? await getLocations(tenantId).catch(() => []) : []
   const staffAssignments = isAdmin && tenantId && locations.length > 0 ? await getStaffLocationAssignments(tenantId).catch(() => []) : []
+  const inventoryTier = tenantId ? await getInventoryTier().catch(() => 'lite' as const) : 'lite' as const
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...(tenant?.settings as Record<string, unknown> ?? {}) }
   const identities  = user.identities ?? []
@@ -110,6 +113,12 @@ export default async function SettingsPage() {
       <SettingsSection label="Modules" hint="Toggle features on or off — hidden modules keep their data.">
         <ModuleToggles settings={settings} availableModules={availableModuleKeys ? [...availableModuleKeys] : undefined} />
       </SettingsSection>
+
+      {inventoryTier === 'full' && (
+        <SettingsSection label="Inventory (Full)" hint="Optional inventory features — only available on your Full inventory tier.">
+          <InventoryToggles settings={settings} />
+        </SettingsSection>
+      )}
 
       <SettingsSection label="Automations">
         <MissedCallSetup currentNumber={(tenant as any)?.telnyx_number ?? null} />

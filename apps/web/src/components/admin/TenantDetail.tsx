@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, CheckCircle2, Circle, AlertTriangle, RefreshCw, Send, Loader2, FileBarChart, Users2, Sparkles } from 'lucide-react'
 import { TenantModulesPanel } from '@/components/admin/TenantModulesPanel'
+import { InventoryTierPanel } from '@/components/admin/InventoryTierPanel'
 import { TenantPricingPanel } from '@/components/admin/TenantPricingPanel'
 import { RenewalReminderPanel } from '@/components/admin/RenewalReminderPanel'
 import { TeamPanel } from '@/components/settings/TeamPanel'
@@ -196,6 +197,9 @@ export function TenantDetail({ tenant, stats, members, pendingInvites, currentUs
 
       {/* Modules — per-tenant feature access, gated by super admin */}
       <TenantModulesPanel tenantId={tenant.id} />
+
+      {/* Inventory Lite/Full tier — gated by super admin */}
+      <InventoryTierPanel tenantId={tenant.id} />
 
       {/* Monthly report */}
       <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">

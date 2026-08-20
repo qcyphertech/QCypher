@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { CatalogItemModal } from './CatalogItemModal'
+import type { InventoryTier } from '@/lib/actions/catalog'
+import type { TenantSettings } from '@/lib/types/settings'
 
-export function NewCatalogItemButton() {
+export function NewCatalogItemButton({ tier, toggles }: { tier?: InventoryTier; toggles?: TenantSettings }) {
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -16,7 +18,7 @@ export function NewCatalogItemButton() {
         <Plus className="w-4 h-4" />
         Add item
       </button>
-      {open && <CatalogItemModal onClose={() => setOpen(false)} />}
+      {open && <CatalogItemModal onClose={() => setOpen(false)} tier={tier} toggles={toggles} />}
     </>
   )
 }

@@ -1,19 +1,25 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createCatalogItem, updateCatalogItem, type CatalogItem } from '@/lib/actions/catalog'
+import { createCatalogItem, updateCatalogItem, type CatalogItem, type InventoryTier } from '@/lib/actions/catalog'
+import { type TenantSettings } from '@/lib/types/settings'
 import { X } from 'lucide-react'
 
 type Props = {
   item?: CatalogItem
   onClose: () => void
+  tier?: InventoryTier
+  toggles?: TenantSettings
 }
 
-export function CatalogItemModal({ item, onClose }: Props) {
+export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Props) {
   const [pending, startTransition] = useTransition()
   const [type, setType] = useState<'good' | 'service' | 'rental'>(item?.item_type ?? 'service')
   const [requiresDeposit, setRequiresDeposit] = useState(item?.requires_deposit ?? false)
   const [error, setError] = useState<string | null>(null)
+
+  const isFull = tier === 'full'
+  const tracksQuantity = type !== 'service'
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -27,6 +33,11 @@ export function CatalogItemModal({ item, onClose }: Props) {
       taxable: fd.has('taxable'),
       requires_deposit: fd.has('requires_deposit'),
       deposit_amount: fd.has('requires_deposit') ? parseFloat(fd.get('deposit_amount') as string) || 0 : undefined,
+      quantity: tracksQuantity && fd.get('quantity') ? parseInt(fd.get('quantity') as string, 10) : undefined,
+      unit_of_measure: isFull && fd.get('unit_of_measure') ? (fd.get('unit_of_measure') as string) : undefined,
+      reorder_point: isFull && fd.get('reorder_point') ? parseInt(fd.get('reorder_point') as string, 10) : undefined,
+      expiry_date: isFull && fd.get('expiry_date') ? (fd.get('expiry_date') as string) : undefined,
+      image_url: isFull && fd.get('image_url') ? (fd.get('image_url') as string) : undefined,
     }
     setError(null)
     startTransition(async () => {
@@ -45,7 +56,7 @@ export function CatalogItemModal({ item, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))]">
+      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
           <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>
             {item ? 'Edit item' : 'New catalog item'}
@@ -93,13 +104,58 @@ export function CatalogItemModal({ item, onClose }: Props) {
             </Field>
           </div>
 
-          <Field label="Base price ($)">
-            <input name="base_price" type="number" step="0.01" min="0"
-              defaultValue={item?.base_price ?? ''}
-              required
-              className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
-              style={{ color: 'hsl(var(--foreground))' }} />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Base price ($)">
+              <input name="base_price" type="number" step="0.01" min="0"
+                defaultValue={item?.base_price ?? ''}
+                required
+                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                style={{ color: 'hsl(var(--foreground))' }} />
+            </Field>
+
+            {tracksQuantity && (
+              <Field label="Quantity" required>
+                <input name="quantity" type="number" step="1" min="0"
+                  defaultValue={item?.quantity ?? ''}
+                  required
+                  className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                  style={{ color: 'hsl(var(--foreground))' }} />
+              </Field>
+            )}
+          </div>
+
+          {isFull && tracksQuantity && toggles?.inventory_enable_uom && (
+            <Field label="Unit of measure">
+              <input name="unit_of_measure" defaultValue={item?.unit_of_measure ?? ''} placeholder="each, box, case…"
+                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                style={{ color: 'hsl(var(--foreground))' }} />
+            </Field>
+          )}
+
+          {isFull && tracksQuantity && toggles?.inventory_enable_reorder_points && (
+            <Field label="Reorder point">
+              <input name="reorder_point" type="number" step="1" min="0" defaultValue={item?.reorder_point ?? ''}
+                placeholder="Flag when quantity falls to or below this"
+                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                style={{ color: 'hsl(var(--foreground))' }} />
+            </Field>
+          )}
+
+          {isFull && toggles?.inventory_enable_expiry_dates && (
+            <Field label="Expiry date">
+              <input name="expiry_date" type="date" defaultValue={item?.expiry_date ?? ''}
+                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                style={{ color: 'hsl(var(--foreground))' }} />
+            </Field>
+          )}
+
+          {isFull && toggles?.inventory_enable_images && (
+            <Field label="Image URL">
+              <input name="image_url" type="url" defaultValue={item?.image_url ?? ''} placeholder="https://…"
+                className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                style={{ color: 'hsl(var(--foreground))' }} />
+            </Field>
+          )}
 
           <div className="flex gap-4">
             <label className="flex items-center gap-2 cursor-pointer">

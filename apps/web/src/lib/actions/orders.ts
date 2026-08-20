@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { logAudit } from '@/lib/actions/audit'
+import { adjustCatalogQuantity } from '@/lib/actions/catalog'
 
 export type DiscountType = 'percent' | 'flat'
 
@@ -212,6 +213,13 @@ export async function addLineItem(input: {
     .from('order_line_items')
     .insert({ ...input, tenant_id })
   if (error) return { ok: false, error: error.message }
+
+  // Phase 42 — deduct stock for tracked items. Best-effort: a failure here
+  // shouldn't undo the line item itself, which already saved successfully.
+  if (input.catalog_item_id) {
+    await adjustCatalogQuantity(input.catalog_item_id, tenant_id, -input.quantity).catch(() => {})
+  }
+
   revalidatePath(`/orders/${input.order_id}`)
   return { ok: true }
 }
@@ -226,8 +234,15 @@ export async function updateLineItem(input: {
   billing_unit_snapshot: OrderLineItem['billing_unit_snapshot']
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const tenant_id = user?.app_metadata?.tenant_id
   const { data: order } = await supabase.from('orders').select('signed_at').eq('id', input.order_id).single()
   if (order?.signed_at) return { ok: false, error: 'Quote is signed and locked — line items cannot be modified' }
+
+  // Read the current quantity/link first so a changed quantity (or a line
+  // item that no longer references a catalog item) reconciles stock by the
+  // difference rather than double-deducting the full new amount.
+  const { data: existing } = await supabase.from('order_line_items').select('catalog_item_id, quantity').eq('id', input.id).single()
 
   const { error } = await supabase
     .from('order_line_items')
@@ -240,6 +255,12 @@ export async function updateLineItem(input: {
     })
     .eq('id', input.id)
   if (error) return { ok: false, error: error.message }
+
+  if (tenant_id && existing?.catalog_item_id) {
+    const qtyDiff = existing.quantity - input.quantity // positive = fewer used now, restore stock
+    await adjustCatalogQuantity(existing.catalog_item_id, tenant_id, qtyDiff).catch(() => {})
+  }
+
   revalidatePath(`/orders/${input.order_id}`)
   return { ok: true }
 }
@@ -320,11 +341,20 @@ export async function updateOrderDiscount(input: {
 
 export async function removeLineItem(id: string, order_id: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const tenant_id = user?.app_metadata?.tenant_id
   const { data: order } = await supabase.from('orders').select('signed_at').eq('id', order_id).single()
   if (order?.signed_at) throw new Error('Quote is signed and locked — line items cannot be modified')
 
+  const { data: existing } = await supabase.from('order_line_items').select('catalog_item_id, quantity').eq('id', id).single()
+
   const { error } = await supabase.from('order_line_items').delete().eq('id', id)
   if (error) throw error
+
+  if (tenant_id && existing?.catalog_item_id) {
+    await adjustCatalogQuantity(existing.catalog_item_id, tenant_id, existing.quantity).catch(() => {})
+  }
+
   revalidatePath(`/orders/${order_id}`)
 }
 

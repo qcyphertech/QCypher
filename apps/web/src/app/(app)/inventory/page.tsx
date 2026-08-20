@@ -3,6 +3,10 @@ import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import type { Metadata } from 'next'
 import { CatalogList } from '@/components/inventory/CatalogList'
 import { NewCatalogItemButton } from '@/components/inventory/NewCatalogItemButton'
+import { InventoryTabs } from '@/components/inventory/InventoryTabs'
+import { getInventoryTier, type CatalogItem } from '@/lib/actions/catalog'
+import { getRentals } from '@/lib/actions/catalog-rentals'
+import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Package } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Inventory' }
@@ -13,9 +17,18 @@ export default async function InventoryPage() {
   const tenant_id = user ? await getTenantId(user.id, user.app_metadata).catch(() => null) : null
 
   const admin = createAdminClient()
-  const { data: items } = tenant_id
-    ? await admin.from('catalog_items').select('*').eq('tenant_id', tenant_id).order('name')
-    : { data: [] }
+  const [{ data: items }, { data: tenant }, tier] = await Promise.all([
+    tenant_id
+      ? admin.from('catalog_items').select('*').eq('tenant_id', tenant_id).order('name')
+      : Promise.resolve({ data: [] as CatalogItem[] }),
+    tenant_id
+      ? admin.from('tenants').select('settings').eq('id', tenant_id).single()
+      : Promise.resolve({ data: null }),
+    tenant_id ? getInventoryTier().catch(() => 'lite' as const) : Promise.resolve('lite' as const),
+  ])
+
+  const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...((tenant?.settings as Record<string, unknown>) ?? {}) }
+  const rentals = tier === 'full' ? await getRentals().catch(() => []) : []
 
   return (
     <div className="space-y-6">
@@ -23,10 +36,10 @@ export default async function InventoryPage() {
         <div>
           <h1 className="text-2xl font-black" style={{ color: 'var(--heading)' }}>Inventory</h1>
           <p className="text-[15px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            Goods, services & rentals you offer
+            {tier === 'full' ? 'Products, services & rentals you offer' : 'Products & services'}
           </p>
         </div>
-        <NewCatalogItemButton />
+        <NewCatalogItemButton tier={tier} toggles={settings} />
       </div>
 
       {(!items || items.length === 0) ? (
@@ -36,12 +49,17 @@ export default async function InventoryPage() {
           </div>
           <div>
             <p className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>No inventory items yet</p>
-            <p className="text-[15px] mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Add your first good, service, or rental item</p>
+            <p className="text-[15px] mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Add your first product or service</p>
           </div>
-          <NewCatalogItemButton />
+          <NewCatalogItemButton tier={tier} toggles={settings} />
         </div>
+      ) : tier === 'full' ? (
+        <InventoryTabs
+          catalogList={<CatalogList items={items} tier={tier} toggles={settings} />}
+          rentals={rentals}
+        />
       ) : (
-        <CatalogList items={items} />
+        <CatalogList items={items} tier={tier} toggles={settings} />
       )}
     </div>
   )

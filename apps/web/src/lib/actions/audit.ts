@@ -28,8 +28,10 @@ export type AuditAction =
   | 'location_created' | 'location_updated' | 'location_paused' | 'location_activated'
   | 'staff_location_assigned' | 'staff_location_unassigned'
   | 'ai_blog_published' | 'ai_crm_bot_query'
+  | 'inventory_item_created' | 'inventory_item_updated' | 'inventory_item_deleted'
+  | 'inventory_qty_changed' | 'inventory_rental_returned'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location' | 'blog' | 'ai_assistant'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location' | 'blog' | 'ai_assistant' | 'inventory'
 
 export type AuditLog = {
   id: string

@@ -522,14 +522,19 @@ export type Database = {
           created_at: string
           deposit_amount: number | null
           description: string | null
+          expiry_date: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           item_type: Database["public"]["Enums"]["item_type"]
           location_id: string | null
           name: string
+          quantity: number | null
+          reorder_point: number | null
           requires_deposit: boolean
           taxable: boolean
           tenant_id: string
+          unit_of_measure: string | null
           updated_at: string
         }
         Insert: {
@@ -538,14 +543,19 @@ export type Database = {
           created_at?: string
           deposit_amount?: number | null
           description?: string | null
+          expiry_date?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           item_type: Database["public"]["Enums"]["item_type"]
           location_id?: string | null
           name: string
+          quantity?: number | null
+          reorder_point?: number | null
           requires_deposit?: boolean
           taxable?: boolean
           tenant_id: string
+          unit_of_measure?: string | null
           updated_at?: string
         }
         Update: {
@@ -554,14 +564,19 @@ export type Database = {
           created_at?: string
           deposit_amount?: number | null
           description?: string | null
+          expiry_date?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           item_type?: Database["public"]["Enums"]["item_type"]
           location_id?: string | null
           name?: string
+          quantity?: number | null
+          reorder_point?: number | null
           requires_deposit?: boolean
           taxable?: boolean
           tenant_id?: string
+          unit_of_measure?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -574,6 +589,70 @@ export type Database = {
           },
           {
             foreignKeyName: "catalog_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_rentals: {
+        Row: {
+          catalog_item_id: string
+          condition_on_return: string | null
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          rented_by: string
+          rented_date: string
+          returned_date: string | null
+          tenant_id: string
+        }
+        Insert: {
+          catalog_item_id: string
+          condition_on_return?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          rented_by: string
+          rented_date?: string
+          returned_date?: string | null
+          tenant_id: string
+        }
+        Update: {
+          catalog_item_id?: string
+          condition_on_return?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          rented_by?: string
+          rented_date?: string
+          returned_date?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_rentals_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_rentals_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_rentals_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -3286,6 +3365,7 @@ export type Database = {
           deletion_requested_at: string | null
           deletion_scheduled_at: string | null
           id: string
+          inventory_tier: string
           is_admin: boolean
           name: string
           plan: string
@@ -3303,6 +3383,7 @@ export type Database = {
           deletion_requested_at?: string | null
           deletion_scheduled_at?: string | null
           id?: string
+          inventory_tier?: string
           is_admin?: boolean
           name: string
           plan?: string
@@ -3320,6 +3401,7 @@ export type Database = {
           deletion_requested_at?: string | null
           deletion_scheduled_at?: string | null
           id?: string
+          inventory_tier?: string
           is_admin?: boolean
           name?: string
           plan?: string
