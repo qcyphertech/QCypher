@@ -80,7 +80,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_connected=1`)
   } catch (err) {
     console.error('[google-cal/callback] unhandled error', err)
-    return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=unexpected`)
+    // TEMPORARY: surfaces the actual error message in the redirect so we
+    // can diagnose a live production failure without log access. Revert
+    // to a plain "unexpected" code once diagnosed — never ship this long
+    // term, error messages can leak internal detail.
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.redirect(`${process.env.APP_URL}/calendar?gcal_error=${encodeURIComponent(msg.slice(0, 200))}`)
   }
 }
 
