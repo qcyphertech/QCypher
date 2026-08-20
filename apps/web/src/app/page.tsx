@@ -929,15 +929,25 @@ export default function HomePage() {
         .compare-table { width: 100%; border-collapse: collapse; }
         .compare-table th, .compare-table td { text-align: left; padding: 12px 10px; font-size: 14px; }
         .compare-table thead th { color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.15); }
-        .compare-table thead th.tier-col { text-align: center; }
+        .compare-table thead th.tier-col { text-align: center; white-space: nowrap; }
         .compare-table thead th.tier-col.growth-col { color: #7dd3f7; }
         .compare-table thead th.tier-col.allin-col { color: #ffaa6e; }
         .compare-table tbody td { color: rgba(255,255,255,0.72); border-bottom: 1px solid rgba(255,255,255,0.07); }
         .compare-table tbody tr:last-child td { border-bottom: none; }
-        .compare-table td.tier-col { text-align: center; font-size: 16px; }
-        .dot-yes { color: #00e5aa; font-weight: 800; }
+        .compare-table td.tier-col { text-align: center; }
+        .dot-yes {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 20px; height: 20px; border-radius: 50%;
+          background: rgba(0,229,170,0.18); color: #00e5aa;
+          font-size: 12px; font-weight: 800; line-height: 1;
+        }
         .dot-no { color: rgba(255,255,255,0.2); }
-        @media (max-width: 560px) { .compare-table { font-size: 12px; } .compare-table th, .compare-table td { padding: 10px 6px; } }
+        @media (max-width: 560px) {
+          .compare-table { font-size: 12px; }
+          .compare-table th, .compare-table td { padding: 10px 6px; }
+          .compare-table thead th.tier-col { font-size: 10px; }
+          .dot-yes { width: 18px; height: 18px; font-size: 11px; }
+        }
 
         /* HOLOGRAPHIC GLOBE SECTION - ULTRA 3D Futuristic (Horizontal Only, Always Round) */
         @keyframes blobMorph3DUltra {
