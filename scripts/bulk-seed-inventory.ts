@@ -7,19 +7,24 @@
  * torn down again with --cleanup — nothing it creates looks like real data,
  * and nothing else in the tenant's catalog is touched.
  *
- * Usage:
- *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npx ts-node scripts/bulk-seed-inventory.ts \
+ * Usage (run from the repo root; NODE_PATH points node at apps/web's
+ * resolvable node_modules since this script lives outside any workspace
+ * package of its own — pnpm's strict layout means @supabase/supabase-js
+ * isn't hoisted to the repo root node_modules):
+ *
+ *   export NODE_PATH="$(pwd)/apps/web/node_modules"
+ *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npx tsx scripts/bulk-seed-inventory.ts \
  *     --tenant <tenant-id> --goods 150 --services 50 [--rentals 0] [--bookings 0] [--cleanup]
  *
  * Examples:
  *   # Lite-tier load test — 200 items total
- *   npx ts-node scripts/bulk-seed-inventory.ts --tenant <id> --goods 150 --services 50
+ *   npx tsx scripts/bulk-seed-inventory.ts --tenant <id> --goods 150 --services 50
  *
  *   # Full-tier load test — 100 products + 50 rental-type items + 50 active bookings
- *   npx ts-node scripts/bulk-seed-inventory.ts --tenant <id> --goods 100 --rentals 50 --bookings 50
+ *   npx tsx scripts/bulk-seed-inventory.ts --tenant <id> --goods 100 --rentals 50 --bookings 50
  *
  *   # Tear down whatever this script created for that tenant
- *   npx ts-node scripts/bulk-seed-inventory.ts --tenant <id> --cleanup
+ *   npx tsx scripts/bulk-seed-inventory.ts --tenant <id> --cleanup
  */
 
 import { createClient } from '@supabase/supabase-js'
