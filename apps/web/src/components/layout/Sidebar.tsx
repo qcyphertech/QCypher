@@ -14,12 +14,10 @@ export function Sidebar({
   isAdmin = false,
   isSuperAdmin = false,
   settings = DEFAULT_SETTINGS,
-  dark = false,
 }: {
   isAdmin?:      boolean
   isSuperAdmin?: boolean
   settings?:     TenantSettings
-  dark?:         boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -42,24 +40,11 @@ export function Sidebar({
         transition: 'width 0.15s ease',
       }}
     >
-      {/* Logo, directly above the nav — icon-only while the rail is
-          collapsed, full wordmark (swapped by theme, bigger once
-          expanded) once expanded. A thin rule underneath separates it
-          from the nav, same style as the rules between nav groups below,
-          instead of a vertical border down the sidebar's edge. Sits below
-          the header now (.qc-sidebar's top offset), so no overlap risk
-          with the header's own logo despite the header spanning full
-          width above everything. */}
-      <Link href="/dashboard" className="flex items-center flex-shrink-0 px-4 pt-3 pb-2">
-        <img src="/qcypher-logo.png" alt="QCypher" className="qc-sidebar-icon-only" style={{ height: '32px', width: 'auto', flexShrink: 0 }} />
-        <img
-          src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
-          alt="QCypher"
-          className="qc-sidebar-label"
-          style={{ height: '50px', width: 'auto', flexShrink: 0 }}
-        />
-      </Link>
-      <div className="mx-3 h-px flex-shrink-0" style={{ background: 'hsl(var(--border))' }} />
+      {/* Branding lives only in the header now (see TopBar.tsx) — just a
+          small top gap before the nav starts, so it doesn't sit flush
+          against the sidebar's top edge (which is right below the
+          header). */}
+      <div className="flex-shrink-0" style={{ height: '12px' }} />
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-3 space-y-0.5">
         <SidebarItem item={HOME_ITEM} active={active('/dashboard')} />

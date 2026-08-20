@@ -51,7 +51,7 @@ export function TopBar({
         <img
           src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
           alt="QCypher"
-          className="hidden sm:block h-[34px]"
+          className="hidden sm:block h-[50px]"
           style={{ width: 'auto' }}
         />
         <span

@@ -31,7 +31,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
       {/* Desktop collapsible sidebar */}
-      <Sidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} settings={settings} dark={dark} />
+      <Sidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} settings={settings} />
 
       {/* Fixed top bar — spans the full viewport width and sits above
           everything else in the app, including in-page modals (most of
