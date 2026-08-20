@@ -71,15 +71,19 @@ export async function middleware(request: NextRequest) {
   // docs/risk-register.md Risk #3). Checked via session AAL, which
   // covers every sign-in method (password, Google OAuth, magic link)
   // since it's a property of the session, not the login path taken.
-  if (isSuperAdminUser(user)) {
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
-      return NextResponse.redirect(new URL(`/auth/mfa-challenge?next=${encodeURIComponent(pathname)}`, request.url))
-    }
-    if (aal && aal.nextLevel !== 'aal2') {
-      return NextResponse.redirect(new URL(`/auth/mfa-setup?next=${encodeURIComponent(pathname)}`, request.url))
-    }
-  }
+  //
+  // TEMPORARILY DISABLED 2026-08-20 at explicit user request — re-enable
+  // by uncommenting this block. Does not affect any already-enrolled MFA
+  // factor; it only stops forcing setup/challenge on every request.
+  // if (isSuperAdminUser(user)) {
+  //   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  //   if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+  //     return NextResponse.redirect(new URL(`/auth/mfa-challenge?next=${encodeURIComponent(pathname)}`, request.url))
+  //   }
+  //   if (aal && aal.nextLevel !== 'aal2') {
+  //     return NextResponse.redirect(new URL(`/auth/mfa-setup?next=${encodeURIComponent(pathname)}`, request.url))
+  //   }
+  // }
 
   return supabaseResponse
 }
