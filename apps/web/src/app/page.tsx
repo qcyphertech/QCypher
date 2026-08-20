@@ -1604,6 +1604,7 @@ export default function HomePage() {
                     <li><span className="chk">✓</span><span><strong>Appointment Scheduling</strong> <em>(customers book directly from your website, auto-synced to your calendar)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>Basic Inventory</strong> <em>(track products and services you sell — who bought what, when)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>Google Integration</strong> <em>(claim your business listing, show hours, services, and reviews on Google Maps)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Orders &amp; Invoicing</strong> <em>(create and track sales orders and invoices for jobs, right inside the CRM)</em></span></li>
                     <li><span className="chk crm-chk">✓</span><span><strong>Customer Management Tool</strong> <em>(included free with this plan)</em></span></li>
                   </ul>
                 </div>
@@ -1624,8 +1625,7 @@ export default function HomePage() {
                 <div>
                   <div className="pkg-inherit">Everything in Starter, plus:</div>
                   <ul className="pkg-list">
-                    <li><span className="chk">✓</span><span><strong>Sell Online</strong> <em>(a Shopify store embedded on your website — customers buy, we handle payments &amp; shipping)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>Orders &amp; Invoicing</strong> <em>(create and track sales orders and invoices for jobs, right inside the CRM)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Sell Online</strong> <em>(an online store embedded on your website — customers buy, we handle payments &amp; shipping)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>AI Assistant (QBot)</strong> <em>(&quot;How many customers this month?&quot; — AI answers instantly inside the CRM)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>Automated Review Requests</strong> <em>(after a completed job, automatically ask for Google/Yelp reviews — text &amp; email)</em></span></li>
                     <li><span className="chk crm-chk">✓</span><span><strong>Customer Management Tool</strong> <em>(included free with this plan)</em></span></li>
@@ -1704,12 +1704,12 @@ export default function HomePage() {
                   <tr><td>Customer contacts &amp; notes</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>Scheduling calendar</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>Quick-reply text &amp; email templates</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
-                  <tr><td>Orders &amp; invoicing</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                  <tr><td>Orders &amp; invoicing</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>AI Assistant (QBot)</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>Advanced analytics dashboard</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                 </tbody>
               </table>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>Every plan includes the full contact list, calendar, and templates — Orders, AI Assistant, and Analytics unlock as you grow.</p>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>Every plan includes the full contact list, calendar, templates, and orders &amp; invoicing — AI Assistant and Analytics unlock as you grow.</p>
             </div>
             <div className="crm-cta-col">
               <button onClick={() => setShowContactModal(true)} className="btn btn-primary">Get a Free Consultation</button>

@@ -5,8 +5,8 @@ import type { InventoryTier } from '@/lib/actions/catalog'
 // Only covers modules that already have a real toggle mechanism
 // (platform_modules/tenant_module_access, tenants.inventory_tier) — bullets
 // with no corresponding code feature today (Custom Website, Google
-// Integration, Shopify "Sell Online", Email & Text Automation rules, Smart
-// Upsells, Vulnerability Scanning) and Reviews/SMS (deliberately left
+// Integration, "Sell Online" storefront, Email & Text Automation rules,
+// Smart Upsells, Vulnerability Scanning) and Reviews/SMS (deliberately left
 // ungated) are out of scope. Plain data so the table is easy to eyeball
 // and update if the packages change.
 const MODULE_DEFAULTS: Record<PriceTier, Record<string, boolean>> = {
@@ -14,7 +14,7 @@ const MODULE_DEFAULTS: Record<PriceTier, Record<string, boolean>> = {
     show_calendar: true,
     show_catalog: true,
     show_templates: true,
-    show_orders: false,
+    show_orders: true,
     show_crm_bot: false,
     show_overview: false,
   },
