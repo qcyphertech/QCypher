@@ -1420,7 +1420,6 @@ export default function HomePage() {
           </a>
           <div className="nav-cta">
             <Link href="/about" className="nav-page-link" style={{ fontSize: '15px', fontWeight: 600, color: '#5b6072', marginRight: '4px' }}>About</Link>
-            <Link href="/blog" className="nav-page-link" style={{ fontSize: '15px', fontWeight: 600, color: '#5b6072', marginRight: '4px' }}>Blog</Link>
             <Link href="/auth/login" className="btn btn-ghost btn-sm">Sign in</Link>
           </div>
         </div>
@@ -1878,6 +1877,7 @@ export default function HomePage() {
               <a href="#packages">Packages</a>
               <a href="#crm">Customer Management</a>
               <Link href="/about">About Us</Link>
+              <Link href="/blog">Blog</Link>
               <Link href="/security">Security</Link>
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms of Service</Link>
