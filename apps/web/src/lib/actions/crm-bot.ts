@@ -480,7 +480,53 @@ export async function startCrmBotConversation(): Promise<CrmBotResult<string>> {
   return { ok: true, data: data.id }
 }
 
-export async function sendCrmBotMessage(conversationId: string, message: string): Promise<CrmBotResult<CrmBotReply>> {
+// Page-aware context — QBot previously behaved identically on every page.
+// This maps the pathname the widget is opened on to a short description,
+// and for a record detail page best-effort resolves the actual name so
+// the model can ground an ambiguous "add a note" / "how much is this" in
+// whatever the user is already looking at, without a fresh search_records
+// call. Kept to a static, hand-maintained prefix list — same tradeoff as
+// CRM_BOT_KNOWLEDGE's site map (a stale entry is just a missed context
+// hint, never wrong data, since this only ever adds a line to the prompt).
+const PAGE_LABELS: Array<{ prefix: string; label: string }> = [
+  { prefix: '/dashboard', label: 'the Dashboard' },
+  { prefix: '/contacts/new', label: 'the new-contact form' },
+  { prefix: '/contacts/import', label: 'the contact CSV import page' },
+  { prefix: '/contacts', label: 'the Contacts list' },
+  { prefix: '/orders/rentals', label: 'the Rentals view' },
+  { prefix: '/orders', label: 'the Orders list' },
+  { prefix: '/calendar', label: 'the Calendar' },
+  { prefix: '/overview/expenses', label: 'the Expenses page' },
+  { prefix: '/overview', label: 'the Overview/reports page' },
+  { prefix: '/payments', label: 'the Payments page' },
+  { prefix: '/templates', label: 'the Templates page' },
+  { prefix: '/inventory', label: 'the Inventory page' },
+  { prefix: '/settings', label: 'Settings' },
+]
+
+async function describeCurrentPage(admin: AdminClient, tenantId: string, currentPath?: string): Promise<string> {
+  if (!currentPath) return ''
+
+  const contactMatch = currentPath.match(/^\/contacts\/([0-9a-f-]{36})/)
+  if (contactMatch) {
+    const { data } = await admin.from('contacts').select('first_name, last_name').eq('id', contactMatch[1]).eq('tenant_id', tenantId).maybeSingle()
+    if (data) {
+      const name = `${data.first_name} ${data.last_name ?? ''}`.trim()
+      return `\n\nCurrent page: this contact's detail page — ${name} (id ${contactMatch[1]}). If their next message is ambiguous about who/what they mean (e.g. "add a note", "what's their balance"), assume they mean this contact unless they say otherwise.`
+    }
+  }
+
+  const orderMatch = currentPath.match(/^\/orders\/([0-9a-f-]{36})/)
+  if (orderMatch) {
+    const { data } = await admin.from('orders').select('order_number').eq('id', orderMatch[1]).eq('tenant_id', tenantId).maybeSingle()
+    if (data) return `\n\nCurrent page: Order #${data.order_number}'s detail page (id ${orderMatch[1]}). If their next message is ambiguous about which order they mean (e.g. "mark this paid", "add a discount"), assume they mean this order unless they say otherwise.`
+  }
+
+  const page = PAGE_LABELS.find(p => currentPath.startsWith(p.prefix))
+  return page ? `\n\nCurrent page: ${page.label}.` : ''
+}
+
+export async function sendCrmBotMessage(conversationId: string, message: string, currentPath?: string): Promise<CrmBotResult<CrmBotReply>> {
   let admin: Awaited<ReturnType<typeof requireTenantWriter>>['admin'], tenantId: string, role: 'owner' | 'member' | 'read_only', userId: string
   try {
     ;({ admin, tenantId, role, userId } = await requireTenantWriter())
@@ -547,8 +593,10 @@ export async function sendCrmBotMessage(conversationId: string, message: string)
     }
   }
 
+  const pageLine = await describeCurrentPage(admin, tenantId, currentPath)
+
   const messages: ChatMessage[] = [
-    { role: 'system', content: `${CRM_BOT_SYSTEM_PROMPT}\n\n${currentDateLine}${memoryLine}` },
+    { role: 'system', content: `${CRM_BOT_SYSTEM_PROMPT}\n\n${currentDateLine}${pageLine}${memoryLine}` },
     ...(history ?? []).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     { role: 'user', content: trimmed },
   ]

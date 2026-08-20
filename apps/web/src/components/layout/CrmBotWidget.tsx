@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Sparkles, X, Send, ArrowRight } from 'lucide-react'
 import { startCrmBotConversation, sendCrmBotMessage, confirmCrmBotAction, type CrmBotProposedAction, type CrmBotNavigate } from '@/lib/actions/crm-bot'
 
 type Msg = { role: 'user' | 'assistant'; content: string; navigate?: CrmBotNavigate[] | null }
 
 export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([
     { role: 'assistant', content: "Hi, I'm QBot. Ask me how to do something, or tell me to add a contact or schedule something — I'll check with you before making any changes." },
@@ -39,7 +41,7 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
     setSending(true)
     try {
       const id = await ensureConversation()
-      const result = await sendCrmBotMessage(id, text)
+      const result = await sendCrmBotMessage(id, text, pathname)
       if (!result.ok) throw new Error(result.error)
       setMessages((prev) => [...prev, { role: 'assistant', content: result.data.reply, navigate: result.data.navigate }])
       setPendingAction(result.data.proposedAction)
