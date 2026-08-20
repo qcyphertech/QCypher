@@ -1578,14 +1578,15 @@ export default function HomePage() {
               <span className="pkg-badge-spacer" />
               <div className="pkg-for">Getting started with protection</div>
               <div className="pkg-name">Starter</div>
-              <p className="pkg-tagline">Built for basics. Growing businesses start here.</p>
+              <p className="pkg-tagline">Your business online, organized, and scheduled.</p>
               <details className="pkg-details" open>
                 <summary>See what&apos;s included</summary>
                 <div>
                   <ul className="pkg-list">
-                    <li><span className="chk">✓</span><span><strong>Website</strong> <em>(a fast, mobile-friendly site built to bring in new customers)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>Get Set Up Online</strong> <em>(Google Business Profile, social pages, and business email — all in one pass)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>Security &amp; Backup</strong> <em>(daily backups and security monitoring to keep your site safe)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Custom Website</strong> <em>(your business info, photos, and contact details live online — Google finds you)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Appointment Scheduling</strong> <em>(customers book directly from your website, auto-synced to your calendar)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Basic Inventory</strong> <em>(track products and services you sell — who bought what, when)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Google Integration</strong> <em>(claim your business listing, show hours and services on Google Maps)</em></span></li>
                     <li><span className="chk crm-chk">✓</span><span><strong>Customer Management Tool</strong> <em>(included free with this plan)</em></span></li>
                   </ul>
                 </div>
@@ -1600,16 +1601,15 @@ export default function HomePage() {
               <div className="pkg-badge">Most popular</div>
               <div className="pkg-for">Ready for more customers</div>
               <div className="pkg-name">Growth</div>
-              <p className="pkg-tagline">More bookings, smarter growth, your customer data protected.</p>
+              <p className="pkg-tagline">Starter, plus tools to grow faster.</p>
               <details className="pkg-details" open>
                 <summary>See what&apos;s included</summary>
                 <div>
                   <div className="pkg-inherit">Everything in Starter, plus:</div>
                   <ul className="pkg-list">
-                    <li><span className="chk">✓</span><span><strong>Fast Customer Online Scheduler</strong> <em>(customers book appointments and fill out any needed forms, automatically)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>Generate More Online Reviews</strong> <em>(ongoing optimization plus automatic requests for happy-customer reviews)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>AI Blog Posts</strong> <em>(monthly posts about your services — helps customers find you through AI search and Google)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>24/7 AI Assistant</strong> <em>(chatbot on your website that answers questions and helps book a call, anytime)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Sell Online</strong> <em>(a Shopify store embedded on your website — customers buy, we handle payments &amp; shipping)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>AI Assistant (QBot)</strong> <em>(&quot;How many customers this month?&quot; — AI answers instantly inside the CRM)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Automated Review Requests</strong> <em>(after a completed job, automatically ask for Google/Yelp reviews — text &amp; email)</em></span></li>
                     <li><span className="chk crm-chk">✓</span><span><strong>Customer Management Tool</strong> <em>(included free with this plan)</em></span></li>
                   </ul>
                 </div>
@@ -1624,15 +1624,16 @@ export default function HomePage() {
               <span className="pkg-badge-spacer" />
               <div className="pkg-for">Fully hands-off growth</div>
               <div className="pkg-name">All-In</div>
-              <p className="pkg-tagline">Everything managed. Data protected. Growth on autopilot.</p>
+              <p className="pkg-tagline">Everything. Complete business control.</p>
               <details className="pkg-details" open>
                 <summary>See what&apos;s included</summary>
                 <div>
                   <div className="pkg-inherit">Everything in Growth, plus:</div>
                   <ul className="pkg-list">
-                    <li><span className="chk">✓</span><span><strong>Sell Online</strong> <em>(a simple online store with secure payments built in)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>Customer Engagement</strong> <em>(email and text templates you control — job updates, promotions, customer follow-ups)</em></span></li>
-                    <li><span className="chk">✓</span><span><strong>Smart Upsell Suggestions</strong> <em>(system recommends add-on services at checkout — increase customer spending without extra effort)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Advanced Inventory</strong> <em>(rentals, reorder alerts, expiry dates, item photos — know exactly what&apos;s in stock)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Email &amp; Text Automation</strong> <em>(job updates, payment reminders, and follow-ups sent automatically by your own rules)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Vulnerability Scanning</strong> <em>(a weekly security check of your website for hacks and threats)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Advanced Analytics</strong> <em>(revenue trends, customer health, and team performance in one dashboard)</em></span></li>
                     <li><span className="chk crm-chk">✓</span><span><strong>Customer Management Tool</strong> <em>(included free with this plan)</em></span></li>
                   </ul>
                 </div>
