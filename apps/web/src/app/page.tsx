@@ -926,6 +926,19 @@ export default function HomePage() {
         .crm-cta-col .btn { white-space: nowrap; }
         .crm-cta-col p { color: rgba(255,255,255,0.5) !important; }
 
+        .compare-table { width: 100%; border-collapse: collapse; }
+        .compare-table th, .compare-table td { text-align: left; padding: 12px 10px; font-size: 14px; }
+        .compare-table thead th { color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.15); }
+        .compare-table thead th.tier-col { text-align: center; }
+        .compare-table thead th.tier-col.growth-col { color: #7dd3f7; }
+        .compare-table thead th.tier-col.allin-col { color: #ffaa6e; }
+        .compare-table tbody td { color: rgba(255,255,255,0.72); border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .compare-table tbody tr:last-child td { border-bottom: none; }
+        .compare-table td.tier-col { text-align: center; font-size: 16px; }
+        .dot-yes { color: #00e5aa; font-weight: 800; }
+        .dot-no { color: rgba(255,255,255,0.2); }
+        @media (max-width: 560px) { .compare-table { font-size: 12px; } .compare-table th, .compare-table td { padding: 10px 6px; } }
+
         /* HOLOGRAPHIC GLOBE SECTION - ULTRA 3D Futuristic (Horizontal Only, Always Round) */
         @keyframes blobMorph3DUltra {
           0%, 100% {
@@ -1669,18 +1682,29 @@ export default function HomePage() {
           </div>
           <div className="crm-card">
             <div>
-              <p className="crm-lead">Built In-House CRM — included free with every monthly plan. We'll walk you through it, and questions get answered by a real person.</p>
+              <p className="crm-lead">Built In-House CRM — included with every monthly plan. See exactly what each tier unlocks below.</p>
               <div className="crm-mini-laptop crm-mini-laptop-mobile">
                 <ClayLaptop />
               </div>
-              <ul className="crm-features">
-                <li><span className="chk">✓</span>Your full customer contact list — always organized</li>
-                <li><span className="chk">✓</span>Notes and call history on every customer</li>
-                <li><span className="chk">✓</span>Built-in scheduling calendar</li>
-                <li><span className="chk">✓</span>Quick-reply text & email templates</li>
-                <li><span className="chk">✓</span>Works on your phone, tablet, or computer</li>
-              </ul>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>Included free with Starter, Growth, and All-In plans</p>
+              <table className="compare-table">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th className="tier-col">Starter</th>
+                    <th className="tier-col growth-col">Growth</th>
+                    <th className="tier-col allin-col">All-In</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>Customer contacts &amp; notes</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                  <tr><td>Scheduling calendar</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                  <tr><td>Quick-reply text &amp; email templates</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                  <tr><td>Sales orders &amp; invoicing</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                  <tr><td>AI Assistant (QBot)</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                  <tr><td>Advanced analytics dashboard</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                </tbody>
+              </table>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>Every plan includes the full contact list, calendar, and templates — Orders, AI Assistant, and Analytics unlock as you grow.</p>
             </div>
             <div className="crm-cta-col">
               <button onClick={() => setShowContactModal(true)} className="btn btn-primary">Get a Free Consultation</button>
