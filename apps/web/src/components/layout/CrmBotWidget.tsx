@@ -89,8 +89,8 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
     <div className="bottom-[84px] md:bottom-5" style={{ position: 'fixed', right: '20px', zIndex: 100 }}>
       <style>{`
         @keyframes qc-crmbot-glow-pulse {
-          0%, 100% { box-shadow: 0 8px 28px rgba(13,109,255,0.38), 0 0 0 1px rgba(94,234,212,0.25); }
-          50% { box-shadow: 0 8px 32px rgba(13,109,255,0.55), 0 0 0 1px rgba(94,234,212,0.45), 0 0 20px rgba(56,189,248,0.35); }
+          0%, 100% { box-shadow: 0 8px 28px rgba(42,82,160,0.38), 0 0 0 1px rgba(74,157,181,0.25); }
+          50% { box-shadow: 0 8px 32px rgba(42,82,160,0.55), 0 0 0 1px rgba(74,157,181,0.45), 0 0 20px rgba(74,157,181,0.35); }
         }
         .qc-crmbot-toggle { animation: qc-crmbot-glow-pulse 3.2s ease-in-out infinite; }
         .qc-crmbot-input::placeholder { color: ${inputPlaceholder}; }
@@ -219,7 +219,7 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
         className="qc-crmbot-toggle"
         style={{
           width: '52px', height: '52px', borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: 'linear-gradient(135deg,#0d1f45,#0d6dff)', color: '#fff',
+          background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', color: '#fff',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >

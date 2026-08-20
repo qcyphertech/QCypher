@@ -77,8 +77,8 @@ export function ChatbotWidget() {
     <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 200, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <style>{`
         @keyframes qc-bot-glow-pulse {
-          0%, 100% { box-shadow: 0 8px 28px rgba(13,109,255,0.30), 0 0 0 1px rgba(13,109,255,0.15); }
-          50% { box-shadow: 0 8px 32px rgba(13,109,255,0.45), 0 0 0 1px rgba(13,109,255,0.3), 0 0 20px rgba(56,189,248,0.25); }
+          0%, 100% { box-shadow: 0 8px 28px rgba(42,82,160,0.30), 0 0 0 1px rgba(74,157,181,0.15); }
+          50% { box-shadow: 0 8px 32px rgba(42,82,160,0.45), 0 0 0 1px rgba(74,157,181,0.3), 0 0 20px rgba(74,157,181,0.25); }
         }
         .qc-bot-toggle { animation: qc-bot-glow-pulse 3.2s ease-in-out infinite; }
         .qc-bot-input::placeholder { color: rgba(23,26,43,0.4); }
@@ -183,7 +183,7 @@ export function ChatbotWidget() {
         className="qc-bot-toggle"
         style={{
           width: '56px', height: '56px', borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: 'linear-gradient(135deg,#0d1f45,#0d6dff)', color: '#fff',
+          background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', color: '#fff',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >

@@ -15,7 +15,7 @@ export type NavItem = {
 }
 
 export const HOME_ITEM: NavItem = {
-  href: '/dashboard', label: 'Home', icon: Home,
+  href: '/dashboard', label: 'Dashboard', icon: Home,
   color: '#2a52a0', bg: 'rgba(42,82,160,0.12)', flag: null,
 }
 
