@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, ShoppingBag, Calendar, BarChart2 } from 'lucide-react'
+import { LayoutDashboard, Users, ShoppingBag, Calendar, BarChart2, Menu, X } from 'lucide-react'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 
 const ALL_TABS = [
@@ -13,7 +13,15 @@ const ALL_TABS = [
   { href: '/overview',  icon: BarChart2,        label: 'Overview', color: '#22c55e', flag: 'show_overview' as const },
 ]
 
-export function BottomNav({ settings = DEFAULT_SETTINGS }: { settings?: TenantSettings }) {
+export function BottomNav({
+  settings = DEFAULT_SETTINGS,
+  menuOpen = false,
+  onOpenMenu,
+}: {
+  settings?: TenantSettings
+  menuOpen?: boolean
+  onOpenMenu?: () => void
+}) {
   const pathname = usePathname()
   const tabs = ALL_TABS.filter(t => t.flag === null || settings[t.flag])
 
@@ -67,6 +75,19 @@ export function BottomNav({ settings = DEFAULT_SETTINGS }: { settings?: TenantSe
             </Link>
           )
         })}
+        <button
+          onClick={onOpenMenu}
+          aria-label="Menu"
+          className="flex items-center justify-center flex-shrink-0 transition-colors duration-200"
+          style={{
+            width: '36px', height: '36px', borderRadius: '999px',
+            background: menuOpen ? '#4a9db5' : 'transparent',
+          }}
+        >
+          {menuOpen
+            ? <X    className="w-[18px] h-[18px]" style={{ color: '#fff' }} strokeWidth={2.2} />
+            : <Menu className="w-[18px] h-[18px]" style={{ color: 'hsl(var(--muted-foreground))' }} strokeWidth={1.8} />}
+        </button>
       </div>
     </nav>
   )

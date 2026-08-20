@@ -86,7 +86,7 @@ export function CrmBotWidget({ dark = false }: { dark?: boolean }) {
   const inputPlaceholder = dark ? 'rgba(255,255,255,0.4)' : 'rgba(23,26,43,0.4)'
 
   return (
-    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 100 }}>
+    <div className="bottom-[84px] md:bottom-5" style={{ position: 'fixed', right: '20px', zIndex: 100 }}>
       <style>{`
         @keyframes qc-crmbot-glow-pulse {
           0%, 100% { box-shadow: 0 8px 28px rgba(13,109,255,0.38), 0 0 0 1px rgba(94,234,212,0.25); }

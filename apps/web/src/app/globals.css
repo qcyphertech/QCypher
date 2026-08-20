@@ -135,4 +135,36 @@
   html.dark .badge-violet   { background: var(--badge-violet-bg); color: var(--badge-violet-text); }
   html.dark .badge-rose     { @apply bg-rose-900/40   text-rose-300; }
   html.dark .badge-sky      { @apply bg-sky-900/40    text-sky-300; }
+
+  /* Collapsible desktop sidebar — icon-only rail below 1280px, expanding
+     on hover; permanently expanded (no hover needed) at 1280px+. The
+     fixed sidebar overlays content on hover rather than reflowing it, so
+     .app-main only reserves space for the COLLAPSED width — matches the
+     Supabase-style pattern this was modeled on. */
+  .qc-sidebar { width: 64px; }
+  .qc-sidebar-label { display: none; }
+  @media (min-width: 1280px) {
+    .qc-sidebar { width: 224px; }
+    .qc-sidebar-label { display: inline; }
+  }
+  @media (min-width: 768px) and (max-width: 1279px) {
+    .qc-sidebar:hover { width: 224px; }
+    .qc-sidebar:hover .qc-sidebar-label { display: inline; }
+  }
+
+  .app-main-offset { padding-left: 1rem; padding-right: 1rem; }
+  @media (min-width: 768px) {
+    .app-main-offset { padding-left: calc(64px + 1.5rem); padding-right: 1.5rem; }
+  }
+  @media (min-width: 1280px) {
+    .app-main-offset { padding-left: calc(224px + 1.5rem); }
+  }
+
+  .app-topbar-offset { padding-left: 1rem; }
+  @media (min-width: 768px) {
+    .app-topbar-offset { padding-left: calc(64px + 1.25rem); }
+  }
+  @media (min-width: 1280px) {
+    .app-topbar-offset { padding-left: calc(224px + 1.25rem); }
+  }
 }
