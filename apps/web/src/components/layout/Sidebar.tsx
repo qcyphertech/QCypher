@@ -85,8 +85,7 @@ function SidebarItem({ item, active }: { item: NavItem; active: boolean }) {
   const { href, label, icon: Icon, color } = item
   return (
     <Link href={href}
-      className="flex items-center gap-3 px-2 py-2 rounded-xl transition-colors"
-      style={{ background: active ? 'hsl(var(--muted))' : 'transparent' }}
+      className="flex items-center gap-3 px-2 py-2 rounded-xl transition-colors hover:bg-[hsl(var(--muted))]"
     >
       <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{ background: active ? color : 'hsl(var(--muted))' }}>
