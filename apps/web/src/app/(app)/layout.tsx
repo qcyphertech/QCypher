@@ -4,6 +4,7 @@ import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -64,9 +65,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ? (words[0][0] + words[1][0]).toUpperCase()
     : (businessName.slice(0, 2).toUpperCase() || (user.email ?? 'U').slice(0, 2).toUpperCase())
 
+  // Cheap JWT-based check — good enough for gating UI (show the tenant-
+  // search placeholder and Admin panel link). searchAll() independently
+  // re-verifies with a fresh lookup before it ever returns cross-tenant
+  // data, so a stale claim here can't leak anything.
+  const isSuperAdmin = isSuperAdminUser(user)
+
   return (
     <AppShell
       isAdmin={(tenant as { is_admin?: boolean } | null)?.is_admin ?? false}
+      isSuperAdmin={isSuperAdmin}
       settings={settings}
       userInitial={initials}>
       {children}

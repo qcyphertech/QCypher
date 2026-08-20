@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Users, Calendar, FileText, ShieldCheck, ShoppingBag, CornerDownLeft, Loader2 } from 'lucide-react'
+import { Search, Users, Calendar, FileText, ShieldCheck, ShoppingBag, Building2, Loader2 } from 'lucide-react'
 import { searchAll, type SearchResult } from '@/lib/actions/search'
 
 const BASE_COMMANDS = [
@@ -14,28 +14,38 @@ const BASE_COMMANDS = [
   { label: 'New template', href: '/templates/new', icon: FileText },
 ]
 
+const ADMIN_COMMANDS = [
+  { label: 'Admin panel', href: '/admin', icon: ShieldCheck },
+]
+
 const TYPE_META: Record<SearchResult['type'], { label: string; icon: React.ElementType; color: string }> = {
   contact:  { label: 'Contact',  icon: Users,       color: '#10b981' },
   order:    { label: 'Order',    icon: ShoppingBag, color: '#f97316' },
   event:    { label: 'Event',    icon: Calendar,    color: '#0ea5e9' },
   template: { label: 'Template', icon: FileText,    color: '#a855f7' },
+  tenant:   { label: 'Tenant',   icon: Building2,    color: '#2a52a0' },
 }
 
-type Candidate = { title: string; href: string; icon: React.ElementType; color: string; typeLabel: string }
+type Row = { title: string; subtitle: string; href: string; icon: React.ElementType; color: string; typeLabel: string }
 
-// Inline ghost-text autocomplete — no results dropdown. The input shows
-// the user's typed text plus the best match's remaining characters as a
-// native browser text SELECTION (the classic address-bar technique): a
-// keystroke naturally overwrites the selected tail, so we don't need to
-// hand-track "typed vs suggested" state separately.
-export function CommandPalette({ open, onClose, isAdmin = false }: { open: boolean; onClose: () => void; isAdmin?: boolean }) {
-  const commands = isAdmin
-    ? [...BASE_COMMANDS, { label: 'Admin panel', href: '/admin', icon: ShieldCheck }]
-    : BASE_COMMANDS
+// Plain input + a real results dropdown — a prior version used inline
+// ghost-text autocomplete (typed selection auto-overwritten on keystroke),
+// which made Backspace behave unpredictably (it had to fight the browser's
+// own selection semantics) and only ever surfaced a single best guess.
+// This shows every match up to a handful per type, arrow-key navigable,
+// with plain native backspace/editing on the input itself.
+export function CommandPalette({ open, onClose, isAdmin = false, isSuperAdmin = false }: {
+  open: boolean
+  onClose: () => void
+  isAdmin?: boolean
+  isSuperAdmin?: boolean
+}) {
+  const commands = isAdmin || isSuperAdmin ? [...BASE_COMMANDS, ...ADMIN_COMMANDS] : BASE_COMMANDS
 
   const [typed, setTyped] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [highlighted, setHighlighted] = useState(0)
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -60,52 +70,30 @@ export function CommandPalette({ open, onClose, isAdmin = false }: { open: boole
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [typed])
 
-  // Best single candidate: live data match wins over a static nav command.
-  const candidate: Candidate | null = useMemo(() => {
-    const q = typed.trim().toLowerCase()
-    if (!q) return null
+  const q = typed.trim().toLowerCase()
+  const matchedCommands = q ? commands.filter(c => c.label.toLowerCase().includes(q)) : commands
 
-    const bestResult = results.find(r => r.title.toLowerCase().startsWith(q)) ?? results[0]
-    if (bestResult) {
-      const meta = TYPE_META[bestResult.type]
-      return { title: bestResult.title, href: bestResult.href, icon: meta.icon, color: meta.color, typeLabel: meta.label }
-    }
+  const rows: Row[] = q
+    ? [
+        ...results.map(r => {
+          const meta = TYPE_META[r.type]
+          return { title: r.title, subtitle: r.subtitle, href: r.href, icon: meta.icon, color: meta.color, typeLabel: meta.label }
+        }),
+        ...matchedCommands.map(c => ({ title: c.label, subtitle: '', href: c.href, icon: c.icon, color: 'hsl(var(--muted-foreground))', typeLabel: 'Go to' })),
+      ]
+    : commands.map(c => ({ title: c.label, subtitle: '', href: c.href, icon: c.icon, color: 'hsl(var(--muted-foreground))', typeLabel: 'Go to' }))
 
-    const bestCommand = commands.find(c => c.label.toLowerCase().startsWith(q))
-    if (bestCommand) {
-      return { title: bestCommand.label, href: bestCommand.href, icon: bestCommand.icon, color: 'hsl(var(--muted-foreground))', typeLabel: 'Go to' }
-    }
-    return null
-  }, [typed, results, commands])
+  useEffect(() => { setHighlighted(0) }, [typed, results.length])
 
-  const ghostTail = candidate && candidate.title.toLowerCase().startsWith(typed.toLowerCase())
-    ? candidate.title.slice(typed.length)
-    : ''
-  const displayValue = typed + ghostTail
-
-  // Keep the ghost tail selected so the next keystroke overwrites it.
-  useEffect(() => {
-    const el = inputRef.current
-    if (!el || !ghostTail) return
-    el.setSelectionRange(typed.length, displayValue.length)
-  }, [displayValue, ghostTail, typed.length])
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    // Whatever remains after this change is the user's real typed intent —
-    // any selected ghost tail was replaced/removed by the native edit.
-    setTyped(e.target.value)
-  }
-
-  function accept() {
-    if (candidate) { router.push(candidate.href); onClose() }
+  function go(row: Row) {
+    router.push(row.href)
+    onClose()
   }
 
   function handleInputKey(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') { e.preventDefault(); accept() }
-    if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghostTail && inputRef.current?.selectionStart === typed.length) {
-      e.preventDefault()
-      setTyped(displayValue)
-    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHighlighted(i => Math.min(i + 1, rows.length - 1)) }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setHighlighted(i => Math.max(i - 1, 0)) }
+    if (e.key === 'Enter') { e.preventDefault(); if (rows[highlighted]) go(rows[highlighted]) }
   }
 
   const handleGlobalKey = useCallback(
@@ -152,10 +140,10 @@ export function CommandPalette({ open, onClose, isAdmin = false }: { open: boole
           <input
             ref={inputRef}
             autoFocus
-            value={displayValue}
-            onChange={handleChange}
+            value={typed}
+            onChange={e => setTyped(e.target.value)}
             onKeyDown={handleInputKey}
-            placeholder="Search contacts, orders, events, templates…"
+            placeholder={isSuperAdmin ? 'Search tenants…' : 'Search contacts, orders, events, templates…'}
             className="flex-1 bg-transparent outline-none"
             style={{ fontSize: '15px', color: 'hsl(var(--foreground))' }}
           />
@@ -167,35 +155,42 @@ export function CommandPalette({ open, onClose, isAdmin = false }: { open: boole
           </kbd>
         </div>
 
-        {candidate && (
-          <div
-            className="flex items-center gap-3 px-5 cursor-pointer transition-colors"
-            style={{ height: '52px', borderTop: '1px solid hsl(var(--border))' }}
-            onClick={accept}
-            onMouseEnter={e => { e.currentTarget.style.background = 'hsl(var(--muted))' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-          >
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '9px', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: `${candidate.color}18`,
-            }}>
-              <candidate.icon style={{ width: '14px', height: '14px', color: candidate.color }} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: candidate.color, marginRight: '8px' }}>
-                {candidate.typeLabel}
-              </span>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>{candidate.title}</span>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              <CornerDownLeft className="w-3.5 h-3.5" />
-              <span style={{ fontSize: '11px', fontWeight: 600 }}>to go</span>
-            </div>
+        {rows.length > 0 && (
+          <div style={{ borderTop: '1px solid hsl(var(--border))', maxHeight: '320px', overflowY: 'auto' }}>
+            {rows.map((row, i) => (
+              <div
+                key={`${row.typeLabel}-${row.href}-${i}`}
+                className="flex items-center gap-3 px-5 cursor-pointer transition-colors"
+                style={{ height: '52px', background: i === highlighted ? 'hsl(var(--muted))' : 'transparent' }}
+                onClick={() => go(row)}
+                onMouseEnter={() => setHighlighted(i)}
+              >
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '9px', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: `${row.color}18`,
+                }}>
+                  <row.icon style={{ width: '14px', height: '14px', color: row.color }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: row.color, marginRight: '8px' }}>
+                      {row.typeLabel}
+                    </span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>{row.title}</span>
+                  </div>
+                  {row.subtitle && (
+                    <p style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {row.subtitle}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {typed.trim().length >= 2 && !candidate && !searching && (
+        {q.length >= 2 && !searching && results.length === 0 && matchedCommands.length === 0 && (
           <p style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', padding: '16px 20px', borderTop: '1px solid hsl(var(--border))' }}>
             No results for &ldquo;{typed}&rdquo;
           </p>

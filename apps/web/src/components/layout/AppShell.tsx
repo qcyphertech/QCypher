@@ -12,11 +12,13 @@ import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 export function AppShell({
   children,
   isAdmin = false,
+  isSuperAdmin = false,
   settings = DEFAULT_SETTINGS,
   userInitial = 'U',
 }: {
   children:       React.ReactNode
   isAdmin?:       boolean
+  isSuperAdmin?:  boolean
   settings?:      TenantSettings
   userInitial?:   string
 }) {
@@ -46,7 +48,7 @@ export function AppShell({
 
       {settings.show_crm_bot && <CrmBotWidget dark={dark} />}
 
-      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} isAdmin={isAdmin} />
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} />
       <NoBottomOverscroll />
     </div>
   )

@@ -1,9 +1,11 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { isSuperAdminUser } from '@/lib/auth/superadmin'
 
 export type SearchResult = {
-  type: 'contact' | 'order' | 'event' | 'template'
+  type: 'contact' | 'order' | 'event' | 'template' | 'tenant'
   id: string
   title: string
   subtitle: string
@@ -14,14 +16,39 @@ export type SearchResult = {
 // automatically limited to the caller's own tenant, same as any other
 // authenticated read in this app. Runs all four lookups in parallel and
 // caps each at 5 so the dropdown stays short and fast.
+//
+// A super admin has no tenant of their own (the RLS-scoped queries above
+// would just come back empty for them), so they additionally get a
+// tenant-name/slug search — via the admin client, since it spans every
+// tenant and RLS would otherwise block it entirely. The super-admin check
+// re-reads the caller's own JWT here rather than trusting a client-passed
+// flag, since this determines whether cross-tenant data gets returned.
 export async function searchAll(query: string): Promise<SearchResult[]> {
   const q = query.trim()
   if (q.length < 2) return []
 
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   const like = `%${q}%`
   const asNumber = Number(q)
   const isNumeric = !Number.isNaN(asNumber) && q !== ''
+
+  if (isSuperAdminUser(user)) {
+    const admin = createAdminClient()
+    const { data: tenants } = await admin
+      .from('tenants')
+      .select('id, name, slug, plan')
+      .or(`name.ilike.${like},slug.ilike.${like}`)
+      .limit(8)
+
+    return (tenants ?? []).map(t => ({
+      type: 'tenant' as const,
+      id: t.id,
+      title: t.name,
+      subtitle: `${t.slug} · ${t.plan ?? 'Free'}`,
+      href: `/admin/tenants/${t.id}`,
+    }))
+  }
 
   const [contacts, orders, events, templates] = await Promise.all([
     supabase

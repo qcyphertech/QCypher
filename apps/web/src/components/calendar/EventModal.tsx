@@ -31,6 +31,32 @@ function joinDateTime(date: string, time: string) {
   return `${date}T${time || '00:00'}`
 }
 
+// form.starts_at/ends_at are naive local wall-clock strings (no timezone —
+// see joinDateTime/splitDateTime), so `new Date(local)` below parses in
+// the browser's local zone and any output must be re-formatted the same
+// naive-local way, NOT via toISOString() (which would convert to UTC and
+// desync from the still-local starts_at field).
+function toLocalInputDateTime(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// Moving the start slides the end along with it, preserving whatever
+// duration was already set (an hour by default) — so picking 10:00am
+// keeps the meeting ending at 11:00am instead of leaving a stale end
+// time (or an inverted one) behind.
+function shiftStart<T extends { starts_at: string; ends_at: string }>(prev: T, newStartsAt: string): T {
+  const prevStart = new Date(prev.starts_at).getTime()
+  const prevEnd = new Date(prev.ends_at).getTime()
+  const duration = Number.isFinite(prevStart) && Number.isFinite(prevEnd) && prevEnd > prevStart
+    ? prevEnd - prevStart
+    : 60 * 60 * 1000
+  const newStart = new Date(newStartsAt)
+  if (Number.isNaN(newStart.getTime())) return { ...prev, starts_at: newStartsAt }
+  const newEnds = new Date(newStart.getTime() + duration)
+  return { ...prev, starts_at: newStartsAt, ends_at: toLocalInputDateTime(newEnds) }
+}
+
 export function EventModal({ date, event, readOnly, contacts = [], gcalConnected = false, calConnected = false, onClose }: {
   date?: Date
   event?: CalEvent
@@ -293,11 +319,11 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
                 <label className="text-[15px] font-medium">Start</label>
                 <div className="flex items-center gap-2 flex-wrap">
                   <input type="date" required value={splitDateTime(form.starts_at).date}
-                    onChange={e => setForm(prev => ({ ...prev, starts_at: joinDateTime(e.target.value, splitDateTime(prev.starts_at).time) }))}
+                    onChange={e => setForm(prev => shiftStart(prev, joinDateTime(e.target.value, splitDateTime(prev.starts_at).time)))}
                     className={`${input} w-[118px] flex-shrink-0`} />
                   <TimePicker
                     value={splitDateTime(form.starts_at).time}
-                    onChange={t => setForm(prev => ({ ...prev, starts_at: joinDateTime(splitDateTime(prev.starts_at).date, t) }))}
+                    onChange={t => setForm(prev => shiftStart(prev, joinDateTime(splitDateTime(prev.starts_at).date, t)))}
                   />
                 </div>
               </div>
@@ -362,6 +388,11 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
               {!linkError && gcalConnected && !form.meeting_link && (
                 <p className="text-[12.5px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   A Google Meet link is generated automatically once you add a title and time.
+                </p>
+              )}
+              {!gcalConnected && !calConnected && (
+                <p className="text-[12.5px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Connect <a href="/api/google-cal/connect" className="underline font-semibold">Google Calendar</a> or Cal.com to auto-generate a meeting link — otherwise paste one in above.
                 </p>
               )}
 
