@@ -1631,6 +1631,7 @@ export default function HomePage() {
                   <div className="pkg-inherit">Everything in Starter, plus:</div>
                   <ul className="pkg-list">
                     <li><span className="chk">✓</span><span><strong>Sell Online</strong> <em>(a Shopify store embedded on your website — customers buy, we handle payments &amp; shipping)</em></span></li>
+                    <li><span className="chk">✓</span><span><strong>Orders &amp; Invoicing</strong> <em>(create and track sales orders and invoices for jobs, right inside the CRM)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>AI Assistant (QBot)</strong> <em>(&quot;How many customers this month?&quot; — AI answers instantly inside the CRM)</em></span></li>
                     <li><span className="chk">✓</span><span><strong>Automated Review Requests</strong> <em>(after a completed job, automatically ask for Google/Yelp reviews — text &amp; email)</em></span></li>
                     <li><span className="chk crm-chk">✓</span><span><strong>Customer Management Tool</strong> <em>(included free with this plan)</em></span></li>
@@ -1709,7 +1710,7 @@ export default function HomePage() {
                   <tr><td>Customer contacts &amp; notes</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>Scheduling calendar</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>Quick-reply text &amp; email templates</td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
-                  <tr><td>Sales orders &amp; invoicing</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
+                  <tr><td>Orders &amp; invoicing</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>AI Assistant (QBot)</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                   <tr><td>Advanced analytics dashboard</td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-no">—</span></td><td className="tier-col"><span className="dot-yes">✓</span></td></tr>
                 </tbody>
