@@ -26,7 +26,10 @@ const TYPE_META: Record<SearchResult['type'], { label: string; icon: React.Eleme
   tenant:   { label: 'Tenant',   icon: Building2,    color: '#2a52a0' },
 }
 
-type Row = { title: string; subtitle: string; href: string; icon: React.ElementType; color: string; typeLabel: string }
+type Row = { title: string; subtitle: string; href: string; icon: React.ElementType; iconColor: string; iconBg: string }
+
+const NAV_ICON_COLOR = 'hsl(var(--muted-foreground))'
+const NAV_ICON_BG = 'hsl(var(--muted))'
 
 // Plain input + a real results dropdown — a prior version used inline
 // ghost-text autocomplete (typed selection auto-overwritten on keystroke),
@@ -73,15 +76,16 @@ export function CommandPalette({ open, onClose, isAdmin = false, isSuperAdmin = 
   const q = typed.trim().toLowerCase()
   const matchedCommands = q ? commands.filter(c => c.label.toLowerCase().includes(q)) : commands
 
+  // Empty until the user types — no prepopulated nav list on open.
   const rows: Row[] = q
     ? [
         ...results.map(r => {
           const meta = TYPE_META[r.type]
-          return { title: r.title, subtitle: r.subtitle, href: r.href, icon: meta.icon, color: meta.color, typeLabel: meta.label }
+          return { title: r.title, subtitle: r.subtitle, href: r.href, icon: meta.icon, iconColor: meta.color, iconBg: `${meta.color}22` }
         }),
-        ...matchedCommands.map(c => ({ title: c.label, subtitle: '', href: c.href, icon: c.icon, color: 'hsl(var(--muted-foreground))', typeLabel: 'Go to' })),
+        ...matchedCommands.map(c => ({ title: c.label, subtitle: '', href: c.href, icon: c.icon, iconColor: NAV_ICON_COLOR, iconBg: NAV_ICON_BG })),
       ]
-    : commands.map(c => ({ title: c.label, subtitle: '', href: c.href, icon: c.icon, color: 'hsl(var(--muted-foreground))', typeLabel: 'Go to' }))
+    : []
 
   useEffect(() => { setHighlighted(0) }, [typed, results.length])
 
@@ -155,11 +159,20 @@ export function CommandPalette({ open, onClose, isAdmin = false, isSuperAdmin = 
           </kbd>
         </div>
 
+        {!q && (
+          <div className="flex flex-col items-center text-center" style={{ borderTop: '1px solid hsl(var(--border))', padding: '34px 22px' }}>
+            <Search className="w-5 h-5 mb-2.5" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }} />
+            <p style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, margin: 0 }}>
+              {isSuperAdmin ? 'Start typing to search tenants' : 'Start typing to search contacts, orders, events, and templates'}
+            </p>
+          </div>
+        )}
+
         {rows.length > 0 && (
           <div style={{ borderTop: '1px solid hsl(var(--border))', maxHeight: '320px', overflowY: 'auto' }}>
             {rows.map((row, i) => (
               <div
-                key={`${row.typeLabel}-${row.href}-${i}`}
+                key={`${row.href}-${i}`}
                 className="flex items-center gap-3 px-5 cursor-pointer transition-colors"
                 style={{ height: '52px', background: i === highlighted ? 'hsl(var(--muted))' : 'transparent' }}
                 onClick={() => go(row)}
@@ -168,17 +181,12 @@ export function CommandPalette({ open, onClose, isAdmin = false, isSuperAdmin = 
                 <div style={{
                   width: '28px', height: '28px', borderRadius: '9px', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: `${row.color}18`,
+                  background: row.iconBg,
                 }}>
-                  <row.icon style={{ width: '14px', height: '14px', color: row.color }} />
+                  <row.icon style={{ width: '14px', height: '14px', color: row.iconColor }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: row.color, marginRight: '8px' }}>
-                      {row.typeLabel}
-                    </span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>{row.title}</span>
-                  </div>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>{row.title}</span>
                   {row.subtitle && (
                     <p style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {row.subtitle}

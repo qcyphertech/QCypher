@@ -32,15 +32,16 @@ export function TopBar({
         borderColor: 'hsl(var(--border))',
       }}
     >
-      {/* Logo — mobile only; desktop branding lives in the sidebar */}
+      {/* Logo — full wordmark, swapped by theme (navy text on light, white text on dark) */}
       <button
         onClick={() => setExitPrompt(true)}
-        className="flex md:hidden items-center gap-2 flex-shrink-0 hover:opacity-90 transition-opacity mr-2 bg-transparent border-0 cursor-pointer p-0"
+        className="flex items-center flex-shrink-0 hover:opacity-90 transition-opacity mr-2 bg-transparent border-0 cursor-pointer p-0"
       >
-        <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '38px', width: 'auto', display: 'block', transform: 'translateY(-5px)' }} />
-        <span className="hidden sm:block" style={{ fontFamily: 'var(--font-sans)', fontWeight: 900, fontSize: '17px', color: 'var(--heading)', letterSpacing: '-0.03em', lineHeight: 1, marginLeft: '-10px' }}>
-          QCypher
-        </span>
+        <img
+          src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
+          alt="QCypher"
+          style={{ height: '26px', width: 'auto', display: 'block' }}
+        />
       </button>
 
       {/* Exit confirmation dialog */}
@@ -84,30 +85,26 @@ export function TopBar({
         </div>
       )}
 
-      {/* Mobile spacer */}
-      <div className="flex-1 md:hidden" />
+      {/* Left spacer — with the right spacer below, centers the search bar
+          on the header's own midpoint regardless of logo/controls width. */}
+      <div className="flex-1" />
 
       {/* Search */}
       <button onClick={onOpenCmd}
-        className="flex items-center gap-2.5 rounded-full border transition-all group"
+        className="flex items-center gap-2.5 rounded-full border transition-all group flex-shrink-0"
         style={{
           padding: '8px 14px',
           color: 'hsl(var(--muted-foreground))',
           background: 'hsl(var(--muted) / 0.6)',
           borderColor: 'hsl(var(--border))',
           width: '210px',
-          marginLeft: 'auto',
         }}
       >
         <Search style={{ width: '14px', height: '14px', flexShrink: 0 }} />
         <span className="flex-1 text-left truncate" style={{ fontSize: '14px', fontWeight: 500 }}>Search…</span>
-        <kbd
-          className="hidden lg:flex flex-shrink-0 items-center gap-0.5"
-          style={{ fontSize: '11px', fontWeight: 700, padding: '2px 6px', borderRadius: '6px', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
-        >
-          ⌘K
-        </kbd>
       </button>
+
+      <div className="flex-1" />
 
       {/* Right controls */}
       <div className="flex items-center gap-1 flex-shrink-0">
