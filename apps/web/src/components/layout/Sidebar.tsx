@@ -14,12 +14,10 @@ export function Sidebar({
   isAdmin = false,
   isSuperAdmin = false,
   settings = DEFAULT_SETTINGS,
-  dark = false,
 }: {
   isAdmin?:      boolean
   isSuperAdmin?: boolean
   settings?:     TenantSettings
-  dark?:         boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -36,25 +34,18 @@ export function Sidebar({
 
   return (
     <aside
-      className="qc-sidebar hidden md:flex fixed top-0 left-0 h-full flex-col z-40 print:hidden overflow-hidden border-r"
+      className="qc-sidebar hidden md:flex fixed top-0 left-0 h-full flex-col z-40 print:hidden overflow-hidden"
       style={{
         background: 'hsl(var(--card))',
-        borderColor: 'hsl(var(--border))',
         transition: 'width 0.15s ease',
       }}
     >
-      {/* Logo — icon-only mark while the rail is collapsed, full wordmark
-          (swapped by theme) once expanded; see .qc-sidebar-icon-only /
-          .qc-sidebar-label in globals.css for which shows when. */}
-      <Link href="/dashboard" className="flex items-center flex-shrink-0 px-4" style={{ height: '64px' }}>
-        <img src="/qcypher-logo.png" alt="QCypher" className="qc-sidebar-icon-only" style={{ height: '33px', width: 'auto', flexShrink: 0 }} />
-        <img
-          src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
-          alt="QCypher"
-          className="qc-sidebar-label"
-          style={{ height: '33px', width: 'auto', flexShrink: 0 }}
-        />
-      </Link>
+      {/* Branding lives in the header now (see TopBar.tsx) — this is just
+          a header-height spacer so the nav below lines up with the top
+          bar, separated by a horizontal rule rather than a vertical
+          border down the sidebar's edge. */}
+      <div className="flex-shrink-0" style={{ height: '64px' }} />
+      <div className="mx-3 h-px flex-shrink-0" style={{ background: 'hsl(var(--border))' }} />
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-3 space-y-0.5">
         <SidebarItem item={HOME_ITEM} active={active('/dashboard')} />

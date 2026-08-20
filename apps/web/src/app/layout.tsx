@@ -1,7 +1,13 @@
 import type { Metadata, Viewport } from 'next'
+import { Space_Grotesk } from 'next/font/google'
 import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar'
 import { ChatbotWidgetGate } from '@/components/shared/ChatbotWidgetGate'
 import './globals.css'
+
+// Used only for the "CRM" badge next to the header logo — deliberately
+// distinct from --font-sans (the app's body face) so the badge reads as
+// a product mark, not body copy.
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], weight: ['500', '700'], variable: '--font-space-grotesk' })
 
 export const metadata: Metadata = {
   title: { default: 'QCypher Technologies', template: '%s — QCypher Technologies' },
@@ -69,7 +75,7 @@ try {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={spaceGrotesk.variable}>
       <body>
         {/* eslint-disable-next-line react/no-danger */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />

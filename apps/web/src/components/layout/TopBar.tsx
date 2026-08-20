@@ -6,11 +6,11 @@ import { useState } from 'react'
 import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { NotificationBell } from './NotificationBell'
 
-// Desktop branding lives in the sidebar (see Sidebar.tsx) — the sidebar is
-// hidden on mobile though, so mobile keeps its own small logo/exit-trigger
-// here. On desktop this left cell is empty; a 3-column grid (empty left /
-// search / right controls) keeps the search bar at the header's true
-// center regardless of the right controls' width.
+// Logo + "CRM" badge live here, flush left like the marketing site's nav
+// bar — always visible (mobile, collapsed sidebar, expanded sidebar alike),
+// since the sidebar itself no longer carries its own copy. A 3-column grid
+// (logo / search / right controls) keeps the search bar at the header's
+// true center regardless of how wide the logo or right controls are.
 export function TopBar({
   onOpenCmd,
   dark,
@@ -38,16 +38,34 @@ export function TopBar({
         borderColor: 'hsl(var(--border))',
       }}
     >
-      <div className="flex items-center">
-        <button
-          onClick={() => setExitPrompt(true)}
-          className="flex md:hidden items-center flex-shrink-0 hover:opacity-90 transition-opacity bg-transparent border-0 cursor-pointer p-0"
+      <button
+        onClick={() => setExitPrompt(true)}
+        className="flex items-center gap-2.5 flex-shrink-0 hover:opacity-90 transition-opacity bg-transparent border-0 cursor-pointer p-0"
+      >
+        <img
+          src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
+          alt="QCypher"
+          className="h-[20px] sm:h-[28px]"
+          style={{ width: 'auto', display: 'block' }}
+        />
+        <span
+          className="hidden sm:inline-flex"
+          style={{
+            fontFamily: 'var(--font-space-grotesk)',
+            fontWeight: 700,
+            fontSize: '11px',
+            letterSpacing: '0.08em',
+            padding: '4px 10px',
+            borderRadius: '999px',
+            color: '#fff',
+            background: 'linear-gradient(135deg,#1a3070,#4a9db5)',
+          }}
         >
-          <img src="/qcypher-logo.png" alt="QCypher" style={{ height: '38px', width: 'auto', display: 'block' }} />
-        </button>
-      </div>
+          CRM
+        </span>
+      </button>
 
-      {/* Exit confirmation dialog — mobile-only trigger above, desktop's is in the sidebar */}
+      {/* Exit confirmation dialog */}
       {exitPrompt && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -90,13 +108,12 @@ export function TopBar({
 
       {/* Search */}
       <button onClick={onOpenCmd}
-        className="flex items-center gap-2.5 rounded-full border transition-all group flex-shrink-0"
+        className="flex items-center gap-2.5 rounded-full border transition-all group flex-shrink-0 w-[120px] sm:w-[210px]"
         style={{
           padding: '8px 14px',
           color: 'hsl(var(--muted-foreground))',
           background: 'hsl(var(--muted) / 0.6)',
           borderColor: 'hsl(var(--border))',
-          width: '210px',
         }}
       >
         <Search style={{ width: '14px', height: '14px', flexShrink: 0 }} />
