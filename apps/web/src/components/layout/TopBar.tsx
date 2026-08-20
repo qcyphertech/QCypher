@@ -42,8 +42,11 @@ export function TopBar({
         onClick={() => setExitPrompt(true)}
         className="flex items-center gap-2.5 flex-shrink-0 hover:opacity-90 transition-opacity bg-transparent border-0 cursor-pointer p-0"
       >
-        {/* Mobile: icon only, no wordmark/pill text */}
-        <img src="/qcypher-logo.png" alt="QCypher" className="h-[30px] sm:hidden" style={{ width: 'auto', display: 'block' }} />
+        {/* Mobile: icon only, no wordmark/pill text — no inline `display`
+            here deliberately: an inline style would override sm:hidden's
+            display:none at wider viewports regardless of the media query,
+            since inline styles always win over stylesheet rules. */}
+        <img src="/qcypher-logo.png" alt="QCypher" className="h-[30px] sm:hidden" style={{ width: 'auto' }} />
         {/* sm+: full wordmark, swapped by theme, plus the CRM badge */}
         <img
           src={dark ? '/qcypher-logo-footer.png' : '/qcypher-logo-horizontal.png'}
