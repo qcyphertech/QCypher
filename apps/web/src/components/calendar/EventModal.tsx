@@ -392,7 +392,7 @@ export function EventModal({ date, event, readOnly, contacts = [], gcalConnected
               )}
               {!gcalConnected && !calConnected && (
                 <p className="text-[12.5px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  Connect <a href="/api/google-cal/connect" className="underline font-semibold">Google Calendar</a> or Cal.com to auto-generate a meeting link — otherwise paste one in above.
+                  Connect <a href="/api/google-cal/connect" className="underline font-semibold">Google Calendar</a> or <a href="/api/cal/connect" className="underline font-semibold">Cal.com</a> to auto-generate a meeting link — otherwise paste one in above.
                 </p>
               )}
 
