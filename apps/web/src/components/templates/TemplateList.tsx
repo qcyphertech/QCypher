@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Mail, MessageSquare, ChevronRight, Send, Target, Calendar, Wrench, CreditCard, Handshake, MessageCircle, FileText, type LucideIcon } from 'lucide-react'
+import { ChevronRight, Send, Target, Calendar, Wrench, CreditCard, Handshake, MessageCircle, FileText } from 'lucide-react'
 import { SendTemplateModal } from './SendTemplateModal'
+import { interpolate } from '@/lib/template-interpolate'
 import type { Tables } from '@/types/database'
 
 type Template = Tables<'templates'>
-type ContactLite = { id: string; first_name: string; last_name: string | null; email: string | null; phone: string | null }
+type ContactLite = { id: string; first_name: string; last_name: string | null; email: string | null; phone: string | null; company: string | null }
 
 const CATEGORIES = [
   {
@@ -72,15 +73,12 @@ const CATEGORIES = [
   },
 ]
 
-type Filter = 'all' | 'email' | 'sms'
-
-export function TemplateList({ templates, contacts = [] }: { templates: Template[]; contacts?: ContactLite[] }) {
-  const [filter, setFilter] = useState<Filter>('all')
+export function TemplateList({ templates, contacts = [], businessName = '' }: {
+  templates: Template[]
+  contacts?: ContactLite[]
+  businessName?: string
+}) {
   const [sendTarget, setSendTarget] = useState<Template | null>(null)
-
-  const visible = filter === 'all' ? templates : templates.filter(t => t.channel === filter)
-  const emailCount = templates.filter(t => t.channel === 'email').length
-  const smsCount = templates.filter(t => t.channel === 'sms').length
 
   if (templates.length === 0) {
     return (
@@ -110,58 +108,18 @@ export function TemplateList({ templates, contacts = [] }: { templates: Template
 
   const grouped = CATEGORIES.map(cat => ({
     ...cat,
-    items: visible.filter(t => (t.category ?? 'General') === cat.name),
+    items: templates.filter(t => (t.category ?? 'General') === cat.name),
   })).filter(g => g.items.length > 0)
 
   const knownNames = new Set(CATEGORIES.map(c => c.name))
-  const uncategorised = visible.filter(t => !knownNames.has(t.category ?? 'General'))
+  const uncategorised = templates.filter(t => !knownNames.has(t.category ?? 'General'))
 
   return (
     <div>
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', flexWrap: 'wrap' }}>
-        {([
-          { key: 'all',   label: 'All',   icon: null,         count: templates.length },
-          { key: 'email', label: 'Email', icon: Mail,         count: emailCount },
-          { key: 'sms',   label: 'Text',  icon: MessageSquare, count: smsCount },
-        ] as { key: Filter; label: string; icon: LucideIcon | null; count: number }[]).map(tab => {
-          const active = filter === tab.key
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '7px',
-                padding: '8px 16px', borderRadius: '100px',
-                fontSize: '15px', fontWeight: 600,
-                border: active ? 'none' : '1px solid hsl(var(--border))',
-                cursor: 'pointer', transition: 'all 0.15s',
-                background: active
-                  ? 'linear-gradient(135deg, #2a52a0 0%, #4a9db5 100%)'
-                  : 'hsl(var(--card))',
-                color: active ? '#fff' : 'hsl(var(--muted-foreground))',
-                boxShadow: active ? '0 2px 12px rgba(42,82,160,0.35)' : 'none',
-              }}
-            >
-              {tab.icon && <tab.icon size={14} fill="currentColor" strokeWidth={1} />}
-              {tab.label}
-              <span style={{
-                fontSize: '15px', fontWeight: 700,
-                padding: '1px 7px', borderRadius: '100px',
-                background: active ? 'rgba(255,255,255,0.22)' : 'hsl(var(--muted))',
-                color: active ? '#fff' : 'hsl(var(--muted-foreground))',
-              }}>
-                {tab.count}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
       {/* Category sections */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         {grouped.map(cat => (
-          <CategorySection key={cat.name} cat={cat} onSend={setSendTarget} />
+          <CategorySection key={cat.name} cat={cat} onSend={setSendTarget} businessName={businessName} />
         ))}
         {uncategorised.length > 0 && (
           <CategorySection cat={{
@@ -170,7 +128,7 @@ export function TemplateList({ templates, contacts = [] }: { templates: Template
             accent: '#64748b', glow: 'rgba(100,116,139,0.10)',
             border: 'rgba(100,116,139,0.22)', chip: 'rgba(100,116,139,0.10)',
             tag: '#94a3b8', items: uncategorised,
-          }} onSend={setSendTarget} />
+          }} onSend={setSendTarget} businessName={businessName} />
         )}
       </div>
 
@@ -183,7 +141,7 @@ export function TemplateList({ templates, contacts = [] }: { templates: Template
 
 type CatWithItems = typeof CATEGORIES[0] & { items: Template[] }
 
-function CategorySection({ cat, onSend }: { cat: CatWithItems; onSend: (t: Template) => void }) {
+function CategorySection({ cat, onSend, businessName }: { cat: CatWithItems; onSend: (t: Template) => void; businessName: string }) {
   return (
     <div>
       {/* Section header */}
@@ -234,18 +192,23 @@ function CategorySection({ cat, onSend }: { cat: CatWithItems; onSend: (t: Templ
         gap: '12px',
       }}>
         {cat.items.map(t => (
-          <TemplateRow key={t.id} template={t} cat={cat} onSend={onSend} />
+          <TemplateRow key={t.id} template={t} cat={cat} onSend={onSend} businessName={businessName} />
         ))}
       </div>
     </div>
   )
 }
 
-function TemplateRow({ template: t, cat, onSend }: {
+function TemplateRow({ template: t, cat, onSend, businessName }: {
   template: Template
   cat: CatWithItems
   onSend: (t: Template) => void
+  businessName: string
 }) {
+  // No contact is selected at the list level — use a generic placeholder
+  // for the receiver side and the real tenant name for the sender side,
+  // so the sample looks like a real message without fabricating contact data.
+  const sample = interpolate(t.body, { first_name: 'there', business_name: businessName })
   return (
     <div
       style={{
@@ -298,17 +261,26 @@ function TemplateRow({ template: t, cat, onSend }: {
         </p>
       </Link>
 
-      {/* Body preview */}
-      <p style={{
-        fontSize: '15px', color: 'hsl(var(--muted-foreground))',
-        lineHeight: 1.5, flex: 1,
-        display: '-webkit-box',
-        WebkitLineClamp: 3,
-        WebkitBoxOrient: 'vertical',
-        overflow: 'hidden',
+      {/* Body preview — styled like a sample message bubble */}
+      <div style={{
+        flex: 1,
+        borderRadius: '14px',
+        borderTopLeftRadius: '4px',
+        padding: '10px 13px',
+        background: cat.chip,
+        border: `1px solid ${cat.border}`,
       }}>
-        {t.body}
-      </p>
+        <p style={{
+          fontSize: '15px', color: 'hsl(var(--foreground) / 0.85)',
+          lineHeight: 1.5,
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}>
+          {sample}
+        </p>
+      </div>
 
       {/* Footer — Send opens the contact picker, Edit goes to the editor */}
       <div style={{

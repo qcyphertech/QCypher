@@ -7,7 +7,7 @@ import { getContactSendContext, type SendContext } from '@/lib/actions/send-cont
 import type { Tables } from '@/types/database'
 
 type Template = Tables<'templates'>
-type ContactLite = { id: string; first_name: string; last_name: string | null; email: string | null; phone: string | null }
+type ContactLite = { id: string; first_name: string; last_name: string | null; email: string | null; phone: string | null; company: string | null }
 type Channel = 'email' | 'sms'
 
 // The template-first counterpart to QuickSendButton (which is
@@ -43,7 +43,7 @@ export function SendTemplateModal({ template, contacts, onClose }: {
     return {
       first_name:       contact?.first_name,
       last_name:        contact?.last_name,
-      company:          undefined,
+      company:          contact?.company,
       phone:            contact?.phone,
       business_name:    ctx.businessName,
       appointment_date: ctx.appointmentDate,

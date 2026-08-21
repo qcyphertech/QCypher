@@ -7,10 +7,15 @@ export const metadata: Metadata = { title: 'Templates' }
 
 export default async function TemplatesPage() {
   const supabase = await createClient()
-  const [{ data: templates }, { data: contacts }] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser()
+  const tenantId = user?.app_metadata?.tenant_id ?? user?.user_metadata?.tenant_id ?? ''
+
+  const [{ data: templates }, { data: contacts }, { data: tenant }] = await Promise.all([
     supabase.from('templates').select('*').order('name', { ascending: true }),
     // Send-target picker for the template-first "Send" flow.
-    supabase.from('contacts').select('id, first_name, last_name, email, phone').order('first_name', { ascending: true }),
+    supabase.from('contacts').select('id, first_name, last_name, email, phone, company').order('first_name', { ascending: true }),
+    // Real sender name for the sample-message preview on each card.
+    supabase.from('tenants').select('name').eq('id', tenantId).maybeSingle(),
   ])
 
   return (
@@ -24,7 +29,7 @@ export default async function TemplatesPage() {
           New template
         </Link>
       </div>
-      <TemplateList templates={templates ?? []} contacts={contacts ?? []} />
+      <TemplateList templates={templates ?? []} contacts={contacts ?? []} businessName={tenant?.name ?? ''} />
     </div>
   )
 }
