@@ -7,8 +7,8 @@ import { sendSms } from '@/lib/telnyx'
 // Daily: asks customers to leave a review N days after their order's
 // job_status flips to 'completed' (orders.updated_at is the best signal
 // we have for that transition — no dedicated completed_at column).
-// Initial ask is SMS + email; a single follow-up (SMS only, cost
-// optimization) fires later per tenant's review_reminder_days.
+// Initial ask prefers email (SMS only when there's no email on file); a
+// single SMS-only follow-up fires later per tenant's review_reminder_days.
 // Idempotent via the unique (order_id, stage) constraint on
 // review_requests, and respects both the tenant-level toggle and any
 // per-customer opt-out in customer_automation_overrides.
@@ -83,9 +83,6 @@ export async function GET(request: NextRequest) {
       ? `Hi ${firstName}, thanks for choosing ${businessName}! Mind leaving us a quick review? ${reviewUrl}`
       : `Hi ${firstName}, would you take a moment to review ${businessName}? It really helps: ${reviewUrl}`
 
-    if (order.contacts?.phone) {
-      await sendSms({ to: order.contacts.phone, body: smsBody })
-    }
     if (stage === 'initial' && order.contacts?.email) {
       await sendEmail({
         to: order.contacts.email,
@@ -99,6 +96,10 @@ export async function GET(request: NextRequest) {
           cta: { label: 'Leave a review', href: reviewUrl },
         }),
       })
+    } else if (order.contacts?.phone) {
+      // Email is preferred — SMS only fires here when there's no email on
+      // file, or on the SMS-only follow-up stage.
+      await sendSms({ to: order.contacts.phone, body: smsBody })
     }
 
     await admin.from('audit_logs').insert({

@@ -6,8 +6,8 @@ import { formatTimeLabel } from '@/lib/recurrence'
 
 // Daily: for each pending recurring-job order whose scheduled_date is
 // exactly `reminder_days_before` away, send the customer an approve/
-// reschedule/skip link (email + SMS, whichever contact info exists) and
-// mark reminder_sent_at so it only ever goes out once.
+// reschedule/skip link — email if they have one on file, SMS only when
+// they don't — and mark reminder_sent_at so it only ever goes out once.
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization')
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -90,9 +90,7 @@ export async function GET(request: NextRequest) {
           text: `Your ${order.recurring_jobs.title} appointment is scheduled for ${dateLabel} ($${Number(order.total_amount).toFixed(2)}). Confirm, reschedule, or skip: ${link}`,
         }),
       })
-    }
-
-    if (contact?.phone) {
+    } else if (contact?.phone) {
       await sendSms({
         to: contact.phone,
         body: `Hi ${contact.first_name ?? 'there'}, your ${order.recurring_jobs.title} is scheduled for ${dateLabel} ($${Number(order.total_amount).toFixed(2)}). Confirm here: ${link}`,
