@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Mail, MessageSquare, X, Send, ChevronDown, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { interpolate } from '@/lib/template-interpolate'
+import { interpolate, hasBlockingUnresolved } from '@/lib/template-interpolate'
 import type { Tables } from '@/types/database'
 
 type Contact  = Tables<'contacts'>
@@ -42,8 +42,8 @@ export function QuickSendButton({
       .then(({ data }) => setTemplates(data ?? []))
   }, [open, channel])
 
-  function buildPreview(t: Template): string {
-    return interpolate(t.body, {
+  function interpolateContext() {
+    return {
       first_name:       contact.first_name,
       last_name:        contact.last_name,
       company:          contact.company,
@@ -51,7 +51,11 @@ export function QuickSendButton({
       business_name:    businessName || undefined,
       appointment_date: appointmentDate,
       amount_due:       amountDue,
-    })
+    }
+  }
+
+  function buildPreview(t: Template): string {
+    return interpolate(t.body, interpolateContext())
   }
 
   function selectTemplate(t: Template) {
@@ -59,17 +63,19 @@ export function QuickSendButton({
     setPreview(buildPreview(t))
   }
 
-  const hasUnresolved = preview.includes('⚠{{')
+  const hasUnresolved = hasBlockingUnresolved(preview)
 
   async function handleSend() {
     if (!selected) return
     setSending(true)
     setResult(null)
 
+    const subject = selected.subject ? interpolate(selected.subject, interpolateContext()) : undefined
+
     const res  = await fetch('/api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ templateId: selected.id, contactId: contact.id, preview, channel }),
+      body: JSON.stringify({ templateId: selected.id, contactId: contact.id, preview, subject, channel }),
     })
     const json = await res.json()
     setSending(false)

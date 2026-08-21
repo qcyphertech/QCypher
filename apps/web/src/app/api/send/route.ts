@@ -33,10 +33,11 @@ export async function POST(request: NextRequest) {
   const tenantId = user.app_metadata?.tenant_id ?? user.user_metadata?.tenant_id
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { templateId, contactId, preview: _preview, channel: _channel } = await request.json() as {
+  const { templateId, contactId, preview: _preview, subject: _subject, channel: _channel } = await request.json() as {
     templateId: string
     contactId: string
     preview: string
+    subject?: string
     channel?: string
   }
   const channel = (_channel === 'sms' ? 'sms' : 'email') as 'email' | 'sms'
@@ -63,6 +64,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Contact has no ${channel === 'sms' ? 'phone number' : 'email address'}` }, { status: 422 })
   }
 
+  // The client already interpolates {{variables}} in the subject the same
+  // way it does the body (see QuickSendButton.tsx) and sends the result
+  // here — falls back to the raw template subject only if the caller
+  // didn't provide one, so a subject with unresolved {{tags}} never goes
+  // out literally.
+  const subject = channel === 'email' ? (_subject ?? template.subject) : null
+
   // Insert queued log entry
   const { data: logEntry } = await supabase
     .from('send_log')
@@ -72,7 +80,7 @@ export async function POST(request: NextRequest) {
       template_id: templateId,
       channel,
       recipient,
-      subject:     channel === 'email' ? template.subject : null,
+      subject,
       body:        preview,
       status:      'queued',
     })
@@ -101,7 +109,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           from:    RESEND_FROM,
           to:      [recipient],
-          subject: template.subject ?? '(no subject)',
+          subject: subject ?? '(no subject)',
           html,
           text:    preview,
         }),

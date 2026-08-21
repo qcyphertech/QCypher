@@ -1,21 +1,21 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
+import { MergeTagPicker } from './MergeTagPicker'
 import type { Tables } from '@/types/database'
 
 type Template = Tables<'templates'>
-
-const VARIABLE_HINT =
-  '{{first_name}}  {{last_name}}  {{company}}  {{phone}}  {{business_name}}  {{appointment_date}}  {{amount_due}}'
 
 export function TemplateForm({ template }: { template?: Template }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error,     setError]        = useState<string | null>(null)
   const supabase = createClient()
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const subjectRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     name:         template?.name         ?? '',
@@ -94,16 +94,18 @@ export function TemplateForm({ template }: { template?: Template }) {
       {form.channel === 'email' && (
         <div className="space-y-1.5">
           <label className="text-[15px] font-medium">Subject</label>
-          <input value={form.subject} onChange={set('subject')} placeholder="Following up on your quote" className={input} />
+          <MergeTagPicker targetRef={subjectRef} />
+          <input ref={subjectRef} value={form.subject} onChange={set('subject')} placeholder="Following up on your quote" className={input} />
         </div>
       )}
 
       <div className="space-y-1.5">
         <label className="text-[15px] font-medium">Body *</label>
-        <textarea required value={form.body} onChange={set('body')} rows={6} className={`${input} resize-none`}
+        <MergeTagPicker targetRef={bodyRef} />
+        <textarea ref={bodyRef} required value={form.body} onChange={set('body')} rows={6} className={`${input} resize-none`}
           placeholder="Hi {{first_name}}, thanks for…" />
-        <p className="text-[15px] text-[hsl(var(--muted-foreground))] leading-relaxed">
-          Variables: {VARIABLE_HINT}
+        <p className="text-[13px] text-[hsl(var(--muted-foreground))] leading-relaxed">
+          Click a tag above to insert it, or type <code>{'{{variable|"fallback text"}}'}</code> to set what shows when it's not available.
         </p>
       </div>
 
