@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { logAudit } from './audit'
-import { getInventoryTier } from './catalog'
+import { getInventoryTier, adjustCatalogQuantity } from './catalog'
 
 export type CatalogRental = {
   id: string
@@ -61,15 +61,20 @@ export async function createRental(input: {
   notes?: string
 }) {
   const { admin, user, tenant_id } = await requireFullTierWriter()
-  const { error } = await admin.from('catalog_rentals').insert({
+  const { data, error } = await admin.from('catalog_rentals').insert({
     tenant_id,
     catalog_item_id: input.catalog_item_id,
     order_id: input.order_id ?? null,
     rented_by: user.id,
     due_date: input.due_date,
     notes: input.notes ?? null,
-  })
+  }).select('id, catalog_items(name)').single()
   if (error) throw new Error(error.message)
+  // Stock-tracked items come off the shelf while rented out — restored in
+  // returnRental. adjustCatalogQuantity itself no-ops for services (quantity is null).
+  await adjustCatalogQuantity(input.catalog_item_id, tenant_id, -1)
+  const itemName = (data as unknown as { catalog_items: { name: string } | null } | null)?.catalog_items?.name
+  await logAudit({ action: 'inventory_rental_created', resource_type: 'inventory', resource_id: data.id, resource_name: itemName, details: { due_date: input.due_date } })
   revalidatePath('/inventory')
 }
 
@@ -82,6 +87,7 @@ export async function returnRental(id: string, condition: 'good' | 'needs_repair
     .eq('id', id)
     .eq('tenant_id', tenant_id)
   if (error) throw new Error(error.message)
+  if (rental) await adjustCatalogQuantity(rental.catalog_item_id, tenant_id, 1)
   const itemName = (rental as unknown as { catalog_items: { name: string } | null } | null)?.catalog_items?.name
   await logAudit({ action: 'inventory_rental_returned', resource_type: 'inventory', resource_id: id, resource_name: itemName, details: { condition } })
   revalidatePath('/inventory')

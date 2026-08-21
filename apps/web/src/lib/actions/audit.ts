@@ -29,7 +29,7 @@ export type AuditAction =
   | 'staff_location_assigned' | 'staff_location_unassigned'
   | 'ai_blog_published' | 'ai_crm_bot_query'
   | 'inventory_item_created' | 'inventory_item_updated' | 'inventory_item_deleted'
-  | 'inventory_qty_changed' | 'inventory_rental_returned'
+  | 'inventory_qty_changed' | 'inventory_rental_created' | 'inventory_rental_returned'
 
 export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location' | 'blog' | 'ai_assistant' | 'inventory'
 

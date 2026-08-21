@@ -31,7 +31,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   staff_location_assigned: 'Staff assigned to location', staff_location_unassigned: 'Staff removed from location',
   ai_blog_published: 'AI blog post published', ai_crm_bot_query: 'AI assistant queried',
   inventory_item_created: 'Inventory item added', inventory_item_updated: 'Inventory item updated', inventory_item_deleted: 'Inventory item deleted',
-  inventory_qty_changed: 'Inventory quantity changed', inventory_rental_returned: 'Rental returned',
+  inventory_qty_changed: 'Inventory quantity changed', inventory_rental_created: 'Rented out', inventory_rental_returned: 'Rental returned',
 }
 
 const RESOURCE_TYPES: ResourceType[] = ['contact', 'event', 'note', 'template', 'auth', 'team', 'account', 'pricing', 'invoice', 'payment', 'order', 'automation', 'location', 'blog', 'ai_assistant']

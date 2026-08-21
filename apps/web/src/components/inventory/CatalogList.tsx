@@ -5,6 +5,7 @@ import type { CatalogItem, InventoryTier } from '@/lib/actions/catalog'
 import { deactivateCatalogItem, deleteCatalogItem } from '@/lib/actions/catalog'
 import type { TenantSettings } from '@/lib/types/settings'
 import { CatalogItemModal } from './CatalogItemModal'
+import { RentOutModal } from './RentOutModal'
 import { Pencil, ToggleLeft, Trash2, Package, Wrench, Key, Filter, Download } from 'lucide-react'
 
 const TYPE_META = {
@@ -227,6 +228,8 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
 }) {
   const { label, icon: Icon, bg, color } = TYPE_META[item.item_type]
   const qStatus = quantityStatus(item, tier, reorderEnabled)
+  const rentable = item.is_rentable || item.item_type === 'rental'
+  const [showRentOut, setShowRentOut] = useState(false)
 
   async function handleDelete() {
     if (!confirm(`Delete "${item.name}"? This can't be undone.`)) return
@@ -234,6 +237,7 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
   }
 
   return (
+    <>
     <tr
       className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--muted))] transition-colors"
       style={{ opacity: item.is_active ? 1 : 0.5 }}
@@ -309,6 +313,12 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
       </td>
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-2 justify-end">
+          {tier === 'full' && rentable && item.is_active && (
+            <button onClick={() => setShowRentOut(true)} title="Rent out"
+              className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-amber-50 transition-colors">
+              <Key className="w-3.5 h-3.5" style={{ color: 'var(--badge-amber-text)' }} />
+            </button>
+          )}
           <button onClick={onEdit}
             className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-indigo-50 transition-colors">
             <Pencil className="w-3.5 h-3.5" style={{ color: '#2a52a0' }} />
@@ -330,5 +340,9 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
         </div>
       </td>
     </tr>
+    {showRentOut && (
+      <RentOutModal itemId={item.id} itemName={item.name} onClose={() => setShowRentOut(false)} />
+    )}
+    </>
   )
 }
