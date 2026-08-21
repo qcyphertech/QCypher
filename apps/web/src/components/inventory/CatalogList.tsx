@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import type { CatalogItem, InventoryTier } from '@/lib/actions/catalog'
-import { deactivateCatalogItem, deleteCatalogItem } from '@/lib/actions/catalog'
+import { activateCatalogItem, deactivateCatalogItem, deleteCatalogItem } from '@/lib/actions/catalog'
 import type { TenantSettings } from '@/lib/types/settings'
 import { CatalogItemModal } from './CatalogItemModal'
 import { RentOutModal } from './RentOutModal'
-import { Pencil, ToggleLeft, Trash2, Package, Wrench, Key, Filter, Download } from 'lucide-react'
+import { Pencil, ToggleLeft, ToggleRight, Trash2, Package, Wrench, Key, Filter, Download } from 'lucide-react'
 
 const TYPE_META = {
   good:    { label: 'Good',    icon: Package, bg: 'var(--badge-indigo-bg)', color: 'var(--badge-indigo-text)' },
@@ -323,12 +323,20 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
             className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-indigo-50 transition-colors">
             <Pencil className="w-3.5 h-3.5" style={{ color: '#2a52a0' }} />
           </button>
-          {item.is_active && (
+          {item.is_active ? (
             <form action={deactivateCatalogItem.bind(null, item.id)}>
               <button type="submit"
                 className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-amber-50 transition-colors"
                 title="Deactivate">
                 <ToggleLeft className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
+              </button>
+            </form>
+          ) : (
+            <form action={activateCatalogItem.bind(null, item.id)}>
+              <button type="submit"
+                className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-green-50 transition-colors"
+                title="Activate">
+                <ToggleRight className="w-3.5 h-3.5" style={{ color: '#16a34a' }} />
               </button>
             </form>
           )}

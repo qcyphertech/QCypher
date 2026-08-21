@@ -179,6 +179,10 @@ export async function deactivateCatalogItem(id: string) {
   return updateCatalogItem(id, { is_active: false })
 }
 
+export async function activateCatalogItem(id: string) {
+  return updateCatalogItem(id, { is_active: true })
+}
+
 // Order line items call this to auto-deduct stock — delta is negative to
 // consume, positive to restore (e.g. a line item's quantity was reduced,
 // or the line item was removed entirely). Only stock-tracked items
