@@ -38,7 +38,7 @@ function initials(c: Contact) {
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
 type TabKey = 'orders' | 'payments' | 'activity' | 'recurring' | 'timeline' | 'automation'
 
-export function ContactDetail({ contact, interactions, orders = [], activity = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [] }: {
+export function ContactDetail({ contact, interactions, orders = [], activity = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [], nextAppointmentAt = null }: {
   contact: Contact
   interactions: Interaction[]
   orders?: Order[]
@@ -48,11 +48,24 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   businessName: string
   catalogItems?: CatalogItem[]
   recurringJobs?: RecurringJob[]
+  nextAppointmentAt?: string | null
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
   const { canEdit, isAdmin } = useUserRole() // Phase 21 RBAC — hides edit/delete for read-only
+
+  // Quick-send template variables that aren't on the contact/tenant row
+  // directly — the most recent unpaid order's total, and the soonest
+  // upcoming appointment, both pre-formatted since interpolate() just
+  // substitutes strings verbatim.
+  const nextUnpaidOrder = orders.find(o => o.payment_status === 'pending')
+  const amountDue = nextUnpaidOrder
+    ? `$${nextUnpaidOrder.total_amount.toFixed(2)}`
+    : undefined
+  const appointmentDate = nextAppointmentAt
+    ? new Date(nextAppointmentAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    : undefined
   const initialTab = searchParams.get('tab')
   const highlightOrderId = searchParams.get('order')
   const validTabs: TabKey[] = ['orders', 'payments', 'activity', 'recurring', 'timeline', 'automation']
@@ -172,8 +185,8 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
             Quick send
           </span>
           <div className="flex items-center gap-1.5">
-            <QuickSendButton contact={contact} channel="email" iconOnly />
-            <QuickSendButton contact={contact} channel="sms" iconOnly />
+            <QuickSendButton contact={contact} businessName={businessName} amountDue={amountDue} appointmentDate={appointmentDate} channel="email" iconOnly />
+            <QuickSendButton contact={contact} businessName={businessName} amountDue={amountDue} appointmentDate={appointmentDate} channel="sms" iconOnly />
             <SendPortalLinkButton
               contactId={contact.id}
               tenantId={tenantId}

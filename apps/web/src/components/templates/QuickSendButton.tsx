@@ -12,13 +12,17 @@ type Template = Tables<'templates'>
 export function QuickSendButton({
   contact,
   businessName = '',
+  amountDue,
+  appointmentDate,
   channel = 'email',
   iconOnly = false,
 }: {
-  contact:       Contact
-  businessName?: string
-  channel?:      'email' | 'sms'
-  iconOnly?:     boolean
+  contact:          Contact
+  businessName?:    string
+  amountDue?:       string
+  appointmentDate?: string
+  channel?:         'email' | 'sms'
+  iconOnly?:        boolean
 }) {
   const [open,      setOpen]      = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
@@ -45,8 +49,8 @@ export function QuickSendButton({
       company:          contact.company,
       phone:            contact.phone,
       business_name:    businessName || undefined,
-      appointment_date: undefined,
-      amount_due:       undefined,
+      appointment_date: appointmentDate,
+      amount_due:       amountDue,
     })
   }
 
