@@ -7,10 +7,11 @@ export const metadata: Metadata = { title: 'Templates' }
 
 export default async function TemplatesPage() {
   const supabase = await createClient()
-  const { data: templates } = await supabase
-    .from('templates')
-    .select('*')
-    .order('name', { ascending: true })
+  const [{ data: templates }, { data: contacts }] = await Promise.all([
+    supabase.from('templates').select('*').order('name', { ascending: true }),
+    // Send-target picker for the template-first "Send" flow.
+    supabase.from('contacts').select('id, first_name, last_name, email, phone').order('first_name', { ascending: true }),
+  ])
 
   return (
     <div className="space-y-6">
@@ -23,7 +24,7 @@ export default async function TemplatesPage() {
           New template
         </Link>
       </div>
-      <TemplateList templates={templates ?? []} />
+      <TemplateList templates={templates ?? []} contacts={contacts ?? []} />
     </div>
   )
 }

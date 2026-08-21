@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Mail, ChevronRight, Target, Calendar, Wrench, CreditCard, Handshake, MessageCircle, FileText, type LucideIcon } from 'lucide-react'
+import { Mail, MessageSquare, ChevronRight, Send, Target, Calendar, Wrench, CreditCard, Handshake, MessageCircle, FileText, type LucideIcon } from 'lucide-react'
+import { SendTemplateModal } from './SendTemplateModal'
 import type { Tables } from '@/types/database'
 
 type Template = Tables<'templates'>
+type ContactLite = { id: string; first_name: string; last_name: string | null; email: string | null; phone: string | null }
 
 const CATEGORIES = [
   {
@@ -70,13 +72,15 @@ const CATEGORIES = [
   },
 ]
 
-type Filter = 'all' | 'email'
+type Filter = 'all' | 'email' | 'sms'
 
-export function TemplateList({ templates }: { templates: Template[] }) {
+export function TemplateList({ templates, contacts = [] }: { templates: Template[]; contacts?: ContactLite[] }) {
   const [filter, setFilter] = useState<Filter>('all')
+  const [sendTarget, setSendTarget] = useState<Template | null>(null)
 
   const visible = filter === 'all' ? templates : templates.filter(t => t.channel === filter)
   const emailCount = templates.filter(t => t.channel === 'email').length
+  const smsCount = templates.filter(t => t.channel === 'sms').length
 
   if (templates.length === 0) {
     return (
@@ -117,8 +121,9 @@ export function TemplateList({ templates }: { templates: Template[] }) {
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', flexWrap: 'wrap' }}>
         {([
-          { key: 'all',   label: 'All',   icon: null, count: templates.length },
-          { key: 'email', label: 'Email', icon: Mail, count: emailCount },
+          { key: 'all',   label: 'All',   icon: null,         count: templates.length },
+          { key: 'email', label: 'Email', icon: Mail,         count: emailCount },
+          { key: 'sms',   label: 'Text',  icon: MessageSquare, count: smsCount },
         ] as { key: Filter; label: string; icon: LucideIcon | null; count: number }[]).map(tab => {
           const active = filter === tab.key
           return (
@@ -156,7 +161,7 @@ export function TemplateList({ templates }: { templates: Template[] }) {
       {/* Category sections */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         {grouped.map(cat => (
-          <CategorySection key={cat.name} cat={cat} />
+          <CategorySection key={cat.name} cat={cat} onSend={setSendTarget} />
         ))}
         {uncategorised.length > 0 && (
           <CategorySection cat={{
@@ -165,16 +170,20 @@ export function TemplateList({ templates }: { templates: Template[] }) {
             accent: '#64748b', glow: 'rgba(100,116,139,0.10)',
             border: 'rgba(100,116,139,0.22)', chip: 'rgba(100,116,139,0.10)',
             tag: '#94a3b8', items: uncategorised,
-          }} />
+          }} onSend={setSendTarget} />
         )}
       </div>
+
+      {sendTarget && (
+        <SendTemplateModal template={sendTarget} contacts={contacts} onClose={() => setSendTarget(null)} />
+      )}
     </div>
   )
 }
 
 type CatWithItems = typeof CATEGORIES[0] & { items: Template[] }
 
-function CategorySection({ cat }: { cat: CatWithItems }) {
+function CategorySection({ cat, onSend }: { cat: CatWithItems; onSend: (t: Template) => void }) {
   return (
     <div>
       {/* Section header */}
@@ -225,23 +234,26 @@ function CategorySection({ cat }: { cat: CatWithItems }) {
         gap: '12px',
       }}>
         {cat.items.map(t => (
-          <TemplateRow key={t.id} template={t} cat={cat} />
+          <TemplateRow key={t.id} template={t} cat={cat} onSend={onSend} />
         ))}
       </div>
     </div>
   )
 }
 
-function TemplateRow({ template: t, cat }: {
+function TemplateRow({ template: t, cat, onSend }: {
   template: Template
   cat: CatWithItems
+  onSend: (t: Template) => void
 }) {
+  const ChannelIcon = t.channel === 'sms' ? MessageSquare : Mail
+  const channelLabel = t.channel === 'sms' ? 'Text' : 'Email'
+
   return (
-    <Link
-      href={`/templates/${t.id}`}
+    <div
       style={{
         display: 'flex', flexDirection: 'column',
-        padding: '18px 20px', textDecoration: 'none',
+        padding: '18px 20px',
         borderRadius: '16px',
         border: `1px solid ${cat.border}`,
         background: 'hsl(var(--card))',
@@ -250,12 +262,12 @@ function TemplateRow({ template: t, cat }: {
         position: 'relative', overflow: 'hidden',
       }}
       onMouseEnter={e => {
-        const el = e.currentTarget as HTMLAnchorElement
+        const el = e.currentTarget
         el.style.transform = 'translateY(-2px)'
         el.style.boxShadow = `0 6px 24px ${cat.glow}`
       }}
       onMouseLeave={e => {
-        const el = e.currentTarget as HTMLAnchorElement
+        const el = e.currentTarget
         el.style.transform = 'translateY(0)'
         el.style.boxShadow = `0 1px 12px ${cat.glow}`
       }}
@@ -266,14 +278,14 @@ function TemplateRow({ template: t, cat }: {
         background: `linear-gradient(90deg, ${cat.accent}, transparent)`,
       }} />
 
-      {/* Top row: icon + badges */}
+      {/* Top row: icon + channel badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
         <div style={{
           width: '38px', height: '38px', borderRadius: '11px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: cat.chip, border: `1px solid ${cat.border}`,
         }}>
-          <Mail size={16} color={cat.accent} />
+          <ChannelIcon size={16} color={cat.accent} />
         </div>
 
         <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
@@ -284,20 +296,22 @@ function TemplateRow({ template: t, cat }: {
             background: cat.chip, color: cat.accent,
             border: `1px solid ${cat.border}`,
           }}>
-            <Mail size={12} fill="currentColor" strokeWidth={1} /> Email
+            <ChannelIcon size={12} fill="currentColor" strokeWidth={1} /> {channelLabel}
           </span>
         </div>
       </div>
 
-      {/* Name */}
-      <p style={{
-        fontSize: '15px', fontWeight: 700,
-        color: 'hsl(var(--foreground))',
-        marginBottom: '6px',
-        lineHeight: 1.2,
-      }}>
-        {t.name}
-      </p>
+      {/* Name — links to the editor */}
+      <Link href={`/templates/${t.id}`} style={{ textDecoration: 'none' }}>
+        <p style={{
+          fontSize: '15px', fontWeight: 700,
+          color: 'hsl(var(--foreground))',
+          marginBottom: '6px',
+          lineHeight: 1.2,
+        }}>
+          {t.name}
+        </p>
+      </Link>
 
       {/* Body preview */}
       <p style={{
@@ -311,15 +325,30 @@ function TemplateRow({ template: t, cat }: {
         {t.body}
       </p>
 
-      {/* Footer */}
+      {/* Footer — Send opens the contact picker, Edit goes to the editor */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        marginTop: '14px',
+        gap: '14px', marginTop: '14px',
       }}>
-        <span style={{ fontSize: '15px', color: cat.accent, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <button
+          type="button"
+          onClick={() => onSend(t)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '4px',
+            fontSize: '15px', fontWeight: 700, color: cat.accent,
+            background: cat.chip, border: `1px solid ${cat.border}`,
+            borderRadius: '10px', padding: '5px 12px', cursor: 'pointer',
+          }}
+        >
+          <Send size={13} /> Send
+        </button>
+        <Link href={`/templates/${t.id}`} style={{
+          fontSize: '15px', color: cat.accent, fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none',
+        }}>
           Edit <ChevronRight size={13} />
-        </span>
+        </Link>
       </div>
-    </Link>
+    </div>
   )
 }
