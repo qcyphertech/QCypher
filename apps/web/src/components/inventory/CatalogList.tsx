@@ -1,12 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import type { CatalogItem, InventoryTier } from '@/lib/actions/catalog'
 import { activateCatalogItem, deactivateCatalogItem, deleteCatalogItem } from '@/lib/actions/catalog'
 import type { TenantSettings } from '@/lib/types/settings'
 import { CatalogItemModal } from './CatalogItemModal'
 import { RentOutModal } from './RentOutModal'
-import { Pencil, ToggleLeft, ToggleRight, Trash2, Package, Wrench, Key, Filter, Download } from 'lucide-react'
+import { Pencil, Trash2, Package, Wrench, Key, Filter, Download } from 'lucide-react'
 
 const TYPE_META = {
   good:    { label: 'Good',    icon: Package, bg: 'var(--badge-indigo-bg)', color: 'var(--badge-indigo-text)' },
@@ -30,6 +30,17 @@ const STATUS_OPTIONS = [
   { value: 'active',   label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
 ]
+
+const NICE_QTY_STEPS = [0, 1, 5, 10, 25, 50, 100, 250, 500, 1000]
+const NICE_PRICE_STEPS = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+
+// Round-number options, trimmed to whatever actually fits the catalog —
+// a tenant selling $15 candles shouldn't see a $5000 price bucket, and a
+// tenant with 900 units in stock shouldn't be capped at 100.
+function bucketsFor(steps: number[], maxVal: number): number[] {
+  const ceilIdx = steps.findIndex(s => s >= maxVal)
+  return ceilIdx === -1 ? steps : steps.slice(0, ceilIdx + 1)
+}
 
 function quantityStatus(item: CatalogItem, tier: InventoryTier, reorderEnabled: boolean): 'ok' | 'low' | 'critical' | null {
   if (item.quantity === null) return null
@@ -75,9 +86,22 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
   const [nameQuery, setNameQuery] = useState('')
   const [type, setType] = useState('all')
   const [status, setStatus] = useState('all')
+  const [qtyMin, setQtyMin] = useState('')
+  const [qtyMax, setQtyMax] = useState('')
+  const [priceMin, setPriceMin] = useState('')
+  const [priceMax, setPriceMax] = useState('')
 
-  const hasFilters = !!(nameQuery || type !== 'all' || status !== 'all')
+  const hasFilters = !!(nameQuery || type !== 'all' || status !== 'all' || qtyMin || qtyMax || priceMin || priceMax)
   const reorderEnabled = !!toggles?.inventory_enable_reorder_points
+
+  const qtyBuckets = useMemo(() => {
+    const values = items.map(i => i.quantity).filter((q): q is number => q != null)
+    return bucketsFor(NICE_QTY_STEPS, values.length ? Math.max(...values) : 0)
+  }, [items])
+  const priceBuckets = useMemo(() => {
+    const values = items.map(i => i.base_price)
+    return bucketsFor(NICE_PRICE_STEPS, values.length ? Math.max(...values) : 0)
+  }, [items])
 
   const filtered = useMemo(() => {
     const nq = nameQuery.trim().toLowerCase()
@@ -86,9 +110,13 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
       if (status === 'active' && !i.is_active) return false
       if (status === 'inactive' && i.is_active) return false
       if (nq && !i.name.toLowerCase().includes(nq)) return false
+      if (qtyMin && (i.quantity == null || i.quantity < Number(qtyMin))) return false
+      if (qtyMax && (i.quantity == null || i.quantity > Number(qtyMax))) return false
+      if (priceMin && i.base_price < Number(priceMin)) return false
+      if (priceMax && i.base_price > Number(priceMax)) return false
       return true
     })
-  }, [items, nameQuery, type, status])
+  }, [items, nameQuery, type, status, qtyMin, qtyMax, priceMin, priceMax])
 
   const active   = filtered.filter(i => i.is_active)
   const inactive = filtered.filter(i => !i.is_active)
@@ -117,7 +145,7 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
         <div className="flex items-center gap-2">
           {hasFilters && (
             <button
-              onClick={() => { setNameQuery(''); setType('all'); setStatus('all') }}
+              onClick={() => { setNameQuery(''); setType('all'); setStatus('all'); setQtyMin(''); setQtyMax(''); setPriceMin(''); setPriceMax('') }}
               className="text-[15px] font-semibold px-3 py-1.5 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
               style={{ color: 'hsl(var(--muted-foreground))' }}
             >
@@ -157,11 +185,41 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
                   </select>
                 </div>
               </th>
-              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor }}>
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '150px' }}>
                 <span className={headerLabelCls}>Qty</span>
+                <div className="flex items-center gap-1 mt-1.5">
+                  <select value={qtyMin} onChange={e => setQtyMin(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal appearance-none"
+                    style={{ color: 'hsl(var(--foreground))' }}>
+                    <option value="">Min</option>
+                    {qtyBuckets.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <span style={{ color: headerColor }}>–</span>
+                  <select value={qtyMax} onChange={e => setQtyMax(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal appearance-none"
+                    style={{ color: 'hsl(var(--foreground))' }}>
+                    <option value="">Max</option>
+                    {qtyBuckets.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
               </th>
-              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor }}>
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '170px' }}>
                 <span className={headerLabelCls}>Price</span>
+                <div className="flex items-center gap-1 mt-1.5">
+                  <select value={priceMin} onChange={e => setPriceMin(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal appearance-none"
+                    style={{ color: 'hsl(var(--foreground))' }}>
+                    <option value="">Min</option>
+                    {priceBuckets.map(v => <option key={v} value={v}>${v}</option>)}
+                  </select>
+                  <span style={{ color: headerColor }}>–</span>
+                  <select value={priceMax} onChange={e => setPriceMax(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal appearance-none"
+                    style={{ color: 'hsl(var(--foreground))' }}>
+                    <option value="">Max</option>
+                    {priceBuckets.map(v => <option key={v} value={v}>${v}</option>)}
+                  </select>
+                </div>
               </th>
               <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '150px' }}>
                 <span className={headerLabelCls}>Status</span>
@@ -238,6 +296,7 @@ function CatalogRow({ item, tier, reorderEnabled, contacts, onEdit }: {
   const qStatus = quantityStatus(item, tier, reorderEnabled)
   const rentable = item.is_rentable || item.item_type === 'rental'
   const [showRentOut, setShowRentOut] = useState(false)
+  const [togglePending, startToggle] = useTransition()
 
   async function handleDelete() {
     if (!confirm(`Delete "${item.name}"? This can't be undone.`)) return
@@ -311,13 +370,30 @@ function CatalogRow({ item, tier, reorderEnabled, contacts, onEdit }: {
         )}
       </td>
       <td className="px-5 py-3.5">
-        <span className="text-[15px] font-bold px-2 py-0.5 rounded-full"
+        <button
+          type="button"
+          disabled={togglePending}
+          onClick={() => startToggle(async () => {
+            if (item.is_active) await deactivateCatalogItem(item.id)
+            else await activateCatalogItem(item.id)
+          })}
+          className="inline-flex items-center gap-1.5 rounded-full pl-3 pr-1 py-1 transition-colors"
           style={{
             background: item.is_active ? 'var(--badge-green-bg)' : 'var(--badge-inactive-bg)',
-            color: item.is_active ? 'var(--badge-green-text)' : 'var(--badge-inactive-text)',
-          }}>
-          {item.is_active ? 'Active' : 'Inactive'}
-        </span>
+            border: `1.5px solid ${item.is_active ? 'var(--badge-green-text)' : 'hsl(var(--border))'}`,
+            opacity: togglePending ? 0.6 : 1,
+            cursor: togglePending ? 'default' : 'pointer',
+          }}
+        >
+          <span className="text-[15px] font-bold" style={{ color: item.is_active ? 'var(--badge-green-text)' : 'var(--badge-inactive-text)' }}>
+            {item.is_active ? 'Active' : 'Inactive'}
+          </span>
+          <span className="relative rounded-full transition-colors"
+            style={{ width: '30px', height: '17px', background: item.is_active ? 'var(--badge-green-text)' : 'hsl(var(--border))' }}>
+            <span className="absolute rounded-full bg-white transition-transform"
+              style={{ width: '13px', height: '13px', top: '2px', left: '2px', transform: item.is_active ? 'translateX(13px)' : 'translateX(0)', boxShadow: '0 1px 2px rgba(0,0,0,0.25)' }} />
+          </span>
+        </button>
       </td>
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-2 justify-end">
@@ -331,23 +407,6 @@ function CatalogRow({ item, tier, reorderEnabled, contacts, onEdit }: {
             className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-indigo-50 transition-colors">
             <Pencil className="w-3.5 h-3.5" style={{ color: '#2a52a0' }} />
           </button>
-          {item.is_active ? (
-            <form action={deactivateCatalogItem.bind(null, item.id)}>
-              <button type="submit"
-                className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-amber-50 transition-colors"
-                title="Deactivate">
-                <ToggleLeft className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
-              </button>
-            </form>
-          ) : (
-            <form action={activateCatalogItem.bind(null, item.id)}>
-              <button type="submit"
-                className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-green-50 transition-colors"
-                title="Activate">
-                <ToggleRight className="w-3.5 h-3.5" style={{ color: '#16a34a' }} />
-              </button>
-            </form>
-          )}
           <button onClick={handleDelete}
             className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-red-50 transition-colors"
             title="Delete">
