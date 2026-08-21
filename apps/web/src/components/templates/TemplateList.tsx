@@ -246,9 +246,6 @@ function TemplateRow({ template: t, cat, onSend }: {
   cat: CatWithItems
   onSend: (t: Template) => void
 }) {
-  const ChannelIcon = t.channel === 'sms' ? MessageSquare : Mail
-  const channelLabel = t.channel === 'sms' ? 'Text' : 'Email'
-
   return (
     <div
       style={{
@@ -278,26 +275,14 @@ function TemplateRow({ template: t, cat, onSend }: {
         background: `linear-gradient(90deg, ${cat.accent}, transparent)`,
       }} />
 
-      {/* Top row: icon + channel badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+      {/* Category icon — channel is now chosen when sending, not fixed here */}
+      <div style={{ marginBottom: '12px' }}>
         <div style={{
           width: '38px', height: '38px', borderRadius: '11px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: cat.chip, border: `1px solid ${cat.border}`,
         }}>
-          <ChannelIcon size={16} color={cat.accent} />
-        </div>
-
-        <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-          <span style={{
-            display: 'flex', alignItems: 'center', gap: '4px',
-            fontSize: '15px', fontWeight: 700, letterSpacing: '0.03em',
-            padding: '3px 9px', borderRadius: '100px',
-            background: cat.chip, color: cat.accent,
-            border: `1px solid ${cat.border}`,
-          }}>
-            <ChannelIcon size={12} fill="currentColor" strokeWidth={1} /> {channelLabel}
-          </span>
+          <cat.icon size={16} color={cat.accent} />
         </div>
       </div>
 
