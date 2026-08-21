@@ -17,7 +17,7 @@ export default async function InventoryPage() {
   const tenant_id = user ? await getTenantId(user.id, user.app_metadata).catch(() => null) : null
 
   const admin = createAdminClient()
-  const [{ data: items }, { data: tenant }, tier] = await Promise.all([
+  const [{ data: items }, { data: tenant }, tier, { data: contacts }] = await Promise.all([
     tenant_id
       ? admin.from('catalog_items').select('*').eq('tenant_id', tenant_id).order('name')
       : Promise.resolve({ data: [] as CatalogItem[] }),
@@ -25,6 +25,10 @@ export default async function InventoryPage() {
       ? admin.from('tenants').select('settings').eq('id', tenant_id).single()
       : Promise.resolve({ data: null }),
     tenant_id ? getInventoryTier().catch(() => 'lite' as const) : Promise.resolve('lite' as const),
+    // Send-target picker for the "Rent out" modal's linked-order flow.
+    tenant_id
+      ? admin.from('contacts').select('id, first_name, last_name').eq('tenant_id', tenant_id).order('first_name')
+      : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string | null }[] }),
   ])
 
   const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...((tenant?.settings as Record<string, unknown>) ?? {}) }
@@ -55,11 +59,11 @@ export default async function InventoryPage() {
         </div>
       ) : tier === 'full' ? (
         <InventoryTabs
-          catalogList={<CatalogList items={items} tier={tier} toggles={settings} />}
+          catalogList={<CatalogList items={items} tier={tier} toggles={settings} contacts={contacts ?? []} />}
           rentals={rentals}
         />
       ) : (
-        <CatalogList items={items} tier={tier} toggles={settings} />
+        <CatalogList items={items} tier={tier} toggles={settings} contacts={contacts ?? []} />
       )}
     </div>
   )

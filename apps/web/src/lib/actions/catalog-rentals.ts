@@ -70,9 +70,11 @@ export async function createRental(input: {
     notes: input.notes ?? null,
   }).select('id, catalog_items(name)').single()
   if (error) throw new Error(error.message)
-  // Stock-tracked items come off the shelf while rented out — restored in
-  // returnRental. adjustCatalogQuantity itself no-ops for services (quantity is null).
-  await adjustCatalogQuantity(input.catalog_item_id, tenant_id, -1)
+  // Stock only comes off the shelf here when there's no linked order — a
+  // linked rental (RentOutModal) already deducted it via addLineItem, and
+  // double-deducting would undercount. returnRental always restores +1
+  // regardless, since the linked-order path never restores it on its own.
+  if (!input.order_id) await adjustCatalogQuantity(input.catalog_item_id, tenant_id, -1)
   const itemName = (data as unknown as { catalog_items: { name: string } | null } | null)?.catalog_items?.name
   await logAudit({ action: 'inventory_rental_created', resource_type: 'inventory', resource_id: data.id, resource_name: itemName, details: { due_date: input.due_date } })
   revalidatePath('/inventory')

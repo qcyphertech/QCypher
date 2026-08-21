@@ -63,7 +63,14 @@ function exportCsv(items: CatalogItem[]) {
   URL.revokeObjectURL(url)
 }
 
-export function CatalogList({ items, tier = 'lite', toggles }: { items: CatalogItem[]; tier?: InventoryTier; toggles?: TenantSettings }) {
+type ContactLite = { id: string; first_name: string; last_name: string | null }
+
+export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
+  items: CatalogItem[]
+  tier?: InventoryTier
+  toggles?: TenantSettings
+  contacts?: ContactLite[]
+}) {
   const [editItem, setEditItem] = useState<CatalogItem | null>(null)
   const [nameQuery, setNameQuery] = useState('')
   const [type, setType] = useState('all')
@@ -171,7 +178,7 @@ export function CatalogList({ items, tier = 'lite', toggles }: { items: CatalogI
           </thead>
           <tbody>
             {status !== 'inactive' && active.map(item => (
-              <CatalogRow key={item.id} item={item} tier={tier} reorderEnabled={reorderEnabled} onEdit={() => setEditItem(item)} />
+              <CatalogRow key={item.id} item={item} tier={tier} reorderEnabled={reorderEnabled} contacts={contacts} onEdit={() => setEditItem(item)} />
             ))}
             {status !== 'active' && inactive.length > 0 && (
               <>
@@ -184,7 +191,7 @@ export function CatalogList({ items, tier = 'lite', toggles }: { items: CatalogI
                   </tr>
                 )}
                 {inactive.map(item => (
-                  <CatalogRow key={item.id} item={item} tier={tier} reorderEnabled={reorderEnabled} onEdit={() => setEditItem(item)} />
+                  <CatalogRow key={item.id} item={item} tier={tier} reorderEnabled={reorderEnabled} contacts={contacts} onEdit={() => setEditItem(item)} />
                 ))}
               </>
             )}
@@ -220,10 +227,11 @@ const QTY_COLOR = {
   critical: { bg: 'var(--badge-red-bg)',    color: 'var(--badge-red-text)' },
 }
 
-function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
+function CatalogRow({ item, tier, reorderEnabled, contacts, onEdit }: {
   item: CatalogItem
   tier: InventoryTier
   reorderEnabled: boolean
+  contacts: ContactLite[]
   onEdit: () => void
 }) {
   const { label, icon: Icon, bg, color } = TYPE_META[item.item_type]
@@ -349,7 +357,14 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
       </td>
     </tr>
     {showRentOut && (
-      <RentOutModal itemId={item.id} itemName={item.name} onClose={() => setShowRentOut(false)} />
+      <RentOutModal
+        itemId={item.id}
+        itemName={item.name}
+        rentalPrice={item.rental_price ?? item.base_price}
+        rentalBillingUnit={item.rental_billing_unit}
+        contacts={contacts}
+        onClose={() => setShowRentOut(false)}
+      />
     )}
     </>
   )
