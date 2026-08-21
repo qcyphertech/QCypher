@@ -19,6 +19,7 @@ export type CatalogRental = {
   notes: string | null
   created_at: string
   catalog_items: { name: string } | null
+  orders: { order_number: number | null; contact: { first_name: string; last_name: string | null } | null } | null
 }
 
 async function requireFullTier() {
@@ -47,7 +48,7 @@ export async function getRentals(): Promise<CatalogRental[]> {
   const { admin, tenant_id } = await requireFullTier()
   const { data, error } = await admin
     .from('catalog_rentals')
-    .select('*, catalog_items(name)')
+    .select('*, catalog_items(name), orders(order_number, contact:contacts(first_name, last_name))')
     .eq('tenant_id', tenant_id)
     .order('due_date')
   if (error) throw error
