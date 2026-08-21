@@ -8,17 +8,24 @@ import type { Tables } from '@/types/database'
 
 type Template = Tables<'templates'>
 type ContactLite = { id: string; first_name: string; last_name: string | null; email: string | null; phone: string | null }
+type Channel = 'email' | 'sms'
 
 // The template-first counterpart to QuickSendButton (which is
 // contact-first: pick a template for a contact you're already on). This
 // starts from a template and lets you pick who to send it to — same
 // interpolation, same /api/send call, just the other way around.
+//
+// A template's stored `channel` is just its authoring default (whether it
+// has a subject line, which filter tab it shows under) — the body text
+// itself works as either an email or a text, so the send channel here is
+// a toggle, not locked to that default.
 export function SendTemplateModal({ template, contacts, onClose }: {
   template: Template
   contacts: ContactLite[]
   onClose: () => void
 }) {
   const [contactId, setContactId] = useState('')
+  const [channel,    setChannel]    = useState<Channel>(template.channel as Channel)
   const [ctx,        setCtx]        = useState<SendContext>({})
   const [loadingCtx, setLoadingCtx] = useState(false)
   const [sending,    setSending]    = useState(false)
@@ -45,9 +52,15 @@ export function SendTemplateModal({ template, contacts, onClose }: {
   }
 
   const preview = contact ? interpolate(template.body, interpolateContext()) : ''
-  const subjectPreview = contact && template.subject ? interpolate(template.subject, interpolateContext()) : undefined
+  // A template authored for SMS has no subject at all — fall back to its
+  // name so switching one to Email still has something in the subject
+  // line, instead of silently sending "(no subject)".
+  const rawSubject = template.subject || (channel === 'email' ? template.name : null)
+  const subjectPreview = contact && channel === 'email' && rawSubject ? interpolate(rawSubject, interpolateContext()) : undefined
   const hasUnresolved = hasBlockingUnresolved(preview)
-  const recipient = template.channel === 'sms' ? contact?.phone : contact?.email
+  const recipient = channel === 'sms' ? contact?.phone : contact?.email
+  const canEmail = !!contact?.email
+  const canSms = !!contact?.phone
 
   async function handleSend() {
     if (!contact || !recipient) return
@@ -56,7 +69,7 @@ export function SendTemplateModal({ template, contacts, onClose }: {
     const res = await fetch('/api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ templateId: template.id, contactId: contact.id, preview, subject: subjectPreview, channel: template.channel }),
+      body: JSON.stringify({ templateId: template.id, contactId: contact.id, preview, subject: subjectPreview, channel }),
     })
     const json = await res.json()
     setSending(false)
@@ -64,22 +77,44 @@ export function SendTemplateModal({ template, contacts, onClose }: {
     if (res.ok) setTimeout(onClose, 1200)
   }
 
-  const Icon = template.channel === 'sms' ? MessageSquare : Mail
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
       <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-md border border-[hsl(var(--border))] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
-          <div className="flex items-center gap-2.5">
-            <Icon className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
-            <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>Send &ldquo;{template.name}&rdquo;</h2>
-          </div>
+          <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>Send &ldquo;{template.name}&rdquo;</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">
             <X className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
           </button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
+          {/* Channel toggle — the body works as either, this just picks how it goes out */}
+          <div className="flex rounded-xl border border-[hsl(var(--border))] p-1" style={{ background: 'hsl(var(--muted))' }}>
+            {([
+              { key: 'email' as const, label: 'Email', icon: Mail,         disabled: !!contact && !canEmail },
+              { key: 'sms'   as const, label: 'Text',  icon: MessageSquare, disabled: !!contact && !canSms },
+            ]).map(opt => {
+              const active = channel === opt.key
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  disabled={opt.disabled}
+                  onClick={() => setChannel(opt.key)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[14px] font-bold transition-colors"
+                  style={{
+                    background: active ? 'linear-gradient(135deg,#2a52a0,#4a9db5)' : 'transparent',
+                    color: active ? '#fff' : opt.disabled ? 'hsl(var(--muted-foreground) / 0.5)' : 'hsl(var(--muted-foreground))',
+                    cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <opt.icon className="w-3.5 h-3.5" />
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
               Send to
@@ -96,7 +131,7 @@ export function SendTemplateModal({ template, contacts, onClose }: {
 
           {contact && !recipient && (
             <p className="text-[15px] text-red-600">
-              This contact has no {template.channel === 'sms' ? 'phone number' : 'email address'} on file.
+              This contact has no {channel === 'sms' ? 'phone number' : 'email address'} on file.
             </p>
           )}
 
