@@ -15,6 +15,8 @@ export type CatalogItem = {
   is_rentable: boolean
   base_price: number
   billing_unit: 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly'
+  rental_price: number | null
+  rental_billing_unit: 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly'
   is_active: boolean
   taxable: boolean
   requires_deposit: boolean
@@ -115,6 +117,8 @@ type CatalogItemInput = {
   is_rentable?: boolean
   base_price: number
   billing_unit: 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly'
+  rental_price?: number
+  rental_billing_unit?: 'flat' | 'hourly' | 'daily' | 'weekly' | 'monthly'
   taxable?: boolean
   requires_deposit?: boolean
   deposit_amount?: number

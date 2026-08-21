@@ -531,6 +531,8 @@ export type Database = {
           location_id: string | null
           name: string
           quantity: number | null
+          rental_billing_unit: Database["public"]["Enums"]["billing_unit"]
+          rental_price: number | null
           reorder_point: number | null
           requires_deposit: boolean
           taxable: boolean
@@ -553,6 +555,8 @@ export type Database = {
           location_id?: string | null
           name: string
           quantity?: number | null
+          rental_billing_unit?: Database["public"]["Enums"]["billing_unit"]
+          rental_price?: number | null
           reorder_point?: number | null
           requires_deposit?: boolean
           taxable?: boolean
@@ -575,6 +579,8 @@ export type Database = {
           location_id?: string | null
           name?: string
           quantity?: number | null
+          rental_billing_unit?: Database["public"]["Enums"]["billing_unit"]
+          rental_price?: number | null
           reorder_point?: number | null
           requires_deposit?: boolean
           taxable?: boolean

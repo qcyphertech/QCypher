@@ -44,8 +44,13 @@ function quantityStatus(item: CatalogItem, tier: InventoryTier, reorderEnabled: 
 
 function exportCsv(items: CatalogItem[]) {
   const rows = [
-    ['Name', 'Type', 'Quantity', 'Price', 'Billing unit', 'Status'],
-    ...items.map(i => [i.name, i.item_type, i.quantity ?? '', i.base_price, i.billing_unit, i.is_active ? 'Active' : 'Inactive']),
+    ['Name', 'Type', 'Quantity', 'Price', 'Billing unit', 'Rental price', 'Rental billing unit', 'Status'],
+    ...items.map(i => [
+      i.name, i.item_type, i.quantity ?? '', i.base_price, i.billing_unit,
+      i.is_rentable ? (i.rental_price ?? '') : '',
+      i.is_rentable ? i.rental_billing_unit : '',
+      i.is_active ? 'Active' : 'Inactive',
+    ]),
   ]
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv' })
@@ -274,12 +279,24 @@ function CatalogRow({ item, tier, reorderEnabled, onEdit }: {
         )}
       </td>
       <td className="px-5 py-3.5">
-        <span className="text-[15px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-          ${Number(item.base_price).toFixed(2)}
-        </span>
-        <span className="text-[15px] ml-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-          {UNIT_LABELS[item.billing_unit]}
-        </span>
+        <div>
+          <span className="text-[15px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+            ${Number(item.base_price).toFixed(2)}
+          </span>
+          <span className="text-[15px] ml-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            {UNIT_LABELS[item.billing_unit]}
+          </span>
+        </div>
+        {item.is_rentable && item.rental_price != null && (
+          <div>
+            <span className="text-[15px] font-bold" style={{ color: 'var(--badge-amber-text)' }}>
+              ${Number(item.rental_price).toFixed(2)}
+            </span>
+            <span className="text-[15px] ml-1" style={{ color: 'var(--badge-amber-text)' }}>
+              {UNIT_LABELS[item.rental_billing_unit]} rent
+            </span>
+          </div>
+        )}
       </td>
       <td className="px-5 py-3.5">
         <span className="text-[15px] font-bold px-2 py-0.5 rounded-full"
