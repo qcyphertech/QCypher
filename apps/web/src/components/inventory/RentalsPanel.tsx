@@ -54,6 +54,10 @@ export function RentalsPanel({ rentals }: { rentals: CatalogRental[] }) {
   const [contactQuery, setContactQuery] = useState('')
   const [orderQuery, setOrderQuery] = useState('')
   const [status, setStatus] = useState('all')
+  const [rentedFrom, setRentedFrom] = useState('')
+  const [rentedTo, setRentedTo] = useState('')
+  const [dueFrom, setDueFrom] = useState('')
+  const [dueTo, setDueTo] = useState('')
 
   function handleReturn(id: string, condition: typeof CONDITIONS[number]['value']) {
     startTransition(async () => {
@@ -75,11 +79,15 @@ export function RentalsPanel({ rentals }: { rentals: CatalogRental[] }) {
         const num = r.orders?.order_number ? String(r.orders.order_number).padStart(4, '0') : ''
         if (!num.includes(oq)) return false
       }
+      if (rentedFrom && new Date(r.rented_date) < new Date(rentedFrom)) return false
+      if (rentedTo && new Date(r.rented_date) > new Date(`${rentedTo}T23:59:59`)) return false
+      if (dueFrom && new Date(r.due_date) < new Date(dueFrom)) return false
+      if (dueTo && new Date(r.due_date) > new Date(`${dueTo}T23:59:59`)) return false
       return true
     })
-  }, [rentals, itemQuery, contactQuery, orderQuery, status])
+  }, [rentals, itemQuery, contactQuery, orderQuery, status, rentedFrom, rentedTo, dueFrom, dueTo])
 
-  const hasFilters = !!(itemQuery || contactQuery || orderQuery || status !== 'all')
+  const hasFilters = !!(itemQuery || contactQuery || orderQuery || status !== 'all' || rentedFrom || rentedTo || dueFrom || dueTo)
 
   if (rentals.length === 0) {
     return (
@@ -103,7 +111,10 @@ export function RentalsPanel({ rentals }: { rentals: CatalogRental[] }) {
             {filtered.length} of {rentals.length} rental{rentals.length === 1 ? '' : 's'}
           </p>
           <button
-            onClick={() => { setItemQuery(''); setContactQuery(''); setOrderQuery(''); setStatus('all') }}
+            onClick={() => {
+              setItemQuery(''); setContactQuery(''); setOrderQuery(''); setStatus('all')
+              setRentedFrom(''); setRentedTo(''); setDueFrom(''); setDueTo('')
+            }}
             className="text-[15px] font-semibold px-3 py-1.5 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors"
             style={{ color: 'hsl(var(--muted-foreground))' }}
           >
@@ -141,11 +152,29 @@ export function RentalsPanel({ rentals }: { rentals: CatalogRental[] }) {
                     className={headerFilterCls} style={{ color: 'hsl(var(--foreground))' }} />
                 </div>
               </th>
-              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor }}>
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '190px' }}>
                 <span className={headerLabelCls}>Rented</span>
+                <div className="flex items-center gap-1 mt-1.5">
+                  <input type="date" value={rentedFrom} onChange={e => setRentedFrom(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal"
+                    style={{ color: 'hsl(var(--foreground))' }} />
+                  <span style={{ color: headerColor }}>–</span>
+                  <input type="date" value={rentedTo} onChange={e => setRentedTo(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal"
+                    style={{ color: 'hsl(var(--foreground))' }} />
+                </div>
               </th>
-              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor }}>
+              <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '190px' }}>
                 <span className={headerLabelCls}>Due back</span>
+                <div className="flex items-center gap-1 mt-1.5">
+                  <input type="date" value={dueFrom} onChange={e => setDueFrom(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal"
+                    style={{ color: 'hsl(var(--foreground))' }} />
+                  <span style={{ color: headerColor }}>–</span>
+                  <input type="date" value={dueTo} onChange={e => setDueTo(e.target.value)}
+                    className="w-full rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-1.5 py-1 text-[13px] font-normal normal-case tracking-normal"
+                    style={{ color: 'hsl(var(--foreground))' }} />
+                </div>
               </th>
               <th className="px-5 py-3 text-left align-top" style={{ color: headerColor, minWidth: '150px' }}>
                 <span className={headerLabelCls}>Status</span>
