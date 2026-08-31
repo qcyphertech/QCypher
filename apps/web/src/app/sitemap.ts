@@ -4,7 +4,7 @@ import { ALTERNATIVES } from '@/lib/alternatives-data'
 
 const BASE_URL = 'https://www.qcyphertech.com'
 
-const STATIC_PAGES = ['', '/faq', '/about', '/security', '/privacy', '/terms']
+const STATIC_PAGES = ['', '/faq', '/about', '/security', '/privacy', '/terms', '/customers', '/refer', '/blog']
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticEntries = STATIC_PAGES.map(path => ({

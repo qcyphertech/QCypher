@@ -220,6 +220,8 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
               <h5>Quick Links</h5>
               <div className="foot-links-row">
                 <Link href="/about">About</Link>
+                <Link href="/customers">Customer Stories</Link>
+                <Link href="/refer">Refer a Business</Link>
                 <Link href="/security">Security</Link>
                 <Link href="/privacy">Privacy</Link>
                 <Link href="/terms">Terms</Link>

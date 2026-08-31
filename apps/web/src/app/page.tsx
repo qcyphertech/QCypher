@@ -1429,6 +1429,30 @@ export default function HomePage() {
         }
       `}</style>
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'LocalBusiness',
+            name: 'QCypher Technologies',
+            url: 'https://www.qcyphertech.com',
+            telephone: '+1-804-250-5066',
+            email: 'info@qcyphertech.com',
+            image: 'https://www.qcyphertech.com/qcypher-logo-horizontal.png',
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: '3801 Clarendon Crescent Pl',
+              addressLocality: 'Richmond',
+              addressRegion: 'VA',
+              postalCode: '23223',
+              addressCountry: 'US',
+            },
+            priceRange: '$$',
+          }),
+        }}
+      />
+
       {/* NAV */}
       <header className="nav-bar">
         <div className="nav-inner">
@@ -1903,6 +1927,8 @@ export default function HomePage() {
                 <a href="#crm">Customer Management</a>
                 <Link href="/about">About Us</Link>
                 <Link href="/blog">Blog</Link>
+                <Link href="/customers">Customer Stories</Link>
+                <Link href="/refer">Refer a Business</Link>
                 <Link href="/security">Security</Link>
                 <Link href="/privacy">Privacy Policy</Link>
                 <Link href="/terms">Terms of Service</Link>
