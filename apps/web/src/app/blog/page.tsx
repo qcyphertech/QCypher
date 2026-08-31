@@ -7,7 +7,7 @@ import { cleanExcerpt, stripHtmlTitle } from '@/lib/blog-excerpt'
 
 export const metadata: Metadata = {
   title: 'Blog — QCypher Technologies',
-  description: 'Field service tips, scheduling best practices, and product updates from QCypher.',
+  description: 'Scheduling, booking, and customer-follow-up tips for small businesses of every kind — trades, salons, coaches, retail, and event planners.',
   alternates: { types: { 'application/rss+xml': '/blog/rss.xml' } },
 }
 
@@ -79,11 +79,11 @@ export default async function BlogListPage() {
           <span style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#ff7a1a', display: 'block', marginBottom: '16px' }}>
             QCypher Blog
           </span>
-          <h1 style={{ fontSize: 'clamp(34px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff', marginBottom: '16px', maxWidth: '14ch' }}>
-            Field notes for service businesses
+          <h1 style={{ fontSize: 'clamp(34px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff', marginBottom: '16px', maxWidth: '16ch' }}>
+            Field notes for small businesses
           </h1>
           <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, maxWidth: '54ch' }}>
-            Scheduling, reviews, and the small operational habits that move the needle for plumbers, HVAC techs, cleaners, and every trade in between.
+            Scheduling, reviews, and the small operational habits that move the needle — for trades, salons and spas, coaches and consultants, retail shops, event planners, and everyone in between.
           </p>
         </div>
       </div>
