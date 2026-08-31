@@ -41,6 +41,9 @@ export async function middleware(request: NextRequest) {
     pathname === '/privacy' ||
     pathname === '/terms' ||
     pathname === '/faq' ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/robots.txt' ||
+    pathname.startsWith('/solutions') ||
     pathname.startsWith('/blog') ||
     pathname.startsWith('/api/blog/latest') ||
     pathname.startsWith('/api/bot/') ||
