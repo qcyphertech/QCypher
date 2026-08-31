@@ -45,6 +45,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/robots.txt' ||
     pathname === '/google3bd5c1fd300ea394.html' ||
     pathname.startsWith('/solutions') ||
+    pathname.startsWith('/alternatives') ||
     pathname.startsWith('/blog') ||
     pathname.startsWith('/api/blog/latest') ||
     pathname.startsWith('/api/bot/') ||

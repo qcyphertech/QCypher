@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { INDUSTRIES } from '@/lib/industries-data'
+import { ALTERNATIVES } from '@/lib/alternatives-data'
 
 const BASE_URL = 'https://www.qcyphertech.com'
 
@@ -20,5 +21,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }))
 
-  return [...staticEntries, ...industryEntries]
+  const alternativeEntries = ALTERNATIVES.map(a => ({
+    url: `${BASE_URL}/alternatives/${a.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }))
+
+  return [...staticEntries, ...industryEntries, ...alternativeEntries]
 }
