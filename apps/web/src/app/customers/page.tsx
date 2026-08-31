@@ -141,10 +141,17 @@ export default function CustomersPage() {
           </div>
         ))}
 
-        <div style={{ marginTop: '32px', padding: '28px', background: '#fff', border: '1px solid var(--border2)', borderRadius: '16px', textAlign: 'center' }}>
-          <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>Want to see it running for your business?</p>
-          <p style={{ fontSize: '15px', color: 'var(--soft)', marginBottom: '16px' }}>Talk to Felix or Thomas directly — no sales team, no pressure.</p>
-          <a href="mailto:info@qcyphertech.com" className="btn btn-primary">Get a free quote</a>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 260px', padding: '28px', background: '#fff', border: '1px solid var(--border2)', borderRadius: '16px', textAlign: 'center' }}>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>Want to see it running for your business?</p>
+            <p style={{ fontSize: '15px', color: 'var(--soft)', marginBottom: '16px' }}>Talk to Felix or Thomas directly — no sales team, no pressure.</p>
+            <a href="mailto:info@qcyphertech.com" className="btn btn-primary">Get a free quote</a>
+          </div>
+          <div style={{ flex: '1 1 260px', padding: '28px', background: '#fff', border: '1px solid var(--border2)', borderRadius: '16px', textAlign: 'center' }}>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>Already a QCypher customer?</p>
+            <p style={{ fontSize: '15px', color: 'var(--soft)', marginBottom: '16px' }}>A quick Google review helps other small businesses find us.</p>
+            <a href="https://g.page/r/CaMBoOEmQxSwEBM/review" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">Leave us a review</a>
+          </div>
         </div>
       </main>
 

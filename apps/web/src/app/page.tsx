@@ -1858,6 +1858,21 @@ export default function HomePage() {
 
             </div>
           </div>
+
+          <div style={{ textAlign: 'center', marginTop: '32px' }}>
+            <a
+              href="https://g.page/r/CaMBoOEmQxSwEBM/review"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--orange)" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 1l1.8 3.6 4 .6-2.9 2.8.7 4L8 10l-3.6 2 .7-4L2.2 5.2l4-.6z"/>
+              </svg>
+              Leave us a Google review
+            </a>
+          </div>
         </div>
       </section>
 
