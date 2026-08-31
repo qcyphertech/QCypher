@@ -153,6 +153,60 @@ export const INDUSTRIES: Industry[] = [
       { q: 'Can I send an invoice and get paid online?', a: 'Yes, invoices include a secure payment link and update automatically once the client pays.' },
     ],
   },
+  {
+    slug: 'retail',
+    name: 'Retail Shops',
+    metaTitle: 'Inventory & Customer Management Software for Retail Shops | QCypher',
+    metaDescription: 'Track stock, manage customers, and automate follow-ups for ice cream shops, grocers, and boutiques. One platform for inventory and customer relationships — from $49/mo.',
+    heroKicker: 'For ice cream shops, grocers & boutiques',
+    heroHeadline: 'Inventory and customer management for retail shops',
+    heroSubhead: 'Track stock levels across every product, keep a record of your regulars, and automate the follow-ups and reorder alerts you\'d otherwise forget.',
+    ctaLabel: 'Start free trial',
+    painPoints: [
+      { title: 'Stock counts live in your head, not a system', body: 'Knowing you\'re low on a flavor or size only when the shelf is already empty means lost sales you never see.' },
+      { title: 'No record of who your regulars are', body: 'The customer who comes in every week deserves to be remembered — but there\'s no easy way to track that without a real system.' },
+      { title: 'Reorder timing is guesswork', body: 'Ordering too early ties up cash in stock that sits; ordering too late means empty shelves during your busiest hours.' },
+    ],
+    features: [
+      { title: 'Inventory with reorder alerts', body: 'Track quantity on every item, get flagged automatically when something falls below your reorder point.' },
+      { title: 'Customer profiles & history', body: 'Keep every customer\'s order history and notes in one place — useful for loyalty, special orders, and outreach.' },
+      { title: 'Sale price + rental/service pricing', body: 'One catalog handles straightforward retail pricing alongside anything you rent out or sell as a service.' },
+      { title: 'Automatic customer follow-ups', body: 'Review requests and re-engagement messages go out on their own — email first, so it lands in an inbox, not lost in a text thread.' },
+    ],
+    faq: [
+      { q: 'Does QCypher work as a point-of-sale system?', a: 'Not yet — QCypher currently handles inventory tracking, orders, and customer management, but doesn\'t replace a checkout register. Many retail shops run it alongside their existing POS for the customer and inventory side.' },
+      { q: 'Can I track different product types (perishable vs. shelf-stable)?', a: 'Yes, catalog items support an expiry date field for perishables, plus quantity and reorder-point tracking for any product type.' },
+      { q: 'Is this only for one location?', a: 'QCypher supports multiple locations on higher tiers, with inventory and staff scoped per location.' },
+      { q: 'What does it cost for a small retail shop?', a: 'Plans start at $49/mo (Starter); full inventory tracking with reorder points and expiry dates is available from the Full inventory tier upward.' },
+    ],
+  },
+  {
+    slug: 'event-planners',
+    name: 'Event Planners',
+    metaTitle: 'Calendar & Client Tracking Software for Event Planners | QCypher',
+    metaDescription: 'Manage every event, client, and vendor detail in one calendar and CRM built for event planners. Automated reminders and client follow-ups — from $49/mo.',
+    heroKicker: 'For event & wedding planners',
+    heroHeadline: 'Calendar and client tracking built for event planners',
+    heroSubhead: 'Keep every event date, client detail, and rental item organized in one place — with reminders and follow-ups that send themselves.',
+    ctaLabel: 'Start free trial',
+    painPoints: [
+      { title: 'Event details are scattered everywhere', body: 'Contracts in email, notes in a doc, dates in a separate calendar — nothing ties an event to its full history.' },
+      { title: 'Rental items are hard to track across events', body: 'Chairs, linens, decor — knowing what\'s booked, out, or due back without a system means double-booking your own inventory.' },
+      { title: 'Client communication falls behind during busy season', body: 'When three events are happening in the same week, the follow-up emails are the first thing to slip.' },
+    ],
+    features: [
+      { title: 'Event calendar & scheduling', body: 'See every booked event at a glance, synced with Google Calendar and Cal.com so nothing gets double-booked.' },
+      { title: 'Client & vendor history', body: 'Every client\'s past events, preferences, and communications live on one profile you can pull up instantly.' },
+      { title: 'Rental inventory tracking', body: 'Mark items as rentable with their own pricing, and track what\'s currently checked out and when it\'s due back.' },
+      { title: 'Automated client follow-ups', body: 'Booking confirmations, reminders, and post-event review requests go out on their own — email first.' },
+    ],
+    faq: [
+      { q: 'Can I track rental items like decor, linens, or furniture?', a: 'Yes — catalog items can be marked as rentable with their own rental price and billing unit, and a dedicated Rentals view shows what\'s currently out and when it\'s due back.' },
+      { q: 'Does the calendar sync with Google Calendar?', a: 'Yes, QCypher\'s calendar supports Google Calendar sync and Cal.com booking links.' },
+      { q: 'Can clients see a history of their past events with me?', a: 'Yes, each client\'s profile keeps a full history of past orders, events, and communications.' },
+      { q: 'What\'s the cost for a solo event planner?', a: 'Starter is $49/mo and covers calendar, CRM, and client communication — rental inventory tracking is available on higher tiers.' },
+    ],
+  },
 ]
 
 export function getIndustry(slug: string): Industry | undefined {
