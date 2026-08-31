@@ -43,6 +43,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/faq' ||
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt' ||
+    pathname === '/google3bd5c1fd300ea394.html' ||
     pathname.startsWith('/solutions') ||
     pathname.startsWith('/blog') ||
     pathname.startsWith('/api/blog/latest') ||
