@@ -6,9 +6,9 @@ import { isSuperAdminUser } from '@/lib/auth/superadmin'
 import { revalidatePath } from 'next/cache'
 import type { TablesUpdate } from '@qcypher/db'
 import { callDeepSeek } from '@/lib/deepseek'
-import { stripHtmlTitle } from '@/lib/blog-excerpt'
 import { analyzeAiConfidence } from '@/lib/actions/ai-detection'
 import { logAudit } from '@/lib/actions/audit'
+import { slugify, extractTitle, extractExcerpt, QCYPHER_TOPIC_POOL, qcypherBlogPrompt } from '@/lib/blog-content'
 
 export type BlogArticle = {
   id: string
@@ -84,24 +84,6 @@ async function requireTenantWriter() {
 
   const tenantId = await getTenantId(user.id, fresh?.app_metadata)
   return { user, admin, tenantId }
-}
-
-function slugify(title: string) {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
-}
-
-function extractTitle(html: string): string {
-  const m = html.match(/<h1[^>]*>(.*?)<\/h1>/i)
-  return (m?.[1] ?? 'Untitled').replace(/<[^>]+>/g, '').trim()
-}
-
-function extractExcerpt(html: string): string {
-  const text = stripHtmlTitle(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-  return text.slice(0, 160)
 }
 
 // Best-effort — a detection failure shouldn't block saving the draft.
@@ -308,33 +290,21 @@ export async function setMyBlogDisclosure(articleId: string, disclose: boolean):
   revalidatePath('/portal', 'layout')
 }
 
-const QCYPHER_TOPICS = [
-  'How automated review requests actually help a small service business',
-  'What a missed-call text-back does and why it matters',
-  'The real cost of manual scheduling for a small team',
-]
-
 /**
  * Generate a batch of QCypher-authored blog drafts (pending_approval) —
  * human review is required before these ever go live, per the original
- * spec's brand-safety requirement.
+ * spec's brand-safety requirement. Manual admin-triggered batch — the
+ * weekly automated post (apps/web/src/app/api/cron/generate-weekly-blog)
+ * picks one topic at a time via pickWeeklyTopic() instead, so it never
+ * collides with whatever this batch already covered.
  */
 export async function generateQcypherBlogDrafts(): Promise<{ created: number }> {
   const { admin } = await requireSuperAdmin()
   let created = 0
 
-  for (const topic of QCYPHER_TOPICS) {
+  for (const topic of QCYPHER_TOPIC_POOL.slice(0, 3)) {
     try {
-      const html = await callDeepSeek(`You are writing for QCypher Technologies' own blog (qcyphertech.com), a company that builds CRM/scheduling software for small local service businesses (plumbers, HVAC, cleaners, etc.).
-
-Topic: ${topic}
-
-Requirements:
-- 600-900 words
-- Structure: one <h1> title, an intro, 2-3 <h2> sections, a closing paragraph
-- Educational tone, not a sales pitch — mention QCypher by name at most once
-- Do not invent statistics, customer names, or specific numbers
-- Output ONLY raw HTML using <h1>, <h2>, <p>, <ul>/<li> — no markdown, no code fences`)
+      const html = await callDeepSeek(qcypherBlogPrompt(topic))
 
       const title = extractTitle(html)
       const slug = `${slugify(title)}-${Date.now().toString(36)}`

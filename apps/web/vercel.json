@@ -59,6 +59,10 @@
     {
       "path": "/api/cron/qbot-insights",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/generate-weekly-blog",
+      "schedule": "0 13 * * 1"
     }
   ]
 }
