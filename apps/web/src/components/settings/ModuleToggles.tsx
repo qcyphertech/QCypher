@@ -13,7 +13,7 @@ const MODULES: Array<{
   color: string
 }> = [
   { key: 'show_calendar',  label: 'Calendar',   description: 'Scheduling and event management',       icon: Calendar,    color: '#0ea5e9' },
-  { key: 'show_catalog',   label: 'Catalog',    description: 'Products, services & rentals',          icon: Package,     color: '#f59e0b' },
+  { key: 'show_catalog',   label: 'Inventory',  description: 'Products, services & rentals',          icon: Package,     color: '#f59e0b' },
   { key: 'show_orders',    label: 'Orders',     description: 'Sales orders and invoicing',            icon: ShoppingBag, color: '#10b981' },
   { key: 'show_templates', label: 'Templates',  description: 'SMS and email quick-reply snippets',    icon: FileText,    color: '#a855f7' },
   { key: 'show_overview',  label: 'Overview',   description: 'Income, expenses, revenue & customer health', icon: BarChart2,   color: '#22c55e' },

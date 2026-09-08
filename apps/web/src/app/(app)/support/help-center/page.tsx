@@ -31,12 +31,12 @@ const GUIDES = [
     ],
   },
   {
-    title: 'Managing your catalog and orders',
+    title: 'Managing your inventory and orders',
     steps: [
-      'Go to Catalog to add the services, goods, or rentals your business offers.',
+      'Go to Inventory to add the services, goods, or rentals your business offers.',
       'Set a base price and billing unit (e.g. "per hour", "per item").',
-      'Create an Order and attach a contact, then add line items from your catalog.',
-      'Line item prices are snapshotted at creation — changing the catalog later won\'t alter past orders.',
+      'Create an Order and attach a contact, then add line items from your inventory.',
+      'Line item prices are snapshotted at creation — changing the inventory later won\'t alter past orders.',
     ],
   },
 ]
