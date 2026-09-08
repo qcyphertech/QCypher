@@ -7,9 +7,22 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
+import { getAvailableModuleKeys } from './platform-modules'
 import { revalidatePath } from 'next/cache'
 import { logAudit } from './audit'
 import type { ClinicalTemplateType } from '@/lib/clinical-template-defs'
+
+// The nav link hiding when `show_clinical_templates` isn't granted is
+// cosmetic only — this is the actual enforcement point. Every read/write
+// path below goes through one of the two guards, both of which call this
+// first, so a tenant that hasn't been explicitly granted the module can't
+// reach clinical data by hitting the route or action directly.
+async function requireClinicalModuleEnabled() {
+  const available = await getAvailableModuleKeys()
+  if (available && !available.has('show_clinical_templates')) {
+    throw new Error('Clinical Templates is not enabled for this account')
+  }
+}
 
 export type ClinicalTemplateInstance = {
   id: string
@@ -38,6 +51,7 @@ export type ClinicalTemplateVersion = {
 }
 
 async function requireClinicalWriter() {
+  await requireClinicalModuleEnabled()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -52,6 +66,7 @@ async function requireClinicalWriter() {
 }
 
 async function requireClinicalReader() {
+  await requireClinicalModuleEnabled()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
