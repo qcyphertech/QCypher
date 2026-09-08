@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { X, AlertTriangle, Lock } from 'lucide-react'
 import { CLINICAL_TEMPLATES, type ClinicalTemplateType } from '@/lib/clinical-template-defs'
 import {
   createClinicalTemplateInstance, updateClinicalTemplateInstance, finalizeClinicalTemplateInstance,
+  autosaveClinicalTemplateInstance,
   type ClinicalTemplateInstance,
 } from '@/lib/actions/clinical-templates'
+
+const AUTOSAVE_DELAY_MS = 1500
 
 type ContactLite = { id: string; first_name: string; last_name: string | null; phone?: string | null }
 
@@ -24,10 +27,16 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, defaul
 }) {
   const def = CLINICAL_TEMPLATES[templateType]
   const [pending, startTransition] = useTransition()
+  const [, startAutosaveTransition] = useTransition()
   const [contactId, setContactId] = useState(instance?.contact_id ?? defaultContactId ?? '')
+  const [instanceId, setInstanceId] = useState(instance?.id)
   const [error, setError] = useState<string | null>(null)
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const isFinalized = instance?.status === 'finalized'
   const contact = contacts.find(c => c.id === contactId) ?? null
+
+  const skipFirstAutosave = useRef(true)
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [values, setValues] = useState<Record<string, string>>(() => {
     if (instance) return instance.form_data
@@ -57,17 +66,62 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, defaul
     applyAutofill(contacts.find(c => c.id === id) ?? null)
   }
 
+  function buildInstance(id: string, andFinalize: boolean): ClinicalTemplateInstance {
+    return {
+      id, tenant_id: '', contact_id: contactId, template_type: templateType,
+      form_data: values, status: andFinalize ? 'finalized' : 'draft', version: (instance?.version ?? 0) + 1,
+      created_by: '', finalized_by: null, finalized_at: null,
+      created_at: instance?.created_at ?? new Date().toISOString(), updated_at: new Date().toISOString(),
+      contact_name: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : undefined,
+    }
+  }
+
+  // Silent background persistence — doesn't touch version history or the
+  // audit log (see autosaveClinicalTemplateInstance's own comment). Only
+  // runs once a patient is picked, skips the initial mount (so opening an
+  // existing draft doesn't immediately "autosave" unchanged data), and
+  // never runs once finalized.
+  useEffect(() => {
+    if (isFinalized) return
+    if (skipFirstAutosave.current) { skipFirstAutosave.current = false; return }
+    if (!contactId) return
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    autosaveTimer.current = setTimeout(() => {
+      setAutosaveStatus('saving')
+      startAutosaveTransition(async () => {
+        try {
+          if (!instanceId) {
+            const result = await createClinicalTemplateInstance({ contactId, templateType, formData: values })
+            setInstanceId(result.id)
+            onSaved(buildInstance(result.id, false))
+          } else {
+            const result = await autosaveClinicalTemplateInstance(instanceId, values)
+            if (!result.ok) { setAutosaveStatus('error'); return }
+            onSaved(buildInstance(instanceId, false))
+          }
+          setAutosaveStatus('saved')
+        } catch {
+          setAutosaveStatus('error')
+        }
+      })
+    }, AUTOSAVE_DELAY_MS)
+    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values, contactId])
+
   function handleSave(andFinalize: boolean) {
     if (!contactId) { setError('Select a patient first'); return }
     const missing = def.fields.find(f => !f.optional && !(values[f.key] ?? '').trim())
     if (missing) { setError(`${missing.label} is required`); return }
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
     setError(null)
     startTransition(async () => {
       try {
-        let id = instance?.id
+        let id = instanceId
         if (!id) {
           const result = await createClinicalTemplateInstance({ contactId, templateType, formData: values })
           id = result.id
+          setInstanceId(id)
         } else {
           const result = await updateClinicalTemplateInstance(id, values)
           if (!result.ok) { setError(result.error); return }
@@ -76,13 +130,7 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, defaul
           const result = await finalizeClinicalTemplateInstance(id)
           if (!result.ok) { setError(result.error); return }
         }
-        onSaved({
-          id, tenant_id: '', contact_id: contactId, template_type: templateType,
-          form_data: values, status: andFinalize ? 'finalized' : 'draft', version: (instance?.version ?? 0) + 1,
-          created_by: '', finalized_by: null, finalized_at: null,
-          created_at: instance?.created_at ?? new Date().toISOString(), updated_at: new Date().toISOString(),
-          contact_name: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : undefined,
-        })
+        onSaved(buildInstance(id, andFinalize))
         onClose()
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
@@ -96,9 +144,13 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, defaul
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[hsl(var(--border))]">
           <div>
             <h2 className="text-base font-black" style={{ color: 'hsl(var(--foreground))' }}>{def.label}</h2>
-            {isFinalized && (
+            {isFinalized ? (
               <p className="flex items-center gap-1.5 text-[13px] font-semibold mt-1" style={{ color: 'var(--badge-green-text)' }}>
                 <Lock className="w-3 h-3" /> Finalized — read only
+              </p>
+            ) : autosaveStatus !== 'idle' && (
+              <p className="text-[13px] mt-1" style={{ color: autosaveStatus === 'error' ? '#dc2626' : 'hsl(var(--muted-foreground))' }}>
+                {autosaveStatus === 'saving' ? 'Saving draft…' : autosaveStatus === 'saved' ? 'Draft saved' : "Couldn't save draft"}
               </p>
             )}
           </div>
@@ -112,7 +164,7 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, defaul
             <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
               Patient *
             </label>
-            <select value={contactId} onChange={e => handleContactChange(e.target.value)} disabled={!!instance || isFinalized}
+            <select value={contactId} onChange={e => handleContactChange(e.target.value)} disabled={!!instanceId || isFinalized}
               className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px] disabled:opacity-60"
               style={{ color: 'hsl(var(--foreground))' }}>
               <option value="">— Choose a patient —</option>

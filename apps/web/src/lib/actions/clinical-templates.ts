@@ -187,6 +187,28 @@ export async function updateClinicalTemplateInstance(id: string, formData: Recor
   return { ok: true }
 }
 
+// Silent background persistence while a clinician is still typing — does
+// NOT append a version-history row or write an audit log entry. Doing
+// either on every autosave tick would turn "version history" into a
+// keystroke log instead of a meaningful clinical-edit trail, and would
+// flood audit_logs. The real version checkpoint still only happens on an
+// explicit "Save draft" / "Save & finalize" click (updateClinicalTemplateInstance).
+export async function autosaveClinicalTemplateInstance(id: string, formData: Record<string, string>): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { admin, tenantId } = await requireClinicalWriter()
+
+  const { data, error } = await admin
+    .from('clinical_template_instances')
+    .update({ form_data: formData, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .eq('status', 'draft')
+    .select('id')
+    .maybeSingle()
+  if (error) return { ok: false, error: error.message }
+  if (!data) return { ok: false, error: 'Not found, or already finalized' }
+  return { ok: true }
+}
+
 // One-way — no unfinalize action. Re-opening a finalized clinical record
 // is a clinical/legal decision, not a UI convenience; if that's ever
 // needed it should be its own explicit, audited action, not a toggle.
