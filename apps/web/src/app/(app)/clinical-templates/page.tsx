@@ -1,0 +1,33 @@
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient, getTenantId } from '@/lib/supabase/admin'
+import type { Metadata } from 'next'
+import { ClinicalTemplatesList } from '@/components/clinical/ClinicalTemplatesList'
+import { listClinicalTemplateInstances } from '@/lib/actions/clinical-templates'
+
+export const metadata: Metadata = { title: 'Clinical Templates' }
+
+export default async function ClinicalTemplatesPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const tenant_id = user ? await getTenantId(user.id, user.app_metadata).catch(() => null) : null
+
+  const admin = createAdminClient()
+  const [{ data: contacts }, instances] = await Promise.all([
+    tenant_id
+      ? admin.from('contacts').select('id, first_name, last_name').eq('tenant_id', tenant_id).order('first_name')
+      : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string | null }[] }),
+    listClinicalTemplateInstances().catch(() => []),
+  ])
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-black" style={{ color: 'var(--heading)' }}>Clinical Templates</h1>
+        <p className="text-[15px] mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Intake, progress notes, treatment plans & discharge summaries
+        </p>
+      </div>
+      <ClinicalTemplatesList contacts={contacts ?? []} initialInstances={instances} />
+    </div>
+  )
+}

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Calendar,
   Package, ShoppingBag, FileText, Settings, ShieldCheck, Home, Wallet,
-  HelpCircle, BarChart2,
+  HelpCircle, BarChart2, ClipboardList,
 } from 'lucide-react'
 import { type TenantSettings } from '@/lib/types/settings'
 
@@ -31,6 +31,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { href: '/inventory', label: 'Inventory', icon: Package,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   flag: 'show_catalog'   },
   { href: '/payments',  label: 'Payments',  icon: Wallet,      color: '#2a52a0', bg: 'rgba(42,82,160,0.12)',   flag: 'show_orders'    },
   { href: '/templates', label: 'Templates', icon: FileText,    color: '#a855f7', bg: 'rgba(168,85,247,0.12)',  flag: 'show_templates' },
+  { href: '/clinical-templates', label: 'Clinical Templates', icon: ClipboardList, color: '#0891b2', bg: 'rgba(8,145,178,0.12)', flag: 'show_clinical_templates' },
   { href: '/support',   label: 'Support',   icon: HelpCircle,  color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)',  flag: null             },
   { href: '/settings',  label: 'Settings',  icon: Settings,    color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', flag: null             },
 ]

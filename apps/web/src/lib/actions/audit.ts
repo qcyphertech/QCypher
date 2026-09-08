@@ -30,8 +30,9 @@ export type AuditAction =
   | 'ai_blog_published' | 'ai_crm_bot_query'
   | 'inventory_item_created' | 'inventory_item_updated' | 'inventory_item_deleted'
   | 'inventory_qty_changed' | 'inventory_rental_created' | 'inventory_rental_returned'
+  | 'clinical_template_created' | 'clinical_template_updated' | 'clinical_template_finalized'
 
-export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location' | 'blog' | 'ai_assistant' | 'inventory'
+export type ResourceType = 'contact' | 'event' | 'note' | 'template' | 'auth' | 'team' | 'account' | 'pricing' | 'invoice' | 'payment' | 'order' | 'automation' | 'location' | 'blog' | 'ai_assistant' | 'inventory' | 'clinical_template'
 
 export type AuditLog = {
   id: string
