@@ -6,7 +6,6 @@ import { NewCatalogItemButton } from '@/components/inventory/NewCatalogItemButto
 import { InventoryTabs } from '@/components/inventory/InventoryTabs'
 import { getInventoryTier, type CatalogItem } from '@/lib/actions/catalog'
 import { getRentals } from '@/lib/actions/catalog-rentals'
-import { DEFAULT_SETTINGS, type TenantSettings } from '@/lib/types/settings'
 import { Package } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Inventory' }
@@ -17,13 +16,10 @@ export default async function InventoryPage() {
   const tenant_id = user ? await getTenantId(user.id, user.app_metadata).catch(() => null) : null
 
   const admin = createAdminClient()
-  const [{ data: items }, { data: tenant }, tier, { data: contacts }] = await Promise.all([
+  const [{ data: items }, tier, { data: contacts }] = await Promise.all([
     tenant_id
       ? admin.from('catalog_items').select('*').eq('tenant_id', tenant_id).order('name')
       : Promise.resolve({ data: [] as CatalogItem[] }),
-    tenant_id
-      ? admin.from('tenants').select('settings').eq('id', tenant_id).single()
-      : Promise.resolve({ data: null }),
     tenant_id ? getInventoryTier().catch(() => 'lite' as const) : Promise.resolve('lite' as const),
     // Send-target picker for the "Rent out" modal's linked-order flow.
     tenant_id
@@ -31,7 +27,6 @@ export default async function InventoryPage() {
       : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string | null }[] }),
   ])
 
-  const settings: TenantSettings = { ...DEFAULT_SETTINGS, ...((tenant?.settings as Record<string, unknown>) ?? {}) }
   const rentals = tier === 'full' ? await getRentals().catch(() => []) : []
 
   return (
@@ -43,7 +38,7 @@ export default async function InventoryPage() {
             {tier === 'full' ? 'Products, services & rentals you offer' : 'Products & services'}
           </p>
         </div>
-        <NewCatalogItemButton tier={tier} toggles={settings} />
+        <NewCatalogItemButton tier={tier} />
       </div>
 
       {(!items || items.length === 0) ? (
@@ -55,15 +50,15 @@ export default async function InventoryPage() {
             <p className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>No inventory items yet</p>
             <p className="text-[15px] mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Add your first product or service</p>
           </div>
-          <NewCatalogItemButton tier={tier} toggles={settings} />
+          <NewCatalogItemButton tier={tier} />
         </div>
       ) : tier === 'full' ? (
         <InventoryTabs
-          catalogList={<CatalogList items={items} tier={tier} toggles={settings} contacts={contacts ?? []} />}
+          catalogList={<CatalogList items={items} tier={tier} contacts={contacts ?? []} />}
           rentals={rentals}
         />
       ) : (
-        <CatalogList items={items} tier={tier} toggles={settings} contacts={contacts ?? []} />
+        <CatalogList items={items} tier={tier} contacts={contacts ?? []} />
       )}
     </div>
   )

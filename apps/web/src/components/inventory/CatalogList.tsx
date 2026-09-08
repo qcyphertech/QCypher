@@ -3,7 +3,6 @@
 import { useMemo, useState, useTransition } from 'react'
 import type { CatalogItem, InventoryTier } from '@/lib/actions/catalog'
 import { activateCatalogItem, deactivateCatalogItem, deleteCatalogItem } from '@/lib/actions/catalog'
-import type { TenantSettings } from '@/lib/types/settings'
 import { CatalogItemModal } from './CatalogItemModal'
 import { RentOutModal } from './RentOutModal'
 import { Pencil, Trash2, Package, Wrench, Key, Filter, Download } from 'lucide-react'
@@ -42,9 +41,9 @@ function bucketsFor(steps: number[], maxVal: number): number[] {
   return ceilIdx === -1 ? steps : steps.slice(0, ceilIdx + 1)
 }
 
-function quantityStatus(item: CatalogItem, tier: InventoryTier, reorderEnabled: boolean): 'ok' | 'low' | 'critical' | null {
+function quantityStatus(item: CatalogItem, tier: InventoryTier): 'ok' | 'low' | 'critical' | null {
   if (item.quantity === null) return null
-  if (tier === 'full' && reorderEnabled && item.reorder_point !== null) {
+  if (tier === 'full' && item.reorder_point !== null) {
     if (item.quantity <= 0) return 'critical'
     if (item.quantity <= item.reorder_point) return 'low'
     return 'ok'
@@ -76,10 +75,9 @@ function exportCsv(items: CatalogItem[]) {
 
 type ContactLite = { id: string; first_name: string; last_name: string | null }
 
-export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
+export function CatalogList({ items, tier = 'lite', contacts = [] }: {
   items: CatalogItem[]
   tier?: InventoryTier
-  toggles?: TenantSettings
   contacts?: ContactLite[]
 }) {
   const [editItem, setEditItem] = useState<CatalogItem | null>(null)
@@ -92,7 +90,6 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
   const [priceMax, setPriceMax] = useState('')
 
   const hasFilters = !!(nameQuery || type !== 'all' || status !== 'all' || qtyMin || qtyMax || priceMin || priceMax)
-  const reorderEnabled = !!toggles?.inventory_enable_reorder_points
 
   const qtyBuckets = useMemo(() => {
     const values = items.map(i => i.quantity).filter((q): q is number => q != null)
@@ -236,7 +233,7 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
           </thead>
           <tbody>
             {status !== 'inactive' && active.map(item => (
-              <CatalogRow key={item.id} item={item} tier={tier} reorderEnabled={reorderEnabled} contacts={contacts} onEdit={() => setEditItem(item)} />
+              <CatalogRow key={item.id} item={item} tier={tier} contacts={contacts} onEdit={() => setEditItem(item)} />
             ))}
             {status !== 'active' && inactive.length > 0 && (
               <>
@@ -249,7 +246,7 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
                   </tr>
                 )}
                 {inactive.map(item => (
-                  <CatalogRow key={item.id} item={item} tier={tier} reorderEnabled={reorderEnabled} contacts={contacts} onEdit={() => setEditItem(item)} />
+                  <CatalogRow key={item.id} item={item} tier={tier} contacts={contacts} onEdit={() => setEditItem(item)} />
                 ))}
               </>
             )}
@@ -264,7 +261,7 @@ export function CatalogList({ items, tier = 'lite', toggles, contacts = [] }: {
       </div>
 
       {editItem && (
-        <CatalogItemModal item={editItem} onClose={() => setEditItem(null)} tier={tier} toggles={toggles} />
+        <CatalogItemModal item={editItem} onClose={() => setEditItem(null)} tier={tier} />
       )}
     </>
   )
@@ -285,15 +282,14 @@ const QTY_COLOR = {
   critical: { bg: 'var(--badge-red-bg)',    color: 'var(--badge-red-text)' },
 }
 
-function CatalogRow({ item, tier, reorderEnabled, contacts, onEdit }: {
+function CatalogRow({ item, tier, contacts, onEdit }: {
   item: CatalogItem
   tier: InventoryTier
-  reorderEnabled: boolean
   contacts: ContactLite[]
   onEdit: () => void
 }) {
   const { label, icon: Icon, bg, color } = TYPE_META[item.item_type]
-  const qStatus = quantityStatus(item, tier, reorderEnabled)
+  const qStatus = quantityStatus(item, tier)
   const rentable = item.is_rentable || item.item_type === 'rental'
   const [showRentOut, setShowRentOut] = useState(false)
   const [togglePending, startToggle] = useTransition()

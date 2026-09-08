@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import { createCatalogItem, updateCatalogItem, type CatalogItem, type InventoryTier } from '@/lib/actions/catalog'
-import { type TenantSettings } from '@/lib/types/settings'
 import { X } from 'lucide-react'
 import { CatalogImageUpload } from './CatalogImageUpload'
 
@@ -10,7 +9,6 @@ type Props = {
   item?: CatalogItem
   onClose: () => void
   tier?: InventoryTier
-  toggles?: TenantSettings
 }
 
 const BILLING_UNITS = [
@@ -20,7 +18,7 @@ const BILLING_UNITS = [
   { value: 'monthly', label: '/ mo' },
 ] as const
 
-export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Props) {
+export function CatalogItemModal({ item, onClose, tier = 'lite' }: Props) {
   const [pending, startTransition] = useTransition()
   // A legacy 'rental'-typed item is just a rentable good under the new
   // model — collapse it here so the segmented Good/Service control never
@@ -186,7 +184,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
             </Field>
           )}
 
-          {isFull && tracksQuantity && toggles?.inventory_enable_uom && (
+          {isFull && tracksQuantity && (
             <Field label="Unit of measure">
               <input name="unit_of_measure" defaultValue={item?.unit_of_measure ?? ''} placeholder="each, box, case…"
                 className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
@@ -194,7 +192,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
             </Field>
           )}
 
-          {isFull && tracksQuantity && toggles?.inventory_enable_reorder_points && (
+          {isFull && tracksQuantity && (
             <Field label="Reorder point">
               <input name="reorder_point" type="number" step="1" min="0" defaultValue={item?.reorder_point ?? ''}
                 placeholder="Flag when quantity falls to or below this"
@@ -203,7 +201,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
             </Field>
           )}
 
-          {isFull && toggles?.inventory_enable_expiry_dates && (
+          {isFull && (
             <Field label="Expiry date">
               <input name="expiry_date" type="date" defaultValue={item?.expiry_date ?? ''}
                 className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
@@ -211,7 +209,7 @@ export function CatalogItemModal({ item, onClose, tier = 'lite', toggles }: Prop
             </Field>
           )}
 
-          {isFull && toggles?.inventory_enable_images && (
+          {isFull && (
             <Field label="Photo">
               <CatalogImageUpload value={imageUrl} onChange={setImageUrl} />
             </Field>
