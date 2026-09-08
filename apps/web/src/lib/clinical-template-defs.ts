@@ -13,6 +13,7 @@ export type ClinicalField = {
   type: ClinicalFieldType
   autofill?: ClinicalAutofill
   highlight?: boolean // visually flags safety-critical fields (e.g. SI/HI screening)
+  optional?: boolean // everything is required to save unless explicitly marked optional (signatures, insurance info, etc.)
 }
 
 export type ClinicalTemplateType = 'intake' | 'progress_note' | 'treatment_plan' | 'discharge'
@@ -32,15 +33,15 @@ export const CLINICAL_TEMPLATES: Record<ClinicalTemplateType, ClinicalTemplateDe
     fields: [
       { key: 'patient_name', label: 'Patient name', type: 'text', autofill: 'contact_name' },
       { key: 'dob', label: 'Date of birth', type: 'date' },
-      { key: 'phone', label: 'Contact phone', type: 'text', autofill: 'contact_phone' },
-      { key: 'insurance_provider', label: 'Insurance provider', type: 'text' },
-      { key: 'insurance_id', label: 'Insurance ID', type: 'text' },
+      { key: 'phone', label: 'Contact phone', type: 'text', autofill: 'contact_phone' , optional: true },
+      { key: 'insurance_provider', label: 'Insurance provider', type: 'text' , optional: true },
+      { key: 'insurance_id', label: 'Insurance ID', type: 'text' , optional: true },
       { key: 'chief_complaint', label: 'Chief complaint', type: 'textarea' },
       { key: 'psychiatric_history', label: 'Psychiatric history (diagnoses, past treatments)', type: 'textarea' },
       { key: 'current_medications', label: 'Current medications', type: 'textarea' },
       { key: 'substance_use_history', label: 'Substance use history', type: 'textarea' },
       { key: 'si_hi_screening', label: 'Suicidal / homicidal ideation screening', type: 'textarea', highlight: true },
-      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' },
+      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' , optional: true },
       { key: 'signed_date', label: 'Date', type: 'date', autofill: 'today' },
     ],
   },
@@ -51,13 +52,13 @@ export const CLINICAL_TEMPLATES: Record<ClinicalTemplateType, ClinicalTemplateDe
     fields: [
       { key: 'patient_name', label: 'Patient name', type: 'text', autofill: 'contact_name' },
       { key: 'session_date', label: 'Session date', type: 'date', autofill: 'today' },
-      { key: 'session_time', label: 'Session time', type: 'text' },
+      { key: 'session_time', label: 'Session time', type: 'text' , optional: true },
       { key: 'chief_complaint_session', label: 'Chief complaint this session', type: 'textarea' },
       { key: 'subjective', label: 'Subjective — patient report', type: 'textarea' },
       { key: 'objective', label: 'Objective — clinician observations', type: 'textarea' },
       { key: 'assessment', label: 'Assessment — diagnosis, current status', type: 'textarea' },
       { key: 'plan', label: 'Plan — next steps, medication adjustments, referrals', type: 'textarea' },
-      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' },
+      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' , optional: true },
       { key: 'signed_date', label: 'Date', type: 'date', autofill: 'today' },
     ],
   },
@@ -73,8 +74,8 @@ export const CLINICAL_TEMPLATES: Record<ClinicalTemplateType, ClinicalTemplateDe
       { key: 'interventions', label: 'Interventions planned', type: 'textarea' },
       { key: 'medication_regimen', label: 'Medication regimen', type: 'textarea' },
       { key: 'follow_up_schedule', label: 'Follow-up schedule', type: 'text' },
-      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' },
-      { key: 'patient_signature', label: 'Patient signature', type: 'text' },
+      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' , optional: true },
+      { key: 'patient_signature', label: 'Patient signature', type: 'text' , optional: true },
       { key: 'signed_date', label: 'Date', type: 'date', autofill: 'today' },
     ],
   },
@@ -89,8 +90,8 @@ export const CLINICAL_TEMPLATES: Record<ClinicalTemplateType, ClinicalTemplateDe
       { key: 'final_diagnoses', label: 'Final diagnoses', type: 'textarea' },
       { key: 'treatment_summary', label: 'Treatment summary', type: 'textarea' },
       { key: 'medications_at_discharge', label: 'Medications at discharge', type: 'textarea' },
-      { key: 'referrals_next_provider', label: 'Referrals / next provider', type: 'textarea' },
-      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' },
+      { key: 'referrals_next_provider', label: 'Referrals / next provider', type: 'textarea' , optional: true },
+      { key: 'clinician_signature', label: 'Clinician signature', type: 'text' , optional: true },
       { key: 'signed_date', label: 'Date', type: 'date', autofill: 'today' },
     ],
   },

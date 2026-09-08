@@ -54,6 +54,8 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, onClos
 
   function handleSave(andFinalize: boolean) {
     if (!contactId) { setError('Select a patient first'); return }
+    const missing = def.fields.find(f => !f.optional && !(values[f.key] ?? '').trim())
+    if (missing) { setError(`${missing.label} is required`); return }
     setError(null)
     startTransition(async () => {
       try {
@@ -119,7 +121,7 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, onClos
             <div key={f.key} className="space-y-1.5">
               <label className="text-[15px] font-bold uppercase tracking-wide flex items-center gap-1.5" style={{ color: f.highlight ? '#dc2626' : 'hsl(var(--muted-foreground))' }}>
                 {f.highlight && <AlertTriangle className="w-3.5 h-3.5" />}
-                {f.label}
+                {f.label}{!f.optional && ' *'}
               </label>
               {f.type === 'textarea' ? (
                 <textarea
