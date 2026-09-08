@@ -26,7 +26,7 @@ export function InventoryTierPanel({ tenantId }: { tenantId: string }) {
       <div className="px-5 py-4 border-b border-[hsl(var(--border))]">
         <h2 className="text-[15px] font-semibold">Inventory tier</h2>
         <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
-          Lite covers products and services. Full adds images, reorder points, expiry dates, and rental tracking — the tenant turns those on themselves in Settings once granted.
+          Lite covers products and services. Full adds photos, unit of measure, reorder points, expiry dates, and rental tracking — all together, automatically, as soon as this is set to Full.
         </p>
       </div>
       <div className="flex items-center gap-3.5 px-5 py-3.5">
