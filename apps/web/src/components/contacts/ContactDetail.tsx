@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2, Package, Activity as ActivityIcon } from 'lucide-react'
+import { Phone, Mail, Building2, MapPin, Tag, Pencil, Trash2, Clock, CreditCard, Repeat, Zap, Plus, Loader2, Package, Activity as ActivityIcon, ClipboardList } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logAudit } from '@/lib/actions/audit'
 import { InteractionTimeline } from '@/components/interactions/InteractionTimeline'
@@ -16,6 +16,8 @@ import { RecurringJobsSection } from '@/components/contacts/RecurringJobsSection
 import { ActivityTimeline, type ActivityLog } from '@/components/shared/ActivityTimeline'
 import { OrdersTable } from '@/components/orders/OrdersTable'
 import { createOrder } from '@/lib/actions/orders'
+import { ContactClinicalTemplatesSection } from '@/components/clinical/ContactClinicalTemplatesSection'
+import type { ClinicalTemplateInstance } from '@/lib/actions/clinical-templates'
 import type { RecurringJob } from '@/lib/actions/recurring-jobs'
 import { useUserRole } from '@/lib/hooks/useUserRole'
 import type { Tables } from '@/types/database'
@@ -36,9 +38,9 @@ function initials(c: Contact) {
 }
 
 type CatalogItem = { id: string; name: string; description: string | null; base_price: number }
-type TabKey = 'orders' | 'payments' | 'activity' | 'recurring' | 'timeline' | 'automation'
+type TabKey = 'orders' | 'payments' | 'activity' | 'recurring' | 'timeline' | 'automation' | 'clinical'
 
-export function ContactDetail({ contact, interactions, orders = [], activity = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [], nextAppointmentAt = null }: {
+export function ContactDetail({ contact, interactions, orders = [], activity = [], tenantId, tenantSlug, businessName, catalogItems = [], recurringJobs = [], nextAppointmentAt = null, showClinicalTemplates = false, clinicalInstances = [] }: {
   contact: Contact
   interactions: Interaction[]
   orders?: Order[]
@@ -49,6 +51,8 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
   catalogItems?: CatalogItem[]
   recurringJobs?: RecurringJob[]
   nextAppointmentAt?: string | null
+  showClinicalTemplates?: boolean
+  clinicalInstances?: ClinicalTemplateInstance[]
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -68,7 +72,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
     : undefined
   const initialTab = searchParams.get('tab')
   const highlightOrderId = searchParams.get('order')
-  const validTabs: TabKey[] = ['orders', 'payments', 'activity', 'recurring', 'timeline', 'automation']
+  const validTabs: TabKey[] = ['orders', 'payments', 'activity', 'recurring', 'timeline', 'automation', 'clinical']
   const [tab, setTab] = useState<TabKey>(
     validTabs.includes(initialTab as TabKey) ? (initialTab as TabKey) : 'orders'
   )
@@ -98,6 +102,7 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
     { key: 'activity', label: 'Order Activity', icon: <ActivityIcon className="w-4 h-4" />, count: activity.length },
     { key: 'recurring', label: 'Recurring Jobs', icon: <Repeat className="w-4 h-4" />, count: recurringJobs.length },
     { key: 'timeline', label: 'Customer Notes', icon: <Clock className="w-4 h-4" />, count: interactions.length },
+    ...(showClinicalTemplates ? [{ key: 'clinical' as TabKey, label: 'Clinical Templates', icon: <ClipboardList className="w-4 h-4" />, count: clinicalInstances.length }] : []),
     ...(isAdmin ? [{ key: 'automation' as TabKey, label: 'Automation', icon: <Zap className="w-4 h-4" /> }] : []),
   ]
 
@@ -277,6 +282,12 @@ export function ContactDetail({ contact, interactions, orders = [], activity = [
               <AddInteractionForm contactId={contact.id} />
               <InteractionTimeline interactions={interactions} />
             </div>
+          )}
+          {tab === 'clinical' && showClinicalTemplates && (
+            <ContactClinicalTemplatesSection
+              contact={{ id: contact.id, first_name: contact.first_name, last_name: contact.last_name, phone: contact.phone }}
+              initialInstances={clinicalInstances}
+            />
           )}
           {tab === 'automation' && isAdmin && <AutomationSection contactId={contact.id} />}
         </div>

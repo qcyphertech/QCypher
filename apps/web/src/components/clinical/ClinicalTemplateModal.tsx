@@ -8,22 +8,23 @@ import {
   type ClinicalTemplateInstance,
 } from '@/lib/actions/clinical-templates'
 
-type ContactLite = { id: string; first_name: string; last_name: string | null }
+type ContactLite = { id: string; first_name: string; last_name: string | null; phone?: string | null }
 
 function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function ClinicalTemplateModal({ templateType, contacts, instance, onClose, onSaved }: {
+export function ClinicalTemplateModal({ templateType, contacts, instance, defaultContactId, onClose, onSaved }: {
   templateType: ClinicalTemplateType
   contacts: ContactLite[]
   instance: ClinicalTemplateInstance | null
+  defaultContactId?: string
   onClose: () => void
   onSaved: (instance: ClinicalTemplateInstance) => void
 }) {
   const def = CLINICAL_TEMPLATES[templateType]
   const [pending, startTransition] = useTransition()
-  const [contactId, setContactId] = useState(instance?.contact_id ?? '')
+  const [contactId, setContactId] = useState(instance?.contact_id ?? defaultContactId ?? '')
   const [error, setError] = useState<string | null>(null)
   const isFinalized = instance?.status === 'finalized'
   const contact = contacts.find(c => c.id === contactId) ?? null
@@ -31,8 +32,11 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, onClos
   const [values, setValues] = useState<Record<string, string>>(() => {
     if (instance) return instance.form_data
     const initial: Record<string, string> = {}
+    const preselected = defaultContactId ? contacts.find(c => c.id === defaultContactId) ?? null : null
     for (const f of def.fields) {
       if (f.autofill === 'today') initial[f.key] = today()
+      if (f.autofill === 'contact_name' && preselected) initial[f.key] = `${preselected.first_name} ${preselected.last_name ?? ''}`.trim()
+      if (f.autofill === 'contact_phone' && preselected) initial[f.key] = preselected.phone ?? ''
     }
     return initial
   })
@@ -42,6 +46,7 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, onClos
       const next = { ...prev }
       for (const f of def.fields) {
         if (f.autofill === 'contact_name') next[f.key] = nextContact ? `${nextContact.first_name} ${nextContact.last_name ?? ''}`.trim() : ''
+        if (f.autofill === 'contact_phone') next[f.key] = nextContact?.phone ?? ''
       }
       return next
     })

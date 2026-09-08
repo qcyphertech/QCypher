@@ -4,6 +4,8 @@ import { ContactDetail } from '@/components/contacts/ContactDetail'
 import type { Metadata } from 'next'
 import type { RecurringJob } from '@/lib/actions/recurring-jobs'
 import { getContactActivity } from '@/lib/actions/audit'
+import { getAvailableModuleKeys } from '@/lib/actions/platform-modules'
+import { listClinicalTemplateInstances } from '@/lib/actions/clinical-templates'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -42,6 +44,13 @@ export default async function ContactPage({ params }: Props) {
   if (!contact) notFound()
 
   const tenant = tenantRaw as { slug: string; name: string } | null
+
+  const availableModules = await getAvailableModuleKeys()
+  const showClinicalTemplates = !!availableModules?.has('show_clinical_templates')
+  const clinicalInstances = showClinicalTemplates
+    ? await listClinicalTemplateInstances({ contactId: id }).catch(() => [])
+    : []
+
   return (
     <ContactDetail
       contact={contact}
@@ -54,6 +63,8 @@ export default async function ContactPage({ params }: Props) {
       catalogItems={catalogItems ?? []}
       recurringJobs={(recurringJobs ?? []) as RecurringJob[]}
       nextAppointmentAt={nextEvent?.starts_at ?? null}
+      showClinicalTemplates={showClinicalTemplates}
+      clinicalInstances={clinicalInstances}
     />
   )
 }

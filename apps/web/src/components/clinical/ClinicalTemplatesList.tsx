@@ -7,7 +7,7 @@ import type { ClinicalTemplateInstance } from '@/lib/actions/clinical-templates'
 import { ClinicalTemplateModal } from './ClinicalTemplateModal'
 import { FileText, Filter, ClipboardList, Printer } from 'lucide-react'
 
-type ContactLite = { id: string; first_name: string; last_name: string | null }
+type ContactLite = { id: string; first_name: string; last_name: string | null; phone?: string | null }
 
 const TYPE_OPTIONS = [
   { value: 'all', label: 'All types' },

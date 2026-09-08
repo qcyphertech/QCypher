@@ -32,8 +32,8 @@ export default async function ClinicalTemplatesPage() {
   const admin = createAdminClient()
   const [{ data: contacts }, instances] = await Promise.all([
     tenant_id
-      ? admin.from('contacts').select('id, first_name, last_name').eq('tenant_id', tenant_id).order('first_name')
-      : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string | null }[] }),
+      ? admin.from('contacts').select('id, first_name, last_name, phone').eq('tenant_id', tenant_id).order('first_name')
+      : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string | null; phone: string | null }[] }),
     listClinicalTemplateInstances().catch(() => []),
   ])
 
