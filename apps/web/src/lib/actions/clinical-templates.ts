@@ -117,10 +117,21 @@ export async function getClinicalTemplateInstance(id: string): Promise<{ instanc
     .eq('tenant_id', tenantId)
     .order('version', { ascending: false })
 
+  // Resolve editor emails for display — auth.users isn't a normal
+  // PostgREST-joinable table, so this is a separate lookup + in-memory
+  // map, same pattern used for tenant-referral/team-member displays
+  // elsewhere in this app.
+  const editorIds = Array.from(new Set((versionRows ?? []).map(v => v.edited_by)))
+  const emailById = new Map<string, string>()
+  if (editorIds.length) {
+    const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+    for (const u of users) if (editorIds.includes(u.id)) emailById.set(u.id, u.email ?? '')
+  }
+
   const contact = (instance as unknown as { contacts: { first_name: string; last_name: string | null } | null }).contacts
   return {
     instance: { ...(instance as unknown as ClinicalTemplateInstance), contact_name: contact ? `${contact.first_name} ${contact.last_name ?? ''}`.trim() : undefined },
-    versions: (versionRows ?? []) as unknown as ClinicalTemplateVersion[],
+    versions: (versionRows ?? []).map(v => ({ ...v, edited_by_email: emailById.get(v.edited_by) })) as unknown as ClinicalTemplateVersion[],
   }
 }
 

@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { X, AlertTriangle, Lock } from 'lucide-react'
+import { X, AlertTriangle, Lock, History, ChevronDown, ChevronRight } from 'lucide-react'
 import { CLINICAL_TEMPLATES, type ClinicalTemplateType } from '@/lib/clinical-template-defs'
 import {
   createClinicalTemplateInstance, updateClinicalTemplateInstance, finalizeClinicalTemplateInstance,
-  autosaveClinicalTemplateInstance,
-  type ClinicalTemplateInstance,
+  autosaveClinicalTemplateInstance, getClinicalTemplateInstance,
+  type ClinicalTemplateInstance, type ClinicalTemplateVersion,
 } from '@/lib/actions/clinical-templates'
 
 const AUTOSAVE_DELAY_MS = 1500
@@ -37,6 +37,20 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, defaul
 
   const skipFirstAutosave = useRef(true)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [versions, setVersions] = useState<ClinicalTemplateVersion[]>([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [expandedVersion, setExpandedVersion] = useState<number | null>(null)
+
+  // Prior versions only exist for a note that was already saved before
+  // this modal opened — a brand-new note has nothing to show yet.
+  useEffect(() => {
+    if (!instance) return
+    getClinicalTemplateInstance(instance.id).then(result => {
+      if (result) setVersions(result.versions)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [values, setValues] = useState<Record<string, string>>(() => {
     if (instance) return instance.form_data
@@ -154,10 +168,55 @@ export function ClinicalTemplateModal({ templateType, contacts, instance, defaul
               </p>
             )}
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">
-            <X className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {versions.length > 0 && (
+              <button onClick={() => setShowHistory(v => !v)}
+                title="Version history"
+                className="flex items-center gap-1.5 text-[13px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[hsl(var(--muted))]"
+                style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <History className="w-3.5 h-3.5" />
+                {versions.length} earlier {versions.length === 1 ? 'version' : 'versions'}
+              </button>
+            )}
+            <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[hsl(var(--muted))]">
+              <X className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
+            </button>
+          </div>
         </div>
+
+        {showHistory && (
+          <div className="px-6 py-4 border-b border-[hsl(var(--border))]" style={{ background: 'hsl(var(--muted))' }}>
+            <p className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              Version history — view only, cannot be restored
+            </p>
+            <div className="space-y-1.5">
+              {versions.map(v => (
+                <div key={v.id} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] overflow-hidden">
+                  <button
+                    onClick={() => setExpandedVersion(prev => prev === v.version ? null : v.version)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left"
+                  >
+                    {expandedVersion === v.version ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    <span className="text-[13px] font-bold" style={{ color: 'hsl(var(--foreground))' }}>Version {v.version}</span>
+                    <span className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      — edited {new Date(v.edited_at).toLocaleString()}{v.edited_by_email ? ` by ${v.edited_by_email}` : ''}
+                    </span>
+                  </button>
+                  {expandedVersion === v.version && (
+                    <div className="px-3 pb-3 space-y-2 border-t border-[hsl(var(--border))] pt-2">
+                      {def.fields.map(f => (
+                        <div key={f.key}>
+                          <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>{f.label}</p>
+                          <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'hsl(var(--foreground))' }}>{v.form_data[f.key] || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="px-6 py-5 space-y-4">
           <div className="space-y-1.5">
