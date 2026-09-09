@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       template_id: templateId ?? null,
       channel,
       recipient,
-      subject:     testOnly ? `[TEST] ${subject ?? ''}`.trim() : subject,
+      subject,
       body:        preview,
       status:      'queued',
     })
