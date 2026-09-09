@@ -170,8 +170,12 @@ export async function POST(request: NextRequest) {
       providerId = data.id
     }
 
+    // send_log has no client-facing UPDATE policy (it's an audit trail —
+    // inserts and reads only), so this status transition has to go
+    // through the admin client rather than the user-session `supabase`
+    // client, which RLS would silently no-op (0 rows affected, no error).
     if (logId) {
-      await supabase.from('send_log').update({ status: 'sent', provider_id: providerId, sent_at: new Date().toISOString() }).eq('id', logId)
+      await admin.from('send_log').update({ status: 'sent', provider_id: providerId, sent_at: new Date().toISOString() }).eq('id', logId)
     }
 
     // A test send goes to the tenant's own inbox, not the contact's — it
@@ -193,7 +197,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     if (logId) {
-      await supabase.from('send_log').update({ status: 'failed', error: msg }).eq('id', logId)
+      await admin.from('send_log').update({ status: 'failed', error: msg }).eq('id', logId)
     }
     return NextResponse.json({ error: msg }, { status: 500 })
   }
