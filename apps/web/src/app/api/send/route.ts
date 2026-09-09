@@ -139,10 +139,14 @@ export async function POST(request: NextRequest) {
         senderName: businessName,
         bodyHtml: `<div style="white-space:pre-wrap;">${preview.replace(/[&<>]/g, (c: string) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!))}</div>`,
       })
+      // A test send should look exactly like what the contact would get —
+      // no "[TEST]" marker in the actual subject/body, so it's a true
+      // preview. The send_log row below is still tagged for the audit
+      // trail, since that's internal-only.
       const resendBody: Record<string, unknown> = {
         from:    RESEND_FROM,
         to:      [recipient],
-        subject: (testOnly ? '[TEST] ' : '') + (subject ?? '(no subject)'),
+        subject: subject ?? '(no subject)',
         html,
         text:    preview,
       }

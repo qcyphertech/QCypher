@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Mail, MessageSquare, X, Send, ChevronDown, AlertTriangle, FlaskConical } from 'lucide-react'
+import { Mail, MessageSquare, X, Send, ChevronDown, AlertTriangle, FlaskConical, Undo2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { interpolate, hasBlockingUnresolved } from '@/lib/template-interpolate'
 import { useUserRole } from '@/lib/hooks/useUserRole'
+import { useUndoSend } from '@/lib/hooks/useUndoSend'
 import type { Tables } from '@/types/database'
 
 type Contact  = Tables<'contacts'>
@@ -98,8 +99,7 @@ export function QuickSendButton({
     })
   }
 
-  async function handleSend() {
-    if (!canSend) return
+  async function actuallySend() {
     setSending(true)
     setResult(null)
     const res = await doSend()
@@ -107,6 +107,17 @@ export function QuickSendButton({
     setSending(false)
     setResult({ ok: res.ok, msg: res.ok ? 'Sent!' : (json.error ?? 'Send failed') })
     if (res.ok) setTimeout(() => { setOpen(false); setSelected(null); setCustomMode(false); setResult(null) }, 1200)
+  }
+
+  // There's no real "recall" for mail that's already left the server —
+  // this is the practical stand-in, same idea as Gmail's own Undo Send:
+  // hold the actual send for a few seconds so a mis-send can be caught
+  // before anything goes out.
+  const undoSend = useUndoSend(actuallySend)
+
+  function handleSend() {
+    if (!canSend) return
+    undoSend.start()
   }
 
   async function handleSendTest() {
@@ -243,27 +254,38 @@ export function QuickSendButton({
                     <p className={`text-[15px] ${result.ok ? 'text-emerald-600' : 'text-red-500'}`}>{result.msg}</p>
                   )}
 
-                  <div className="flex gap-2">
+                  {undoSend.pending ? (
                     <button
-                      onClick={handleSend}
-                      disabled={!canSend || sending || testSending || hasUnresolved}
-                      className="flex-1 flex items-center justify-center gap-2 bg-accent text-white text-[15px] font-medium py-2 rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-40"
+                      onClick={undoSend.cancel}
+                      className="w-full flex items-center justify-center gap-2 text-[15px] font-medium py-2 rounded-xl transition-colors"
+                      style={{ background: 'rgba(245,158,11,0.12)', color: '#b45309', border: '1px solid rgba(245,158,11,0.3)' }}
                     >
-                      <Send className="w-4 h-4" />
-                      {sending ? 'Sending…' : `Send ${channel}`}
+                      <Undo2 className="w-4 h-4" />
+                      Sending in {undoSend.secondsLeft}s — Undo
                     </button>
-                    {isAdmin && channel === 'email' && (
+                  ) : (
+                    <div className="flex gap-2">
                       <button
-                        onClick={handleSendTest}
+                        onClick={handleSend}
                         disabled={!canSend || sending || testSending || hasUnresolved}
-                        title="Send a test copy to yourself only"
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-medium border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-40"
+                        className="flex-1 flex items-center justify-center gap-2 bg-accent text-white text-[15px] font-medium py-2 rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-40"
                       >
-                        <FlaskConical className="w-3.5 h-3.5" />
-                        {testSending ? 'Sending…' : 'Test'}
+                        <Send className="w-4 h-4" />
+                        {sending ? 'Sending…' : `Send ${channel}`}
                       </button>
-                    )}
-                  </div>
+                      {isAdmin && channel === 'email' && (
+                        <button
+                          onClick={handleSendTest}
+                          disabled={!canSend || sending || testSending || hasUnresolved}
+                          title="Send a test copy to yourself only"
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-medium border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-40"
+                        >
+                          <FlaskConical className="w-3.5 h-3.5" />
+                          {testSending ? 'Sending…' : 'Test'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </div>
