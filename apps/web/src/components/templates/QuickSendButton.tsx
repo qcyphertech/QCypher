@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Mail, MessageSquare, X, Send, ChevronDown, AlertTriangle } from 'lucide-react'
+import { Mail, MessageSquare, X, Send, ChevronDown, AlertTriangle, FlaskConical } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { interpolate, hasBlockingUnresolved } from '@/lib/template-interpolate'
+import { useUserRole } from '@/lib/hooks/useUserRole'
 import type { Tables } from '@/types/database'
 
 type Contact  = Tables<'contacts'>
@@ -24,11 +25,16 @@ export function QuickSendButton({
   channel?:         'email' | 'sms'
   iconOnly?:        boolean
 }) {
+  const { isAdmin } = useUserRole()
   const [open,      setOpen]      = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
   const [selected,  setSelected]  = useState<Template | null>(null)
+  const [customMode, setCustomMode] = useState(false)
+  const [customSubject, setCustomSubject] = useState('')
   const [preview,   setPreview]   = useState('')
+  const [bccSelf,   setBccSelf]   = useState(false)
   const [sending,   setSending]   = useState(false)
+  const [testSending, setTestSending] = useState(false)
   const [result,    setResult]    = useState<{ ok: boolean; msg: string } | null>(null)
   const supabase = createClient()
 
@@ -59,28 +65,58 @@ export function QuickSendButton({
   }
 
   function selectTemplate(t: Template) {
+    setCustomMode(false)
     setSelected(t)
     setPreview(buildPreview(t))
+    setCustomSubject(t.subject ? interpolate(t.subject, interpolateContext()) : '')
+  }
+
+  function startCustomMessage() {
+    setSelected(null)
+    setCustomMode(true)
+    setCustomSubject('')
+    setPreview('')
   }
 
   const hasUnresolved = hasBlockingUnresolved(preview)
+  const canSend = (!!selected || (customMode && channel === 'email' && customSubject.trim())) && preview.trim().length > 0
 
-  async function handleSend() {
-    if (!selected) return
-    setSending(true)
-    setResult(null)
-
-    const subject = selected.subject ? interpolate(selected.subject, interpolateContext()) : undefined
-
-    const res  = await fetch('/api/send', {
+  async function doSend(opts: { testOnly?: boolean } = {}) {
+    const subject = channel === 'email' ? customSubject.trim() || undefined : undefined
+    return fetch('/api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ templateId: selected.id, contactId: contact.id, preview, subject, channel }),
+      body: JSON.stringify({
+        templateId: selected?.id,
+        contactId: contact.id,
+        preview,
+        subject,
+        channel,
+        bccSelf: channel === 'email' ? bccSelf : undefined,
+        testOnly: opts.testOnly,
+      }),
     })
+  }
+
+  async function handleSend() {
+    if (!canSend) return
+    setSending(true)
+    setResult(null)
+    const res = await doSend()
     const json = await res.json()
     setSending(false)
     setResult({ ok: res.ok, msg: res.ok ? 'Sent!' : (json.error ?? 'Send failed') })
-    if (res.ok) setTimeout(() => { setOpen(false); setSelected(null); setResult(null) }, 1200)
+    if (res.ok) setTimeout(() => { setOpen(false); setSelected(null); setCustomMode(false); setResult(null) }, 1200)
+  }
+
+  async function handleSendTest() {
+    if (!canSend) return
+    setTestSending(true)
+    setResult(null)
+    const res = await doSend({ testOnly: true })
+    const json = await res.json()
+    setTestSending(false)
+    setResult({ ok: res.ok, msg: res.ok ? 'Test sent to your own inbox.' : (json.error ?? 'Test send failed') })
   }
 
   const Icon      = channel === 'email' ? Mail : MessageSquare
@@ -127,7 +163,7 @@ export function QuickSendButton({
             </div>
 
             <div className="p-5 space-y-4">
-              {templates.length === 0 ? (
+              {templates.length === 0 && !isAdmin ? (
                 <p className="text-[15px] text-[hsl(var(--muted-foreground))]">
                   No {channel} templates yet. Create one first.
                 </p>
@@ -139,13 +175,15 @@ export function QuickSendButton({
                     <div className="relative">
                       <select
                         className="w-full rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-[15px] bg-transparent outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] appearance-none pr-8"
-                        value={selected?.id ?? ''}
+                        value={customMode ? '__custom__' : selected?.id ?? ''}
                         onChange={e => {
+                          if (e.target.value === '__custom__') { startCustomMessage(); return }
                           const t = templates.find(t => t.id === e.target.value)
                           if (t) selectTemplate(t)
                         }}
                       >
                         <option value="">Select a template…</option>
+                        {isAdmin && <option value="__custom__">✎ Write my own…</option>}
                         {templates.map(t => (
                           <option key={t.id} value={t.id}>
                             {t.name}{(t as any).is_marketing ? ' ★' : ''}
@@ -165,31 +203,67 @@ export function QuickSendButton({
                     </div>
                   )}
 
-                  {/* Preview */}
-                  {selected && (
+                  {/* Subject — editable for a template's own subject, or required when writing a custom email */}
+                  {(selected || customMode) && channel === 'email' && (
                     <div className="space-y-1.5">
-                      <label className="text-[15px] font-medium">Preview (editable)</label>
+                      <label className="text-[15px] font-medium">Subject</label>
+                      <input
+                        type="text"
+                        value={customSubject}
+                        onChange={e => setCustomSubject(e.target.value)}
+                        placeholder={customMode ? 'Subject line…' : undefined}
+                        className="w-full rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-[15px] bg-transparent outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                      />
+                    </div>
+                  )}
+
+                  {/* Preview */}
+                  {(selected || customMode) && (
+                    <div className="space-y-1.5">
+                      <label className="text-[15px] font-medium">{customMode ? 'Message' : 'Preview (editable)'}</label>
                       <textarea
                         value={preview}
                         onChange={e => setPreview(e.target.value)}
                         rows={5}
+                        placeholder={customMode ? 'Write your message…' : undefined}
                         className="w-full rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-[15px] bg-transparent outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] resize-none"
                       />
                     </div>
+                  )}
+
+                  {/* Admin-only send options */}
+                  {isAdmin && (selected || customMode) && channel === 'email' && (
+                    <label className="flex items-center gap-2 text-[15px] text-[hsl(var(--muted-foreground))]">
+                      <input type="checkbox" checked={bccSelf} onChange={e => setBccSelf(e.target.checked)} className="rounded" />
+                      BCC me on this email
+                    </label>
                   )}
 
                   {result && (
                     <p className={`text-[15px] ${result.ok ? 'text-emerald-600' : 'text-red-500'}`}>{result.msg}</p>
                   )}
 
-                  <button
-                    onClick={handleSend}
-                    disabled={!selected || sending || hasUnresolved}
-                    className="w-full flex items-center justify-center gap-2 bg-accent text-white text-[15px] font-medium py-2 rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-40"
-                  >
-                    <Send className="w-4 h-4" />
-                    {sending ? 'Sending…' : `Send ${channel}`}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSend}
+                      disabled={!canSend || sending || testSending || hasUnresolved}
+                      className="flex-1 flex items-center justify-center gap-2 bg-accent text-white text-[15px] font-medium py-2 rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-40"
+                    >
+                      <Send className="w-4 h-4" />
+                      {sending ? 'Sending…' : `Send ${channel}`}
+                    </button>
+                    {isAdmin && channel === 'email' && (
+                      <button
+                        onClick={handleSendTest}
+                        disabled={!canSend || sending || testSending || hasUnresolved}
+                        title="Send a test copy to yourself only"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-medium border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-40"
+                      >
+                        <FlaskConical className="w-3.5 h-3.5" />
+                        {testSending ? 'Sending…' : 'Test'}
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
             </div>

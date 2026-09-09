@@ -5,8 +5,12 @@ import { updateTenantSettings } from '@/lib/actions/settings'
 import { type TenantSettings } from '@/lib/types/settings'
 import { Calendar, FileText, Package, ShoppingBag, BarChart2, Bot } from 'lucide-react'
 
+// Only the boolean show_* flags belong in this toggle list — notify_email
+// is a string setting edited via its own panel (NotifyEmailPanel).
+type BooleanSettingKey = { [K in keyof TenantSettings]: TenantSettings[K] extends boolean ? K : never }[keyof TenantSettings]
+
 const MODULES: Array<{
-  key: keyof TenantSettings
+  key: BooleanSettingKey
   label: string
   description: string
   icon: React.ElementType
@@ -30,7 +34,7 @@ export function ModuleToggles({ settings, availableModules }: { settings: Tenant
   const [localSettings, setLocalSettings] = useState(settings)
   const [error, setError] = useState<string | null>(null)
 
-  function handleToggle(key: keyof TenantSettings, value: boolean) {
+  function handleToggle(key: BooleanSettingKey, value: boolean) {
     setError(null)
     setLocalSettings(prev => ({ ...prev, [key]: value }))
     startTransition(async () => {

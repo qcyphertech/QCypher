@@ -11,6 +11,10 @@ export type TenantSettings = {
   // it goes through the same show_* intersection as everything else so a
   // tenant that IS granted it can still hide it from their own nav.
   show_clinical_templates: boolean
+  // Owner-set "own email" — used to BCC the sender on outgoing template
+  // emails and as the destination for "send a test to myself". Empty
+  // string means unset; callers fall back to the owner's own login email.
+  notify_email: string
 }
 
 export const DEFAULT_SETTINGS: TenantSettings = {
@@ -21,4 +25,5 @@ export const DEFAULT_SETTINGS: TenantSettings = {
   show_overview:  true,
   show_crm_bot:   true,
   show_clinical_templates: true,
+  notify_email: '',
 }

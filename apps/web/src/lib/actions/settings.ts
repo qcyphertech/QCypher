@@ -9,6 +9,13 @@ export async function updateTenantSettings(settings: Partial<TenantSettings>) {
   const { data: { user } } = await supabase.auth.getUser()
   const tenantId = user?.app_metadata?.tenant_id
   if (!tenantId) throw new Error('No tenant')
+
+  // notify_email (BCC-self / test-send destination) is an owner-only
+  // setting — members/read_only can't redirect outgoing mail copies.
+  if (settings.notify_email !== undefined && user?.app_metadata?.role !== 'owner') {
+    throw new Error('Only an account owner can change the notification email address')
+  }
+
   const { data: tenant } = await supabase.from('tenants').select('id, settings').eq('id', tenantId).single()
   if (!tenant) throw new Error('Tenant not found')
 

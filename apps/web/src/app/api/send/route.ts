@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit, LIMITS } from '@/lib/rate-limit'
 import { getIp } from '@/lib/get-ip'
 import { sendSms } from '@/lib/telnyx'
@@ -33,33 +34,64 @@ export async function POST(request: NextRequest) {
   const tenantId = user.app_metadata?.tenant_id ?? user.user_metadata?.tenant_id
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { templateId, contactId, preview: _preview, subject: _subject, channel: _channel } = await request.json() as {
-    templateId: string
+  // Free-form compose (no template), BCC-self, and send-a-test-to-self are
+  // admin-only capabilities — a member/read_only account can send from a
+  // template but can't rewrite the outgoing subject/body wholesale or
+  // redirect a copy to an arbitrary inbox. Re-check role against a fresh
+  // admin lookup rather than trusting the session's app_metadata, same
+  // pattern used elsewhere (see requireClinicalWriter in clinical-templates.ts).
+  const admin = createAdminClient()
+  const { data: { user: fresh } } = await admin.auth.admin.getUserById(user.id)
+  const isOwner = (fresh?.app_metadata?.role ?? 'member') === 'owner'
+
+  const {
+    templateId, contactId, preview: _preview, subject: _subject, channel: _channel,
+    bccSelf, testOnly,
+  } = await request.json() as {
+    templateId?: string
     contactId: string
     preview: string
     subject?: string
     channel?: string
+    bccSelf?: boolean
+    testOnly?: boolean
   }
   const channel = (_channel === 'sms' ? 'sms' : 'email') as 'email' | 'sms'
   let preview = _preview
 
-  if (!templateId || !contactId || !preview) {
+  if (!contactId || !preview) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
+  if (!templateId && !isOwner) {
+    return NextResponse.json({ error: 'Only an account owner can send a custom (non-template) message' }, { status: 403 })
+  }
+  if ((bccSelf || testOnly) && !isOwner) {
+    return NextResponse.json({ error: 'Only an account owner can BCC themselves or send a test copy' }, { status: 403 })
+  }
 
-  // Fetch template, contact, and tenant name (for the email header) — RLS
-  // ensures template/contact belong to the caller's tenant
+  // templateId is optional — a free-form message (custom subject + body,
+  // no template picked) still goes through this same route. RLS ensures
+  // template/contact belong to the caller's tenant.
   const [{ data: template }, { data: contact }, { data: tenant }] = await Promise.all([
-    supabase.from('templates').select('*').eq('id', templateId).single(),
+    templateId ? supabase.from('templates').select('*').eq('id', templateId).single() : Promise.resolve({ data: null }),
     supabase.from('contacts').select('*').eq('id', contactId).single(),
-    supabase.from('tenants').select('name').eq('id', tenantId).single(),
+    supabase.from('tenants').select('name, settings').eq('id', tenantId).single(),
   ])
 
-  if (!template || !contact) {
+  if (!contact || (templateId && !template)) {
     return NextResponse.json({ error: 'Template or contact not found' }, { status: 404 })
   }
 
-  const recipient = channel === 'sms' ? contact.phone : contact.email
+  // The "own email" a tenant can send a test copy to, or BCC themselves
+  // on — set explicitly in Settings, falling back to the sender's own
+  // login email when nothing's configured.
+  const ownEmail = ((tenant?.settings as Record<string, unknown> | null)?.notify_email as string | undefined) || user.email || ''
+
+  let recipient = channel === 'sms' ? contact.phone : contact.email
+  if (channel === 'email' && testOnly) {
+    if (!ownEmail) return NextResponse.json({ error: 'No email address on file to send a test to — set one in Settings first' }, { status: 422 })
+    recipient = ownEmail
+  }
   if (!recipient) {
     return NextResponse.json({ error: `Contact has no ${channel === 'sms' ? 'phone number' : 'email address'}` }, { status: 422 })
   }
@@ -69,7 +101,7 @@ export async function POST(request: NextRequest) {
   // here — falls back to the raw template subject only if the caller
   // didn't provide one, so a subject with unresolved {{tags}} never goes
   // out literally.
-  const subject = channel === 'email' ? (_subject ?? template.subject) : null
+  const subject = channel === 'email' ? (_subject ?? template?.subject ?? null) : null
 
   // Insert queued log entry
   const { data: logEntry } = await supabase
@@ -77,10 +109,10 @@ export async function POST(request: NextRequest) {
     .insert({
       tenant_id:   tenantId,
       contact_id:  contactId,
-      template_id: templateId,
+      template_id: templateId ?? null,
       channel,
       recipient,
-      subject,
+      subject:     testOnly ? `[TEST] ${subject ?? ''}`.trim() : subject,
       body:        preview,
       status:      'queued',
     })
@@ -103,16 +135,23 @@ export async function POST(request: NextRequest) {
         senderName: businessName,
         bodyHtml: `<div style="white-space:pre-wrap;">${preview.replace(/[&<>]/g, (c: string) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!))}</div>`,
       })
+      const resendBody: Record<string, unknown> = {
+        from:    RESEND_FROM,
+        to:      [recipient],
+        subject: (testOnly ? '[TEST] ' : '') + (subject ?? '(no subject)'),
+        html,
+        text:    preview,
+      }
+      // Never double up when the send already targets the tenant's own
+      // inbox (a test send) or when they're BCCing themselves on a note
+      // they're already the recipient of.
+      if (bccSelf && !testOnly && ownEmail && ownEmail.toLowerCase() !== recipient.toLowerCase()) {
+        resendBody.bcc = [ownEmail]
+      }
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from:    RESEND_FROM,
-          to:      [recipient],
-          subject: subject ?? '(no subject)',
-          html,
-          text:    preview,
-        }),
+        body: JSON.stringify(resendBody),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message ?? 'Resend error')
@@ -123,14 +162,20 @@ export async function POST(request: NextRequest) {
       await supabase.from('send_log').update({ status: 'sent', provider_id: providerId, sent_at: new Date().toISOString() }).eq('id', logId)
     }
 
-    const label = channel === 'sms' ? 'SMS' : 'Email'
-    await supabase.from('interactions').insert({
-      tenant_id:   tenantId,
-      contact_id:  contactId,
-      type:        'note',
-      body:        `${label} sent: "${template.name ?? template.subject ?? 'message'}" — ${preview.slice(0, 100)}${preview.length > 100 ? '…' : ''}`,
-      occurred_at: new Date().toISOString(),
-    })
+    // A test send goes to the tenant's own inbox, not the contact's — it
+    // isn't something that happened to/for the contact, so it doesn't
+    // belong in their interaction history.
+    if (!testOnly) {
+      const label = channel === 'sms' ? 'SMS' : 'Email'
+      const messageLabel = template?.name ?? template?.subject ?? subject ?? 'message'
+      await supabase.from('interactions').insert({
+        tenant_id:   tenantId,
+        contact_id:  contactId,
+        type:        'note',
+        body:        `${label} sent: "${messageLabel}" — ${preview.slice(0, 100)}${preview.length > 100 ? '…' : ''}`,
+        occurred_at: new Date().toISOString(),
+      })
+    }
 
     return NextResponse.json({ ok: true, providerId })
   } catch (err) {

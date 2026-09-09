@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Send, Mail, MessageSquare, AlertTriangle } from 'lucide-react'
+import { X, Send, Mail, MessageSquare, AlertTriangle, FlaskConical } from 'lucide-react'
 import { interpolate, hasBlockingUnresolved } from '@/lib/template-interpolate'
 import { getContactSendContext, type SendContext } from '@/lib/actions/send-context'
+import { useUserRole } from '@/lib/hooks/useUserRole'
 import type { Tables } from '@/types/database'
 
 type Template = Tables<'templates'>
@@ -19,16 +20,26 @@ type Channel = 'email' | 'sms'
 // has a subject line, which filter tab it shows under) — the body text
 // itself works as either an email or a text, so the send channel here is
 // a toggle, not locked to that default.
+//
+// Subject/body start out as the interpolated template but are editable —
+// an account owner can rewrite either in their own words before sending.
+// BCC-self and "send a test to myself" are owner-only (see /api/send).
 export function SendTemplateModal({ template, contacts, onClose }: {
   template: Template
   contacts: ContactLite[]
   onClose: () => void
 }) {
+  const { isAdmin } = useUserRole()
   const [contactId, setContactId] = useState('')
   const [channel,    setChannel]    = useState<Channel>(template.channel as Channel)
   const [ctx,        setCtx]        = useState<SendContext>({})
   const [loadingCtx, setLoadingCtx] = useState(false)
+  const [subject,    setSubject]    = useState('')
+  const [body,       setBody]       = useState('')
+  const [touched,    setTouched]    = useState(false)
+  const [bccSelf,    setBccSelf]    = useState(false)
   const [sending,    setSending]    = useState(false)
+  const [testSending, setTestSending] = useState(false)
   const [result,     setResult]     = useState<{ ok: boolean; msg: string } | null>(null)
 
   const contact = contacts.find(c => c.id === contactId) ?? null
@@ -51,30 +62,62 @@ export function SendTemplateModal({ template, contacts, onClose }: {
     }
   }
 
-  const preview = contact ? interpolate(template.body, interpolateContext()) : ''
-  // A template authored for SMS has no subject at all — fall back to its
-  // name so switching one to Email still has something in the subject
-  // line, instead of silently sending "(no subject)".
-  const rawSubject = template.subject || (channel === 'email' ? template.name : null)
-  const subjectPreview = contact && channel === 'email' && rawSubject ? interpolate(rawSubject, interpolateContext()) : undefined
-  const hasUnresolved = hasBlockingUnresolved(preview)
+  // Re-derive the interpolated subject/body whenever the contact, channel,
+  // or the {{vars}} they resolve to (ctx) change — but only while the
+  // tenant hasn't started editing, so we never clobber their own words.
+  useEffect(() => {
+    if (touched) return
+    if (!contact) { setSubject(''); setBody(''); return }
+    setBody(interpolate(template.body, interpolateContext()))
+    // A template authored for SMS has no subject at all — fall back to its
+    // name so switching one to Email still has something in the subject
+    // line, instead of silently sending "(no subject)".
+    const rawSubject = template.subject || (channel === 'email' ? template.name : null)
+    setSubject(channel === 'email' && rawSubject ? interpolate(rawSubject, interpolateContext()) : '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contact, channel, ctx, touched])
+
+  const hasUnresolved = hasBlockingUnresolved(body)
   const recipient = channel === 'sms' ? contact?.phone : contact?.email
   const canEmail = !!contact?.email
   const canSms = !!contact?.phone
+  const canSend = !!contact && !!recipient && body.trim().length > 0
 
-  async function handleSend() {
-    if (!contact || !recipient) return
-    setSending(true)
-    setResult(null)
-    const res = await fetch('/api/send', {
+  async function doSend(opts: { testOnly?: boolean } = {}) {
+    return fetch('/api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ templateId: template.id, contactId: contact.id, preview, subject: subjectPreview, channel }),
+      body: JSON.stringify({
+        templateId: template.id,
+        contactId: contact!.id,
+        preview: body,
+        subject: channel === 'email' ? subject : undefined,
+        channel,
+        bccSelf: channel === 'email' ? bccSelf : undefined,
+        testOnly: opts.testOnly,
+      }),
     })
+  }
+
+  async function handleSend() {
+    if (!canSend) return
+    setSending(true)
+    setResult(null)
+    const res = await doSend()
     const json = await res.json()
     setSending(false)
     setResult({ ok: res.ok, msg: res.ok ? 'Sent!' : (json.error ?? 'Send failed') })
     if (res.ok) setTimeout(onClose, 1200)
+  }
+
+  async function handleSendTest() {
+    if (!canSend) return
+    setTestSending(true)
+    setResult(null)
+    const res = await doSend({ testOnly: true })
+    const json = await res.json()
+    setTestSending(false)
+    setResult({ ok: res.ok, msg: res.ok ? 'Test sent to your own inbox.' : (json.error ?? 'Test send failed') })
   }
 
   return (
@@ -100,7 +143,7 @@ export function SendTemplateModal({ template, contacts, onClose }: {
                   key={opt.key}
                   type="button"
                   disabled={opt.disabled}
-                  onClick={() => setChannel(opt.key)}
+                  onClick={() => { setChannel(opt.key); setTouched(false) }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[14px] font-bold transition-colors"
                   style={{
                     background: active ? 'linear-gradient(135deg,#2a52a0,#4a9db5)' : 'transparent',
@@ -119,7 +162,7 @@ export function SendTemplateModal({ template, contacts, onClose }: {
             <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
               Send to
             </label>
-            <select value={contactId} onChange={e => setContactId(e.target.value)}
+            <select value={contactId} onChange={e => { setContactId(e.target.value); setTouched(false) }}
               className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
               style={{ color: 'hsl(var(--foreground))' }}>
               <option value="">— Choose a contact —</option>
@@ -149,18 +192,40 @@ export function SendTemplateModal({ template, contacts, onClose }: {
                 <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading contact details…</p>
               )}
 
+              {channel === 'email' && (
+                <div className="space-y-1.5">
+                  <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={e => { setTouched(true); setSubject(e.target.value) }}
+                    className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-[15px]"
+                    style={{ color: 'hsl(var(--foreground))' }}
+                  />
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <label className="text-[15px] font-bold uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  Preview
+                  Message (editable)
                 </label>
-                {subjectPreview && (
-                  <p className="text-[15px] font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{subjectPreview}</p>
-                )}
-                <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2.5 text-[15px] whitespace-pre-wrap"
-                  style={{ color: 'hsl(var(--foreground))' }}>
-                  {preview}
-                </div>
+                <textarea
+                  value={body}
+                  onChange={e => { setTouched(true); setBody(e.target.value) }}
+                  rows={5}
+                  className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2.5 text-[15px] resize-none"
+                  style={{ color: 'hsl(var(--foreground))' }}
+                />
               </div>
+
+              {isAdmin && channel === 'email' && (
+                <label className="flex items-center gap-2 text-[15px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <input type="checkbox" checked={bccSelf} onChange={e => setBccSelf(e.target.checked)} className="rounded" />
+                  BCC me on this email
+                </label>
+              )}
             </>
           )}
 
@@ -174,9 +239,18 @@ export function SendTemplateModal({ template, contacts, onClose }: {
               style={{ color: 'hsl(var(--muted-foreground))' }}>
               Cancel
             </button>
-            <button type="button" onClick={handleSend} disabled={!contact || !recipient || sending || hasUnresolved}
+            {isAdmin && channel === 'email' && (
+              <button type="button" onClick={handleSendTest} disabled={!canSend || sending || testSending || hasUnresolved}
+                title="Send a test copy to yourself only"
+                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[hsl(var(--border))] text-[15px] font-bold"
+                style={{ color: 'hsl(var(--muted-foreground))', opacity: (!canSend || sending || testSending || hasUnresolved) ? 0.5 : 1 }}>
+                <FlaskConical className="w-4 h-4" />
+                {testSending ? 'Sending…' : 'Test'}
+              </button>
+            )}
+            <button type="button" onClick={handleSend} disabled={!canSend || sending || testSending || hasUnresolved}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[15px] font-bold text-white"
-              style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', opacity: (!contact || !recipient || sending || hasUnresolved) ? 0.5 : 1 }}>
+              style={{ background: 'linear-gradient(135deg,#2a52a0,#4a9db5)', opacity: (!canSend || sending || testSending || hasUnresolved) ? 0.5 : 1 }}>
               <Send className="w-4 h-4" />
               {sending ? 'Sending…' : 'Send'}
             </button>

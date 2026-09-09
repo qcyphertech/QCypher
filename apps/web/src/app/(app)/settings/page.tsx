@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ThemeToggle } from '@/components/settings/ThemeToggle'
 import { SignOutButton } from '@/components/settings/SignOutButton'
 import { ModuleToggles } from '@/components/settings/ModuleToggles'
+import { NotifyEmailPanel } from '@/components/settings/NotifyEmailPanel'
 import { MissedCallSetup } from '@/components/settings/MissedCallSetup'
 import { ProfileForm } from '@/components/account/ProfileForm'
 import { SecurityPanel } from '@/components/account/SecurityPanel'
@@ -110,6 +111,12 @@ export default async function SettingsPage() {
       <SettingsSection label="Modules" hint="Toggle features on or off — hidden modules keep their data.">
         <ModuleToggles settings={settings} availableModules={availableModuleKeys ? [...availableModuleKeys] : undefined} />
       </SettingsSection>
+
+      {isAdmin && (
+        <SettingsSection label="Notifications">
+          <NotifyEmailPanel initial={settings.notify_email} loginEmail={user.email ?? ''} />
+        </SettingsSection>
+      )}
 
       <SettingsSection label="Automations">
         <MissedCallSetup currentNumber={(tenant as any)?.telnyx_number ?? null} />
