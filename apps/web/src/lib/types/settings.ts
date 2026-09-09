@@ -11,10 +11,21 @@ export type TenantSettings = {
   // it goes through the same show_* intersection as everything else so a
   // tenant that IS granted it can still hide it from their own nav.
   show_clinical_templates: boolean
-  // Owner-set "own email" — used to BCC the sender on outgoing template
-  // emails and as the destination for "send a test to myself". Empty
-  // string means unset; callers fall back to the owner's own login email.
-  notify_email: string
+  // Owner-set email addresses for outgoing mail — all optional, empty
+  // string means unset. Sending itself still goes out through QCypher's
+  // verified mail domain (Resend requires a verified domain to send
+  // "From", so a tenant can't send from an arbitrary unverified address
+  // without their own domain being verified there) — reply_to_email is
+  // the practical equivalent: a customer's "Reply" lands in the
+  // tenant's own inbox instead of QCypher's.
+  reply_to_email: string
+  // BCC destination when "BCC me on this email" is checked. Falls back
+  // to the owner's own login email when unset.
+  bcc_email: string
+  // Destination for "send a test to myself". Falls back to bcc_email,
+  // then the owner's own login email, when unset — but can be pointed
+  // at a different inbox than BCC (e.g. a shared test mailbox).
+  test_email: string
 }
 
 export const DEFAULT_SETTINGS: TenantSettings = {
@@ -25,5 +36,7 @@ export const DEFAULT_SETTINGS: TenantSettings = {
   show_overview:  true,
   show_crm_bot:   true,
   show_clinical_templates: true,
-  notify_email: '',
+  reply_to_email: '',
+  bcc_email: '',
+  test_email: '',
 }

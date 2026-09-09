@@ -38,13 +38,11 @@ export function renderNeutralEmail({ senderName, bodyHtml, cta }: NeutralEmailOp
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
   <body style="margin:0;padding:0;background:#f8f9fc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+    <span style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${senderName}</span>
     <div style="padding:40px 20px;">
       <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,48,112,0.10);border:1px solid rgba(26,48,112,0.08);">
         <div style="height:4px;background:linear-gradient(90deg,#2a52a0,#4a9db5,#00a87a);"></div>
-        <div style="padding:36px 40px 4px;">
-          <p style="margin:0;font-size:23px;font-weight:800;color:#171a2b;letter-spacing:-0.01em;">${senderName}</p>
-        </div>
-        <div style="padding:16px 40px 8px;color:#1a202c;font-size:15px;line-height:1.75;">
+        <div style="padding:36px 40px 8px;color:#1a202c;font-size:15px;line-height:1.75;">
           ${bodyHtml}
           ${ctaHtml}
         </div>

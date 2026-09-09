@@ -74,7 +74,7 @@ export function ContactForm({ contact }: { contact?: Contact }) {
     const payload = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim() || null,
-      email: form.email.trim() || null,
+      email: form.email.trim().toLowerCase() || null,
       phone: form.phone.trim() || null,
       company: form.company.trim() || null,
       address: form.address.trim() || null,

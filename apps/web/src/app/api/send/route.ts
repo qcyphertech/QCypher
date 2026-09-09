@@ -82,15 +82,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Template or contact not found' }, { status: 404 })
   }
 
-  // The "own email" a tenant can send a test copy to, or BCC themselves
-  // on — set explicitly in Settings, falling back to the sender's own
-  // login email when nothing's configured.
-  const ownEmail = ((tenant?.settings as Record<string, unknown> | null)?.notify_email as string | undefined) || user.email || ''
+  // Owner-configurable outgoing-mail addresses, set in Settings →
+  // Notifications. bccEmail falls back to the owner's login email;
+  // testEmail falls back to bccEmail, then the login email, so setting
+  // just one field still gets you a working test-send target.
+  const tenantSettings = (tenant?.settings as Record<string, unknown> | null) ?? {}
+  const replyTo   = (tenantSettings.reply_to_email as string | undefined) || undefined
+  const bccEmail  = (tenantSettings.bcc_email as string | undefined) || user.email || ''
+  const testEmail = (tenantSettings.test_email as string | undefined) || bccEmail
 
   let recipient = channel === 'sms' ? contact.phone : contact.email
   if (channel === 'email' && testOnly) {
-    if (!ownEmail) return NextResponse.json({ error: 'No email address on file to send a test to — set one in Settings first' }, { status: 422 })
-    recipient = ownEmail
+    if (!testEmail) return NextResponse.json({ error: 'No email address on file to send a test to — set one in Settings first' }, { status: 422 })
+    recipient = testEmail
   }
   if (!recipient) {
     return NextResponse.json({ error: `Contact has no ${channel === 'sms' ? 'phone number' : 'email address'}` }, { status: 422 })
@@ -142,11 +146,15 @@ export async function POST(request: NextRequest) {
         html,
         text:    preview,
       }
+      // Resend requires a verified sending domain, so the technical
+      // "From" stays QCypher's — reply_to is the real lever a tenant has
+      // over where their customer's reply ends up.
+      if (replyTo) resendBody.reply_to = [replyTo]
       // Never double up when the send already targets the tenant's own
       // inbox (a test send) or when they're BCCing themselves on a note
       // they're already the recipient of.
-      if (bccSelf && !testOnly && ownEmail && ownEmail.toLowerCase() !== recipient.toLowerCase()) {
-        resendBody.bcc = [ownEmail]
+      if (bccSelf && !testOnly && bccEmail && bccEmail.toLowerCase() !== recipient.toLowerCase()) {
+        resendBody.bcc = [bccEmail]
       }
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',

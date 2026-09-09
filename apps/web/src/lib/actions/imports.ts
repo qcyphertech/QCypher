@@ -102,7 +102,7 @@ export async function commitImport(
       import_id: importId,
       first_name: row.first_name.trim(),
       last_name: row.last_name?.trim() || null,
-      email: row.email?.trim() || null,
+      email: row.email?.trim().toLowerCase() || null,
       phone: row.phone?.trim() || null,
       company: row.company?.trim() || null,
       address: row.address?.trim() || null,

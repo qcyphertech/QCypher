@@ -114,7 +114,10 @@ export default async function SettingsPage() {
 
       {isAdmin && (
         <SettingsSection label="Notifications">
-          <NotifyEmailPanel initial={settings.notify_email} loginEmail={user.email ?? ''} />
+          <NotifyEmailPanel
+            initial={{ reply_to_email: settings.reply_to_email, bcc_email: settings.bcc_email, test_email: settings.test_email }}
+            loginEmail={user.email ?? ''}
+          />
         </SettingsSection>
       )}
 

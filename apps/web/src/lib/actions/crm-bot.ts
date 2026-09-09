@@ -815,7 +815,7 @@ export async function confirmCrmBotAction(actionId: string, approve: boolean): P
           tenant_id: tenantId,
           first_name: String(data.first_name ?? '').slice(0, 100) || 'Unnamed',
           last_name: data.last_name ? String(data.last_name).slice(0, 100) : null,
-          email: data.email ? String(data.email).slice(0, 320) : null,
+          email: data.email ? String(data.email).slice(0, 320).toLowerCase() : null,
           phone: data.phone ? String(data.phone).slice(0, 40) : null,
           notes: data.notes ? String(data.notes).slice(0, 2000) : null,
           status: 'lead',
