@@ -7,23 +7,20 @@ import { renderBrandedEmail } from '@/lib/email/brand'
 import { slugify, extractTitle, extractExcerpt, QCYPHER_TOPIC_POOL, qcypherBlogPrompt, pickWeeklyTopic } from '@/lib/blog-content'
 import { revalidatePath } from 'next/cache'
 
-// Weekly: generates one QCypher-authored blog draft (pending_approval)
-// and emails every super admin a heads-up to review it — never
-// auto-publishes on its own. That review gate is deliberate (see the
-// "brand-safety requirement" comment on generateQcypherBlogDrafts in
-// lib/actions/blog.ts) — this cron only automates the writing and the
-// nudge to review it, not the decision to put it in front of customers.
+// Weekly: generates one QCypher-authored blog post and publishes it
+// straight away, then emails every super admin a "just went live"
+// notice. This used to stop at pending_approval for a manual review
+// (a deliberate brand-safety gate) — the owner has since opted into
+// fully automatic posting, so the scheduled run now publishes on its own.
 //
-// `?publishNow=1` is a manual-only escape hatch (still requires
-// CRON_SECRET) for a one-off immediate publish — used once to seed the
-// first post on launch day. The scheduled cron in vercel.json never
-// passes it, so every automatic run goes through the review queue.
+// `?draft=1` is a manual-only escape hatch (still requires CRON_SECRET)
+// to put a run back in the review queue instead of publishing it.
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization')
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const publishNow = request.nextUrl.searchParams.get('publishNow') === '1'
+  const publishNow = request.nextUrl.searchParams.get('draft') !== '1'
 
   const admin = createAdminClient()
   const appUrl = process.env.APP_URL ?? 'https://www.qcyphertech.com'
@@ -74,6 +71,10 @@ export async function GET(request: NextRequest) {
   }
 
   revalidatePath('/admin')
-  if (publishNow) revalidatePath('/blog')
+  if (publishNow) {
+    revalidatePath('/blog')
+    revalidatePath('/')
+    revalidatePath('/sitemap.xml')
+  }
   return NextResponse.json({ ok: true, id: data.id, title, topic, published: publishNow })
 }
