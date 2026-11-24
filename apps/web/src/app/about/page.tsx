@@ -17,6 +17,9 @@ const INTEGRATION_LOGOS = [
   { name: 'Anthropic', file: '/logos/anthropic.png' },
 ]
 
+// Flip to true to show the team bios (and the "Ask for Felix or Thomas" line) again.
+const SHOW_TEAM = false
+
 export default function AboutPage() {
   const [showContactModal, setShowContactModal] = useState(false)
   return (
@@ -386,6 +389,7 @@ export default function AboutPage() {
       </section>
 
       {/* TEAM */}
+      {SHOW_TEAM && (
       <section>
         <div className="wrap">
           <div className="section-head center">
@@ -455,6 +459,7 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* VALUES */}
       <section style={{ background: '#fff', borderTop: '1px solid rgba(26,48,112,.08)', borderBottom: '1px solid rgba(26,48,112,.08)' }}>
@@ -528,7 +533,7 @@ export default function AboutPage() {
               <h5>Contact Us</h5>
               <a href="mailto:info@qcyphertech.com">info@qcyphertech.com</a>
               <a href="tel:+18042505066">(804) 250-5066</a>
-              <p>Ask for Felix or Thomas.</p>
+              {SHOW_TEAM && <p>Ask for Felix or Thomas.</p>}
             </div>
             <div className="foot-links">
               <h5>Quick Links</h5>
